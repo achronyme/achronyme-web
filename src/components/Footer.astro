@@ -1,0 +1,73 @@
+---
+import type { Locale } from '../i18n';
+import { t } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const year = new Date().getFullYear();
+---
+
+<footer class="relative px-6 py-16">
+  <div class="relative mx-auto max-w-6xl border border-subtle/30">
+    <!-- Corner nodes -->
+    <div class="corner-node absolute -top-1 -left-1"></div>
+    <div class="corner-node absolute -top-1 -right-1"></div>
+    <div class="corner-node absolute -bottom-1 -left-1"></div>
+    <div class="corner-node absolute -bottom-1 -right-1"></div>
+    <!-- Label -->
+    <span class="frame-label top-0 left-8 -translate-y-1/2">.eof</span>
+
+    <div class="p-8 sm:p-10 lg:p-12">
+      <!-- Top section -->
+      <div class="flex flex-col items-start gap-8 sm:flex-row sm:justify-between">
+        <!-- Brand -->
+        <div>
+          <span class="text-lg font-bold text-text-primary">achronyme</span>
+          <p class="mt-2 max-w-xs text-xs leading-relaxed text-text-muted">
+            {locale === 'en'
+              ? 'A zero-knowledge DSL. Write code, generate proofs.'
+              : 'Un DSL de zero-knowledge. Escribe codigo, genera pruebas.'}
+          </p>
+        </div>
+
+        <!-- Links -->
+        <div class="flex gap-12">
+          <div>
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-widest text-text-secondary">
+              {locale === 'en' ? 'Resources' : 'Recursos'}
+            </h4>
+            <ul class="space-y-2">
+              <li><a href="https://github.com/achronyme/achronyme" target="_blank" rel="noopener noreferrer" class="text-xs text-text-muted transition-colors hover:text-text-primary">GitHub</a></li>
+              <li><a href="https://github.com/achronyme/achronyme/releases" target="_blank" rel="noopener noreferrer" class="text-xs text-text-muted transition-colors hover:text-text-primary">Releases</a></li>
+              <li><a href="https://github.com/achronyme/achronyme-editor" target="_blank" rel="noopener noreferrer" class="text-xs text-text-muted transition-colors hover:text-text-primary">VS Code</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="mb-3 text-xs font-semibold uppercase tracking-widest text-text-secondary">
+              {locale === 'en' ? 'Legal' : 'Legal'}
+            </h4>
+            <ul class="space-y-2">
+              <li><span class="text-xs text-text-muted">{s.footer.license}</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="line-gradient my-8 opacity-30"></div>
+
+      <!-- Bottom -->
+      <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+        <span class="text-[11px] text-text-muted">&copy; {year} Achronyme Contributors</span>
+        <span class="inline-flex items-center gap-1.5 text-[11px] text-text-muted">
+          {s.footer.builtWith}
+          <span class="text-error">&hearts;</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</footer>

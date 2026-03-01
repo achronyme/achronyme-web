@@ -1,0 +1,54 @@
+{
+  "lang": "en",
+  "nav": {
+    "features": "Features",
+    "code": "Code",
+    "getStarted": "Get Started"
+  },
+  "hero": {
+    "tagline": "Write code. Generate proofs.",
+    "subtitle": "A zero-knowledge DSL with dual execution — run your code in a full VM or compile it to arithmetic circuits. Same syntax, two targets.",
+    "cta": "Get Started",
+    "github": "View on GitHub",
+    "betaLabel": "Public beta",
+    "proofVerified": "Proof verified",
+    "proofMeta": "(Groth16, 192 bytes, 0.84s)"
+  },
+  "features": {
+    "title": "Why Achronyme",
+    "dual": {
+      "title": "Dual Execution",
+      "desc": "VM mode for the full language — closures, recursion, GC, collections. Circuit mode compiles to R1CS or Plonkish constraints."
+    },
+    "proofs": {
+      "title": "Inline Proofs",
+      "desc": "prove {} blocks compile circuits, capture witnesses, and generate Groth16 or PlonK proofs — all inline, as first-class values."
+    },
+    "native": {
+      "title": "Native Provers",
+      "desc": "Groth16 (ark-groth16) and PlonK (halo2 KZG) run in-process. No Node.js, no snarkjs, no external dependencies."
+    },
+    "security": {
+      "title": "Security Analysis",
+      "desc": "Taint tracking and under-constraint detection at compile time. Catches circuit bugs before proof generation."
+    },
+    "snarkjs": {
+      "title": "snarkjs Compatible",
+      "desc": "Export .r1cs and .wtns files. Generate Solidity verifier contracts with --solidity. Works with the snarkjs ecosystem."
+    },
+    "open": {
+      "title": "Open Source",
+      "desc": "GPL-3.0 licensed. 1,000+ tests passing, 2 security audits completed. Built with Rust for performance and safety."
+    }
+  },
+  "code": {
+    "title": "See it in action",
+    "tab1": "Zero-Knowledge Proof",
+    "tab2": "VM Mode",
+    "tab3": "CLI"
+  },
+  "footer": {
+    "builtWith": "Built with Rust",
+    "license": "GPL-3.0 License"
+  }
+}

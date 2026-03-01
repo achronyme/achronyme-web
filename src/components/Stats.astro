@@ -1,0 +1,48 @@
+---
+import type { Locale } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const stats = locale === 'en' ? [
+  { value: '1,000+', label: 'Tests passing' },
+  { value: '2', label: 'Security audits' },
+  { value: '2', label: 'Proof backends' },
+  { value: '0', label: 'External deps' },
+] : [
+  { value: '1,000+', label: 'Tests pasando' },
+  { value: '2', label: 'Auditorias' },
+  { value: '2', label: 'Backends de prueba' },
+  { value: '0', label: 'Deps externas' },
+];
+---
+
+<section class="relative px-6 py-16">
+  <div class="relative mx-auto max-w-6xl border border-subtle/30">
+    <!-- Corner nodes -->
+    <div class="corner-node absolute -top-1 -left-1"></div>
+    <div class="corner-node absolute -top-1 -right-1"></div>
+    <div class="corner-node absolute -bottom-1 -left-1"></div>
+    <div class="corner-node absolute -bottom-1 -right-1"></div>
+    <!-- Label -->
+    <span class="frame-label top-0 left-8 -translate-y-1/2">.metrics</span>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 p-8 sm:p-10">
+      {stats.map((stat, i) => (
+        <div class:list={[
+          'reveal text-center py-4 sm:py-0',
+          i < 2 && 'border-b border-subtle/30 sm:border-b-0',
+          i % 2 === 0 && 'border-r border-subtle/30',
+          i < 3 && 'sm:border-r sm:border-subtle/30',
+          i === 3 && 'border-r-0',
+        ]}>
+          <div class="text-3xl font-bold text-proof sm:text-4xl">{stat.value}</div>
+          <div class="mt-1 text-xs text-text-muted">{stat.label}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

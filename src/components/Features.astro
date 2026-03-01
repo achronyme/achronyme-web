@@ -1,0 +1,64 @@
+---
+import type { Locale } from '../i18n';
+import { t } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+
+const features = [
+  { key: 'dual' as const, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3m8-18h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3m-4-18v18m-4-9h8"/></svg>` },
+  { key: 'proofs' as const, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>` },
+  { key: 'native' as const, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>` },
+  { key: 'security' as const, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>` },
+  { key: 'snarkjs' as const, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path d="M4 17l6-6-6-6m8 14h8"/></svg>` },
+  { key: 'open' as const, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>` },
+];
+---
+
+<section id="features" class="relative px-6 py-24 sm:py-32">
+  <div class="relative mx-auto max-w-6xl border border-subtle/30">
+    <!-- Corner nodes -->
+    <div class="corner-node absolute -top-1 -left-1"></div>
+    <div class="corner-node absolute -top-1 -right-1"></div>
+    <div class="corner-node absolute -bottom-1 -left-1"></div>
+    <div class="corner-node absolute -bottom-1 -right-1"></div>
+    <!-- Label -->
+    <span class="frame-label top-0 left-8 -translate-y-1/2">.modules</span>
+
+    <div class="p-8 sm:p-10 lg:p-12">
+      <div class="reveal text-center">
+        <span class="mb-4 inline-block text-xs font-medium uppercase tracking-widest text-proof">
+          {locale === 'en' ? 'Capabilities' : 'Capacidades'}
+        </span>
+        <h2 class="mb-4 text-2xl font-bold tracking-tight sm:text-4xl">
+          {s.features.title}
+        </h2>
+        <p class="mx-auto mb-16 max-w-xl text-sm text-text-secondary">
+          {locale === 'en'
+            ? 'Everything you need to write, prove, and verify zero-knowledge circuits.'
+            : 'Todo lo que necesitas para escribir, probar y verificar circuitos zero-knowledge.'}
+        </p>
+      </div>
+
+      <div class="reveal-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {features.map(({ key, icon }) => (
+          <div class="glow-card reveal group rounded-[14px] border border-subtle bg-surface/60 p-6 backdrop-blur-sm transition-all duration-300 hover:bg-surface">
+            <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-[10px] bg-proof/10 text-proof transition-all duration-300 group-hover:bg-proof/20 group-hover:shadow-[0_0_15px_rgba(139,92,246,0.15)]">
+              <Fragment set:html={icon} />
+            </div>
+            <h3 class="mb-2 text-base font-semibold text-text-primary">
+              {s.features[key].title}
+            </h3>
+            <p class="text-[13px] leading-relaxed text-text-secondary">
+              {s.features[key].desc}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

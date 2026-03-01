@@ -1,0 +1,519 @@
+---
+import type { Locale } from '../i18n';
+import { t } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+
+const line1 = s.hero.tagline.split('.')[0]?.trim() ?? '';
+const line2 = s.hero.tagline.split('.')[1]?.trim() ?? '';
+---
+
+<section class="relative min-h-screen overflow-hidden px-6 pt-28 pb-16 lg:pt-32">
+  <!-- Ambient glow -->
+  <div class="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-proof/[0.04] blur-[180px]"></div>
+
+  <!-- Circuit decoration (inline SVG for GSAP animation) -->
+  <svg id="deco-svg" width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" class="pointer-events-none absolute inset-0 h-full w-full">
+    <g id="deco-bl-outer" stroke="rgba(139,92,246,0.12)">
+      <path d="M80 200L90 190H95L100 185H110L125 170H135L145 160V150L155 140M76 200L90 186H95L98 183H108L123 168H133L143 158V148L153 138M72 200L88 184H93L96 181H106L121 166H131L141 156V146L151 136M68 200L86 182H91L94 179H104L119 164H129L139 154V144L149 134M64 200L84 180H89L92 177H102L117 162H127L137 152V142L147 132M56 200L81 175H100L115 160H125L135 150V140L145 130M48 200L75 173H98L109 162V146L121 134H137L143 128M44 200L77 167H85L89 171H96L107 160V144L119 132H131M94 169L105 158V142L117 130H137L141 126"/>
+    </g>
+    <g id="deco-bl-inner" stroke="rgba(139,92,246,0.12)">
+      <path d="M40 200L75 165H87L89 167H92L103 156V140L115 128H135L139 124M36 200L73 163H92L101 154V138L113 126H133M32 200L71 161V142L80 133H96H102L111 124H135M28 200L69 159V140L78 131H100L109 122H137M24 200L67 157V138L76 129H98L107 120H135M20 200L65 155V136L74 127H96M16 200L61 155V136.051L72 125H94M12 200L57 155V136L70 123H92M90 121H68L53 136V155L8 200M4 200L49 155M0 200L45 155"/>
+    </g>
+    <g id="deco-pins" stroke="rgba(139,92,246,0.12)">
+      <path d="M200 185.706V190L202 192V200M198 200V192L196 190M196 190V181M196 190L192 186V177M204 200V192L208 188V177M190 175V186L184 192V200M188 173V184L182 190V194L176 200M172 200L180 192V188L186 182V171M168 200L178 190V186L184 180V169M186 200V194L191 189M193 191L196 194V200M188 200V196L191 193M190 200V198L193 195M210 175L212 177V188L206 194V200M212 173L214 175V190L208 196V200M214 171L216 173V200M216 169L218 171V192L220 194V200M218 167L220 169V190L224 194V200M220 165L222 167V188L228 194V200M222 163L224 165V186L232 194V200M224 161L226 163V184L236 194V200M226 159L228 161V182L240 194V200M228 157L230 160V180L244 194V200"/>
+    </g>
+    <g id="deco-diamond-in" stroke="rgba(139,92,246,0.12)">
+      <path d="M200 160L140 100L200 40L260 100L200 160Z"/>
+    </g>
+    <g id="deco-diamond-out" stroke="rgba(139,92,246,0.12)">
+      <path d="M200 185L115 100L200 15L285 100L200 185Z"/>
+    </g>
+    <g id="deco-br" stroke="rgba(139,92,246,0.12)">
+      <path d="M244 141L252 149V173L260 181V200M246 139L254 147V171L262 179V200M248 137L256 145V153L258 155V171L264 177V200M250 135L260 145V169L266 175V200M252 133L262 143V167L268 173V200M254 131L264 141V165L270 171V200M256 129L266 139V159L272 165V196L276 200M258 127L268 137V157L274 163V194L280 200M260 125L270 135V155L276 161V192L284 200"/>
+    </g>
+    <g id="deco-tr-outer" stroke="rgba(139,92,246,0.12)">
+      <path d="M265 80H273L281 72V48L289 40H300M263 78H271L279 70V46L287 38H300M261 76H269L277 68V44L285 36H300M259 74H267L275 66V42L283 34H300M257 72H265L273 64V40L281 32H300M255 70H263L271 62V38L277 32M253 68H261L269 60V36L273 32M251 66H259L267 58V34L271 30H292L300 22M249 64H257L265 56V32L269 28H290L300 18M280 26H288L298 16M278 24H286L296 14H300M276 22H284L294 12H300"/>
+    </g>
+    <g id="deco-tr-inner" stroke="rgba(139,92,246,0.12)">
+      <path d="M247 62L251 58V32L261 22H272L274 20H282L292 10H300M249 56V30L261 18H280L290 8H300M247 58V28L259 16H278L288 6H300M245 60V44M300 4H286L276 14H257L245 26V44M245 44L239 38V26L254 11V0M237 52L241 48V44L235 38V26L252 9V0M235 50L237 48V44L231 38V26L250 7V0M233 48V44L227 38V26L248 5V0M223 38V26L246 3V0"/>
+    </g>
+    <g id="deco-fan" stroke="rgba(139,92,246,0.12)">
+      <path d="M262 123L289 150V200M264 121L291 148H300M266 119L293 146H300M268 117L295 144H300M270 115L297 142H300M272 113L297 138H300M274 111L297 134H300M276 109L297 130H300M278 107L297 126H300M280 105L297 122H300M282 103L297 118H300M284 101L297 114H300"/>
+    </g>
+  </svg>
+
+  <!-- Main frame -->
+  <div class="relative mx-auto max-w-6xl border border-subtle/30 grid grid-cols-1 lg:grid-cols-[1fr_0.85fr]">
+
+    <!-- Extending lines (desktop only) -->
+    <div class="hidden lg:block absolute top-0 right-full w-[20vw] h-px border-t border-dashed border-subtle/20"></div>
+    <div class="hidden lg:block absolute top-0 left-full w-[20vw] h-px border-t border-dashed border-subtle/20"></div>
+    <div class="hidden lg:block absolute bottom-0 right-full w-[20vw] h-px border-t border-dashed border-subtle/20"></div>
+    <div class="hidden lg:block absolute bottom-0 left-full w-[20vw] h-px border-t border-dashed border-subtle/20"></div>
+
+    <!-- Corner nodes -->
+    <div class="corner-node absolute -top-1 -left-1"></div>
+    <div class="corner-node absolute -top-1 -right-1"></div>
+    <div class="corner-node absolute -bottom-1 -left-1"></div>
+    <div class="corner-node absolute -bottom-1 -right-1"></div>
+    <!-- Divisor intersection nodes (desktop) -->
+    <div class="corner-node hidden lg:block absolute -top-1" style="left: calc(1 / 1.85 * 100% - 4px)"></div>
+    <div class="corner-node hidden lg:block absolute -bottom-1" style="left: calc(1 / 1.85 * 100% - 4px)"></div>
+
+    <!-- Label: .witness -->
+    <span class="absolute top-0 left-8 -translate-y-1/2 bg-void px-3 text-[10px] uppercase tracking-[0.2em] text-text-muted font-medium">.witness</span>
+    <!-- Label: .circuit (desktop: on top border right half, mobile: on divider) -->
+    <span class="hidden lg:inline absolute top-0 -translate-y-1/2 bg-void px-3 text-[10px] uppercase tracking-[0.2em] text-text-muted font-medium" style="left: calc(1 / 1.85 * 100% + 24px)">.circuit</span>
+
+    <!-- Left column: text -->
+    <div class="border-b border-subtle/30 lg:border-b-0 lg:border-r lg:border-subtle/30 p-8 sm:p-10 lg:p-12 relative">
+      <!-- Mobile .circuit label (on divider) -->
+      <span class="lg:hidden absolute bottom-0 left-8 translate-y-1/2 bg-void px-3 text-[10px] uppercase tracking-[0.2em] text-text-muted font-medium z-10">.circuit</span>
+
+      <!-- Badge -->
+      <div class="reveal mb-8 inline-flex items-center gap-2 rounded-full border border-subtle bg-surface/80 px-4 py-1.5 text-xs text-text-secondary backdrop-blur-sm">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-valid animate-pulse"></span>
+        v0.1.0-beta.1
+        <span class="text-text-muted">|</span>
+        <span class="text-text-muted">{s.hero.betaLabel}</span>
+      </div>
+
+      <!-- Tagline -->
+      <h1 class="reveal">
+        <span class="hero-line block text-4xl font-medium leading-[1.1] tracking-tight text-text-secondary sm:text-5xl md:text-6xl">{line1}.</span>
+        <span class="hero-line gradient-text block mt-3 text-5xl font-bold leading-[1.1] tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">{line2}.</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="reveal mt-8 max-w-lg text-base leading-relaxed text-text-secondary sm:text-lg">
+        {s.hero.subtitle}
+      </p>
+
+      <!-- CTAs -->
+      <div class="reveal mt-10 flex flex-col gap-4 sm:flex-row">
+        <a
+          href="https://github.com/achronyme/achronyme/releases"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group relative inline-flex items-center gap-2 overflow-hidden rounded-[10px] bg-proof px-8 py-4 text-base font-medium text-white transition-all hover:shadow-[0_0_30px_rgba(139,92,246,0.3)]"
+        >
+          <span class="relative z-10">{s.hero.cta}</span>
+          <svg class="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+          <div class="absolute inset-0 bg-gradient-to-r from-proof-dim to-proof opacity-0 transition-opacity group-hover:opacity-100"></div>
+        </a>
+        <a
+          href="https://github.com/achronyme/achronyme"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group inline-flex items-center gap-2 rounded-[10px] border border-subtle bg-surface/50 px-8 py-4 text-base font-medium text-text-secondary backdrop-blur-sm transition-all hover:border-proof/30 hover:text-text-primary hover:shadow-[0_0_20px_rgba(139,92,246,0.08)]"
+        >
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          {s.hero.github}
+        </a>
+      </div>
+    </div>
+
+    <!-- Right column: terminal -->
+    <div class="p-8 sm:p-10 lg:p-12 flex items-center">
+      <div class="reveal w-full">
+        <div class="relative overflow-hidden rounded-[14px] border border-subtle bg-surface/90 backdrop-blur-sm">
+          <!-- Window chrome -->
+          <div class="flex items-center gap-2 border-b border-subtle px-4 py-3">
+            <span class="h-2.5 w-2.5 rounded-full bg-error/60"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-warn/60"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-valid/60"></span>
+            <span class="ml-3 text-xs text-text-muted">commitment.ach</span>
+          </div>
+
+          <!-- Code area (min-h reserves space for 11 lines to prevent layout shift) -->
+          <div class="flex overflow-x-auto min-h-[280px]">
+            <div id="hero-line-numbers" class="flex-none select-none border-r border-subtle py-5 pl-4 pr-3 text-right text-[13px] leading-relaxed text-text-muted/50 hidden sm:block">
+            </div>
+            <pre id="hero-code" class="flex-1 py-5 pl-4 pr-5 text-[13px] leading-relaxed"><code></code></pre>
+          </div>
+
+          <!-- Output area (hidden initially) -->
+          <div id="hero-output" class="border-t border-subtle px-5 py-3 text-[13px] opacity-0 transition-opacity duration-700">
+            <span class="text-text-muted">&gt;</span>
+            <span class="text-valid ml-1">{s.hero.proofVerified} &#10003;</span>
+            <span class="text-text-muted ml-1">{s.hero.proofMeta}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Hero line reveal */
+  .hero-line {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: line-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero-line:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  @keyframes line-reveal {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+</style>
+
+<script>
+  const codeLines: Array<Array<{ text: string; cls: string }>> = [
+    [{ text: '// Prove a Poseidon commitment', cls: 'text-text-muted' }],
+    [
+      { text: 'let', cls: 'text-proof-light' },
+      { text: ' secret ', cls: '' },
+      { text: '=', cls: 'text-text-muted' },
+      { text: ' 0p12345', cls: 'text-warn' },
+    ],
+    [
+      { text: 'let', cls: 'text-proof-light' },
+      { text: ' blinding ', cls: '' },
+      { text: '=', cls: 'text-text-muted' },
+      { text: ' 0p98765', cls: 'text-warn' },
+    ],
+    [],
+    [
+      { text: 'prove', cls: 'text-proof font-bold' },
+      { text: ' {', cls: 'text-text-muted' },
+    ],
+    [
+      { text: '    ', cls: '' },
+      { text: 'witness', cls: 'text-info' },
+      { text: ' secret', cls: '' },
+    ],
+    [
+      { text: '    ', cls: '' },
+      { text: 'witness', cls: 'text-info' },
+      { text: ' blinding', cls: '' },
+    ],
+    [
+      { text: '    ', cls: '' },
+      { text: 'public', cls: 'text-valid' },
+      { text: ' commitment', cls: '' },
+    ],
+    [
+      { text: '    ', cls: '' },
+      { text: 'let', cls: 'text-proof-light' },
+      { text: ' cm ', cls: '' },
+      { text: '=', cls: 'text-text-muted' },
+      { text: ' ', cls: '' },
+      { text: 'poseidon', cls: 'text-info' },
+      { text: '(secret, blinding)', cls: '' },
+    ],
+    [
+      { text: '    ', cls: '' },
+      { text: 'assert_eq', cls: 'text-info' },
+      { text: '(cm, commitment)', cls: '' },
+    ],
+    [{ text: '}', cls: 'text-text-muted' }],
+  ];
+
+  function initHeroTyping() {
+    const codeEl = document.querySelector('#hero-code code') as HTMLElement | null;
+    const lineNumsEl = document.getElementById('hero-line-numbers');
+    const outputEl = document.getElementById('hero-output');
+    if (!codeEl || !lineNumsEl || !outputEl) return;
+
+    let lineIdx = 0;
+    let spanIdx = 0;
+    let charIdx = 0;
+    let currentSpan: HTMLSpanElement | null = null;
+
+    function addLineNumber() {
+      const div = document.createElement('div');
+      div.textContent = String(lineIdx + 1);
+      lineNumsEl!.appendChild(div);
+    }
+
+    function typeNext() {
+      if (lineIdx >= codeLines.length) {
+        // Remove cursor
+        const cursor = codeEl!.querySelector('.typing-cursor');
+        if (cursor) cursor.remove();
+        // Show output
+        setTimeout(() => {
+          outputEl!.style.opacity = '1';
+        }, 400);
+        return;
+      }
+
+      const line = codeLines[lineIdx];
+
+      // Start of a new line
+      if (spanIdx === 0 && charIdx === 0) {
+        if (lineIdx > 0) codeEl!.appendChild(document.createTextNode('\n'));
+        addLineNumber();
+
+        // Empty line
+        if (line.length === 0) {
+          lineIdx++;
+          setTimeout(typeNext, 100);
+          return;
+        }
+      }
+
+      // Start of a new span
+      if (charIdx === 0) {
+        currentSpan = document.createElement('span');
+        if (line[spanIdx].cls) currentSpan.className = line[spanIdx].cls;
+        codeEl!.appendChild(currentSpan);
+      }
+
+      const segment = line[spanIdx];
+      const ch = segment.text[charIdx];
+
+      // Remove old cursor
+      const oldCursor = codeEl!.querySelector('.typing-cursor');
+      if (oldCursor) oldCursor.remove();
+
+      // Type character
+      currentSpan!.textContent += ch;
+
+      // Add cursor
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor cursor-blink inline-block w-[7px] h-[15px] bg-proof-light align-middle ml-px';
+      codeEl!.appendChild(cursor);
+
+      charIdx++;
+
+      // Check if span is done
+      if (charIdx >= segment.text.length) {
+        charIdx = 0;
+        spanIdx++;
+
+        // Check if line is done
+        if (spanIdx >= line.length) {
+          spanIdx = 0;
+          lineIdx++;
+          setTimeout(typeNext, 120);
+          return;
+        }
+      }
+
+      // Delay: faster for spaces/symbols, slower for letters
+      const delay = /\s/.test(ch) ? 15 : /[a-zA-Z0-9]/.test(ch) ? 35 : 20;
+      setTimeout(typeNext, delay);
+    }
+
+    typeNext();
+  }
+
+  // Fire via IntersectionObserver with 800ms delay
+  const heroSection = document.querySelector('#hero-code');
+  if (heroSection) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            observer.disconnect();
+            setTimeout(initHeroTyping, 800);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(heroSection);
+  }
+</script>
+
+<script>
+  import { gsap } from 'gsap';
+
+  function initDecoAnimation() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const svg = document.getElementById('deco-svg');
+    if (!svg) return;
+
+    const allPaths = svg.querySelectorAll('path');
+    // Phase A: hide all paths for draw-on
+    allPaths.forEach((path) => {
+      const len = path.getTotalLength();
+      path.style.strokeDasharray = `${len}`;
+      path.style.strokeDashoffset = `${len}`;
+    });
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        // Clean up draw-on dasharray before starting pulses
+        allPaths.forEach((p) => {
+          p.style.strokeDasharray = '';
+          p.style.strokeDashoffset = '';
+        });
+        startPulses();
+      },
+    });
+
+    const drawGroups = [
+      { id: '#deco-diamond-in', start: 0.0, dur: 1.0 },
+      { id: '#deco-diamond-out', start: 0.2, dur: 1.2 },
+      { id: '#deco-pins', start: 0.5, dur: 1.0 },
+      { id: '#deco-bl-inner', start: 0.5, dur: 1.2 },
+      { id: '#deco-br', start: 0.5, dur: 1.2 },
+      { id: '#deco-bl-outer', start: 0.7, dur: 1.2 },
+      { id: '#deco-tr-outer', start: 0.7, dur: 1.2 },
+      { id: '#deco-fan', start: 0.7, dur: 1.2 },
+      { id: '#deco-tr-inner', start: 0.9, dur: 1.2 },
+    ];
+
+    drawGroups.forEach(({ id, start, dur }) => {
+      const paths = svg!.querySelectorAll(`${id} path`);
+      if (!paths.length) return;
+      tl.to(
+        paths,
+        { strokeDashoffset: 0, duration: dur, ease: 'power2.out', stagger: 0.04 },
+        start
+      );
+    });
+
+    // Phase B: diamond color pulses + cable traveling gradients
+    function startPulses() {
+      const base = 'rgba(139,92,246,0.12)';
+
+      // --- Diamonds: yoyo color pulse ---
+      const diamondPulses = [
+        { id: '#deco-diamond-in', delay: 0, bright: 'rgba(220,200,255,0.45)', repeatDelay: 5 },
+        { id: '#deco-diamond-out', delay: 0.3, bright: 'rgba(180,160,255,0.38)', repeatDelay: 5 },
+      ];
+      diamondPulses.forEach(({ id, delay, bright, repeatDelay }) => {
+        const paths = svg!.querySelectorAll(`${id} path`);
+        if (!paths.length) return;
+        gsap.fromTo(paths, { stroke: base }, {
+          stroke: bright,
+          duration: 0.6,
+          delay,
+          stagger: { each: 0.05, repeat: -1, repeatDelay, yoyo: true },
+        });
+      });
+
+      // --- Cables: traveling comet gradients (slower, more frequent) ---
+      const cableGroups: Array<{
+        id: string;
+        delay: number;
+        speed: number;
+        repeatDelay: number;
+        layers: Array<{ color: string; width: number; sw: number }>;
+      }> = [
+        {
+          id: '#deco-pins', delay: 0.5, speed: 3.5, repeatDelay: 2,
+          layers: [
+            { color: 'rgba(139,92,246,0.16)', width: 0.22, sw: 2 },
+            { color: 'rgba(160,140,255,0.30)', width: 0.10, sw: 1.5 },
+            { color: 'rgba(210,190,255,0.50)', width: 0.04, sw: 1 },
+          ],
+        },
+        {
+          id: '#deco-bl-inner', delay: 0.8, speed: 4.5, repeatDelay: 2.5,
+          layers: [
+            { color: 'rgba(90,180,246,0.14)', width: 0.20, sw: 2 },
+            { color: 'rgba(115,205,255,0.28)', width: 0.09, sw: 1.5 },
+            { color: 'rgba(165,230,255,0.48)', width: 0.03, sw: 1 },
+          ],
+        },
+        {
+          id: '#deco-bl-outer', delay: 1.4, speed: 5.0, repeatDelay: 2.5,
+          layers: [
+            { color: 'rgba(75,165,246,0.12)', width: 0.18, sw: 2 },
+            { color: 'rgba(105,195,255,0.24)', width: 0.08, sw: 1.5 },
+            { color: 'rgba(155,225,255,0.44)', width: 0.03, sw: 1 },
+          ],
+        },
+        {
+          id: '#deco-br', delay: 0.8, speed: 4.0, repeatDelay: 2.5,
+          layers: [
+            { color: 'rgba(185,85,246,0.14)', width: 0.20, sw: 2 },
+            { color: 'rgba(205,125,255,0.28)', width: 0.09, sw: 1.5 },
+            { color: 'rgba(240,180,255,0.48)', width: 0.03, sw: 1 },
+          ],
+        },
+        {
+          id: '#deco-tr-outer', delay: 1.4, speed: 5.0, repeatDelay: 2.5,
+          layers: [
+            { color: 'rgba(95,115,246,0.12)', width: 0.18, sw: 2 },
+            { color: 'rgba(125,150,255,0.24)', width: 0.08, sw: 1.5 },
+            { color: 'rgba(180,200,255,0.44)', width: 0.03, sw: 1 },
+          ],
+        },
+        {
+          id: '#deco-tr-inner', delay: 1.8, speed: 4.5, repeatDelay: 3,
+          layers: [
+            { color: 'rgba(115,95,246,0.12)', width: 0.18, sw: 2 },
+            { color: 'rgba(145,130,255,0.24)', width: 0.08, sw: 1.5 },
+            { color: 'rgba(200,180,255,0.44)', width: 0.03, sw: 1 },
+          ],
+        },
+        {
+          id: '#deco-fan', delay: 1.5, speed: 3.8, repeatDelay: 2,
+          layers: [
+            { color: 'rgba(205,75,200,0.14)', width: 0.20, sw: 2 },
+            { color: 'rgba(225,115,230,0.28)', width: 0.09, sw: 1.5 },
+            { color: 'rgba(250,180,248,0.48)', width: 0.03, sw: 1 },
+          ],
+        },
+      ];
+
+      cableGroups.forEach(({ id, delay, speed, repeatDelay, layers }) => {
+        const group = svg!.querySelector(id);
+        if (!group) return;
+        const paths = group.querySelectorAll('path');
+
+        paths.forEach((basePath) => {
+          const len = basePath.getTotalLength();
+
+          layers.forEach(({ color, width: w, sw }) => {
+            const overlay = basePath.cloneNode(true) as SVGPathElement;
+            overlay.setAttribute('stroke', color);
+            overlay.setAttribute('stroke-width', String(sw));
+            overlay.setAttribute('stroke-linecap', 'round');
+            overlay.style.strokeDasharray = `${len * w} ${len * 2}`;
+            overlay.style.strokeDashoffset = `${len}`;
+            group.appendChild(overlay);
+
+            gsap.to(overlay, {
+              strokeDashoffset: -len,
+              duration: speed,
+              delay,
+              repeat: -1,
+              repeatDelay,
+              ease: 'none',
+            });
+          });
+        });
+      });
+    }
+  }
+
+  // Trigger on viewport entry
+  const decoSvg = document.getElementById('deco-svg');
+  if (decoSvg) {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            obs.disconnect();
+            initDecoAnimation();
+          }
+        });
+      },
+      { threshold: 0.05 }
+    );
+    obs.observe(decoSvg);
+  }
+</script>

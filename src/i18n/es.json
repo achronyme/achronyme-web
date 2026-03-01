@@ -1,0 +1,54 @@
+{
+  "lang": "es",
+  "nav": {
+    "features": "Funciones",
+    "code": "Codigo",
+    "getStarted": "Comenzar"
+  },
+  "hero": {
+    "tagline": "Escribe codigo. Genera pruebas.",
+    "subtitle": "Un DSL de zero-knowledge con doble ejecucion — ejecuta tu codigo en una VM completa o compilalo a circuitos aritmeticos. Misma sintaxis, dos objetivos.",
+    "cta": "Comenzar",
+    "github": "Ver en GitHub",
+    "betaLabel": "Beta publica",
+    "proofVerified": "Prueba verificada",
+    "proofMeta": "(Groth16, 192 bytes, 0.84s)"
+  },
+  "features": {
+    "title": "Por que Achronyme",
+    "dual": {
+      "title": "Doble Ejecucion",
+      "desc": "Modo VM para el lenguaje completo — closures, recursion, GC, colecciones. Modo circuito compila a restricciones R1CS o Plonkish."
+    },
+    "proofs": {
+      "title": "Pruebas Inline",
+      "desc": "Los bloques prove {} compilan circuitos, capturan testigos y generan pruebas Groth16 o PlonK — todo inline, como valores de primera clase."
+    },
+    "native": {
+      "title": "Provers Nativos",
+      "desc": "Groth16 (ark-groth16) y PlonK (halo2 KZG) corren en proceso. Sin Node.js, sin snarkjs, sin dependencias externas."
+    },
+    "security": {
+      "title": "Analisis de Seguridad",
+      "desc": "Seguimiento de taint y deteccion de sub-restricciones en tiempo de compilacion. Detecta bugs en circuitos antes de generar pruebas."
+    },
+    "snarkjs": {
+      "title": "Compatible con snarkjs",
+      "desc": "Exporta archivos .r1cs y .wtns. Genera contratos verificadores en Solidity con --solidity. Funciona con el ecosistema snarkjs."
+    },
+    "open": {
+      "title": "Codigo Abierto",
+      "desc": "Licencia GPL-3.0. Mas de 1,000 tests pasando, 2 auditorias de seguridad completadas. Construido con Rust para rendimiento y seguridad."
+    }
+  },
+  "code": {
+    "title": "Velo en accion",
+    "tab1": "Prueba Zero-Knowledge",
+    "tab2": "Modo VM",
+    "tab3": "CLI"
+  },
+  "footer": {
+    "builtWith": "Construido con Rust",
+    "license": "Licencia GPL-3.0"
+  }
+}
