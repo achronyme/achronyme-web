@@ -20,8 +20,8 @@ const stats = locale === 'en' ? [
 ];
 ---
 
-<section class="relative px-6 py-16">
-  <div class="relative mx-auto max-w-6xl border border-subtle/30">
+<section class="relative sm:px-6 py-8">
+  <div class="relative mx-auto max-w-7xl border border-subtle/30">
     <!-- Corner nodes -->
     <div class="corner-node absolute -top-1 -left-1"></div>
     <div class="corner-node absolute -top-1 -right-1"></div>
@@ -30,7 +30,7 @@ const stats = locale === 'en' ? [
     <!-- Label -->
     <span class="frame-label top-0 left-8 -translate-y-1/2">.metrics</span>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 p-8 sm:p-10">
+    <div class="grid grid-cols-2 sm:grid-cols-4 p-5 sm:p-8">
       {stats.map((stat, i) => (
         <div class:list={[
           'reveal text-center py-4 sm:py-0',
@@ -39,8 +39,8 @@ const stats = locale === 'en' ? [
           i < 3 && 'sm:border-r sm:border-subtle/30',
           i === 3 && 'border-r-0',
         ]}>
-          <div class="text-3xl font-bold text-proof sm:text-4xl">{stat.value}</div>
-          <div class="mt-1 text-xs text-text-muted">{stat.label}</div>
+          <div class="gradient-text text-3xl font-bold sm:text-4xl">{stat.value}</div>
+          <div class="mt-1 text-xs text-text-secondary">{stat.label}</div>
         </div>
       ))}
     </div>

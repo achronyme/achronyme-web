@@ -10,8 +10,8 @@ const { locale } = Astro.props;
 const s = t(locale);
 ---
 
-<section id="code" class="relative px-6 py-24 sm:py-32">
-  <div class="relative mx-auto max-w-6xl border border-subtle/30">
+<section id="code" class="relative sm:px-6 py-14 sm:py-20">
+  <div class="relative mx-auto max-w-7xl border border-subtle/30">
     <!-- Corner nodes -->
     <div class="corner-node absolute -top-1 -left-1"></div>
     <div class="corner-node absolute -top-1 -right-1"></div>
@@ -20,7 +20,7 @@ const s = t(locale);
     <!-- Label -->
     <span class="frame-label top-0 left-8 -translate-y-1/2">.repl</span>
 
-    <div class="p-8 sm:p-10 lg:p-12">
+    <div class="p-5 sm:p-8 lg:p-12">
       <div class="reveal text-center">
         <span class="mb-4 inline-block text-xs font-medium uppercase tracking-widest text-proof">
           {locale === 'en' ? 'Examples' : 'Ejemplos'}
@@ -51,7 +51,7 @@ const s = t(locale);
 
       <!-- Code panels -->
       <div class="relative mt-4">
-        <div class="absolute -inset-3 rounded-[20px] bg-gradient-to-b from-proof/8 to-transparent blur-xl"></div>
+        <div class="absolute -inset-4 rounded-[20px] bg-gradient-to-b from-proof/15 via-proof/5 to-transparent blur-2xl"></div>
 
         <div class="relative overflow-hidden rounded-[14px] border border-subtle bg-surface/90 backdrop-blur-sm">
           <!-- ZK Proof -->
@@ -175,7 +175,8 @@ const s = t(locale);
   .tab-btn.active {
     background-color: var(--color-subtle);
     color: var(--color-text-primary);
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.05);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.12);
+    border: 1px solid rgba(168, 85, 247, 0.2);
   }
 </style>
 
