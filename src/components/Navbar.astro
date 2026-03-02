@@ -13,7 +13,7 @@ const altPath = locale === 'en' ? '/es/' : '/';
 ---
 
 <nav class="fixed top-0 left-0 right-0 z-50 border-b border-subtle/30 bg-void/80 backdrop-blur-md">
-  <div class="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+  <div class="relative mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
     <!-- Bottom corner nodes -->
     <div class="corner-node absolute -bottom-1 left-0"></div>
     <div class="corner-node absolute -bottom-1 right-0"></div>
@@ -63,7 +63,7 @@ const altPath = locale === 'en' ? '/es/' : '/';
   </div>
 
   <!-- Mobile menu -->
-  <div id="mobile-menu" class="hidden border-t border-subtle px-6 py-4 sm:hidden">
+  <div id="mobile-menu" class="hidden border-t border-subtle px-4 sm:px-6 py-4 sm:hidden">
     <div class="flex flex-col gap-4">
       <a href="#features" class="text-sm text-text-secondary hover:text-text-primary">{s.nav.features}</a>
       <a href="#code" class="text-sm text-text-secondary hover:text-text-primary">{s.nav.code}</a>
