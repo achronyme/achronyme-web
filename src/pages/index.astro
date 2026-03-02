@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar.astro';
 import Hero from '../components/Hero.astro';
 import Stats from '../components/Stats.astro';
 import Features from '../components/Features.astro';
+import Comparison from '../components/Comparison.astro';
 import CodeExamples from '../components/CodeExamples.astro';
 import Footer from '../components/Footer.astro';
 ---
@@ -28,6 +29,12 @@ import Footer from '../components/Footer.astro';
       <div class="w-px h-6 bg-gradient-to-b from-proof/40 via-proof/20 to-transparent"></div>
     </div>
     <Features locale="en" />
+    <div class="flex flex-col items-center">
+      <div class="w-px h-6 bg-gradient-to-b from-transparent via-proof/20 to-proof/40"></div>
+      <div class="corner-node"></div>
+      <div class="w-px h-6 bg-gradient-to-b from-proof/40 via-proof/20 to-transparent"></div>
+    </div>
+    <Comparison locale="en" />
     <div class="flex flex-col items-center">
       <div class="w-px h-6 bg-gradient-to-b from-transparent via-proof/20 to-proof/40"></div>
       <div class="corner-node"></div>

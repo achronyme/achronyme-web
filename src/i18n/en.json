@@ -2,6 +2,7 @@
   "lang": "en",
   "nav": {
     "features": "Features",
+    "compare": "Compare",
     "code": "Code",
     "getStarted": "Get Started"
   },
@@ -16,34 +17,43 @@
   },
   "features": {
     "title": "Why Achronyme",
+    "subtitle": "Other ZK tools force you to choose between expressiveness and efficiency. Achronyme gives you both.",
     "dual": {
       "title": "Dual Execution",
-      "desc": "VM mode for the full language — closures, recursion, GC, collections. Circuit mode compiles to R1CS or Plonkish constraints."
+      "desc": "One language, two targets. Write closures, recursion, and GC-managed collections in VM mode. The same syntax compiles to R1CS or Plonkish circuits. No separate circuit language needed."
     },
     "proofs": {
-      "title": "Inline Proofs",
-      "desc": "prove {} blocks compile circuits, capture witnesses, and generate Groth16 or PlonK proofs — all inline, as first-class values."
+      "title": "First-Class Proofs",
+      "desc": "prove {} blocks return real proof objects. Chain them, extract components with proof_json(), verify with verify_proof(). Proofs are values, not CLI artifacts."
     },
     "native": {
       "title": "Native Provers",
-      "desc": "Groth16 (ark-groth16) and PlonK (halo2 KZG) run in-process. No Node.js, no snarkjs, no external dependencies."
+      "desc": "Groth16 and PlonK run in-process — a single Rust binary, zero external dependencies. No Node.js, no snarkjs ceremony dance, no 5-step CLI workflow."
     },
     "security": {
-      "title": "Security Analysis",
-      "desc": "Taint tracking and under-constraint detection at compile time. Catches circuit bugs before proof generation."
+      "title": "Compile-Time Safety",
+      "desc": "Under-constrained circuits are catastrophic ZK bugs. Achronyme's taint analysis detects unproven witness variables before a single proof is generated."
     },
     "snarkjs": {
-      "title": "snarkjs Compatible",
-      "desc": "Export .r1cs and .wtns files. Generate Solidity verifier contracts with --solidity. Works with the snarkjs ecosystem."
+      "title": "On-Chain Verification",
+      "desc": "Export .r1cs and .wtns files for snarkjs. Generate Solidity verifier contracts with --solidity and verify proofs directly on Ethereum."
     },
     "open": {
-      "title": "Open Source",
-      "desc": "GPL-3.0 licensed. 1,000+ tests passing, 2 security audits completed. Built with Rust for performance and safety."
+      "title": "Optimized Circuits",
+      "desc": "Boolean propagation tracks proven-boolean variables and skips redundant constraints. Constant folding and dead code elimination shrink circuits automatically."
     }
+  },
+  "comparison": {
+    "title": "The difference",
+    "subtitle": "Proving a Poseidon commitment: Circom + snarkjs vs Achronyme.",
+    "circomLabel": "Circom + snarkjs",
+    "achLabel": "Achronyme",
+    "circomSteps": "7 steps, 3 tools, 2 languages",
+    "achSteps": "6 lines, 1 file, 1 command"
   },
   "code": {
     "title": "See it in action",
-    "tab1": "Zero-Knowledge Proof",
+    "tab1": "Secret Voting",
     "tab2": "VM Mode",
     "tab3": "CLI"
   },

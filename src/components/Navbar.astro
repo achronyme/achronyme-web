@@ -27,6 +27,9 @@ const altPath = locale === 'en' ? '/es/' : '/';
       <a href="#features" class="text-sm text-text-secondary hover:text-text-primary transition-colors">
         {s.nav.features}
       </a>
+      <a href="#comparison" class="text-sm text-text-secondary hover:text-text-primary transition-colors">
+        {s.nav.compare}
+      </a>
       <a href="#code" class="text-sm text-text-secondary hover:text-text-primary transition-colors">
         {s.nav.code}
       </a>
@@ -66,6 +69,7 @@ const altPath = locale === 'en' ? '/es/' : '/';
   <div id="mobile-menu" class="hidden border-t border-subtle px-4 sm:px-6 py-4 sm:hidden">
     <div class="flex flex-col gap-4">
       <a href="#features" class="text-sm text-text-secondary hover:text-text-primary">{s.nav.features}</a>
+      <a href="#comparison" class="text-sm text-text-secondary hover:text-text-primary">{s.nav.compare}</a>
       <a href="#code" class="text-sm text-text-secondary hover:text-text-primary">{s.nav.code}</a>
       <a href={altPath} class="text-sm text-text-muted hover:text-text-primary uppercase">{altLocale}</a>
       <a href="https://github.com/achronyme/achronyme" target="_blank" rel="noopener noreferrer" class="text-sm text-text-secondary hover:text-text-primary">GitHub</a>
