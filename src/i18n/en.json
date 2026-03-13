@@ -1,63 +1,67 @@
 {
   "lang": "en",
-  "nav": {
-    "features": "Features",
-    "compare": "Compare",
-    "code": "Code",
-    "getStarted": "Get Started"
+  "header": {
+    "cta": "Get Started"
   },
   "hero": {
-    "tagline": "Write code. Generate proofs.",
-    "subtitle": "A zero-knowledge DSL with dual execution — run your code in a full VM or compile it to arithmetic circuits. Same syntax, two targets.",
+    "badge": "v0.1.0-beta.6 — Public beta",
+    "headline1": "Write code.",
+    "headline2": "Generate proofs.",
+    "subtitle": "A zero-knowledge DSL with dual execution. Run your code in a full VM or compile it to arithmetic circuits. Same syntax, two targets.",
     "cta": "Get Started",
-    "github": "View on GitHub",
-    "betaLabel": "Public beta",
-    "proofVerified": "Proof verified",
-    "proofMeta": "(Groth16, 192 bytes, 0.84s)"
+    "github": "View on GitHub"
   },
-  "features": {
-    "title": "Why Achronyme",
-    "subtitle": "Other ZK tools force you to choose between expressiveness and efficiency. Achronyme gives you both.",
-    "dual": {
-      "title": "Dual Execution",
-      "desc": "One language, two targets. Write closures, recursion, and GC-managed collections in VM mode. The same syntax compiles to R1CS or Plonkish circuits. No separate circuit language needed."
-    },
-    "proofs": {
-      "title": "First-Class Proofs",
-      "desc": "prove {} blocks return real proof objects. Chain them, extract components with proof_json(), verify with verify_proof(). Proofs are values, not CLI artifacts."
-    },
-    "native": {
-      "title": "Native Provers",
-      "desc": "Groth16 and PlonK run in-process — a single Rust binary, zero external dependencies. No Node.js, no snarkjs ceremony dance, no 5-step CLI workflow."
-    },
-    "security": {
-      "title": "Compile-Time Safety",
-      "desc": "Under-constrained circuits are catastrophic ZK bugs. Achronyme's taint analysis detects unproven witness variables before a single proof is generated."
-    },
-    "snarkjs": {
-      "title": "On-Chain Verification",
-      "desc": "Export .r1cs and .wtns files for snarkjs. Generate Solidity verifier contracts with --solidity and verify proofs directly on Ethereum."
-    },
-    "open": {
-      "title": "Optimized Circuits",
-      "desc": "Boolean propagation tracks proven-boolean variables and skips redundant constraints. Constant folding and dead code elimination shrink circuits automatically."
-    }
+  "ecosystem": {
+    "title": "Built with Rust. Outputs everywhere.",
+    "outputs": [".r1cs", ".wtns", ".sol", "Groth16", "PlonK"]
+  },
+  "sectionDual": {
+    "title": "Dual execution engine",
+    "subtitle": "One language, two targets. No compromises."
+  },
+  "featureVM": {
+    "title": "VM Mode",
+    "desc": "A real programming language with closures, recursion, mark-sweep GC, 36 opcodes, and 43 native functions. Build anything from binary search to cryptographic protocols."
+  },
+  "featureCircuit": {
+    "title": "Circuit Mode",
+    "desc": "Same syntax compiles to R1CS or Plonkish constraints. Boolean propagation, constant folding, and taint analysis catch under-constrained bugs before proof generation."
+  },
+  "sectionProofs": {
+    "title": "Proofs without the ceremony",
+    "subtitle": "Native Groth16 and PlonK provers. One binary, zero Node.js."
+  },
+  "featureProve": {
+    "title": "First-Class Proofs",
+    "desc": "prove {} blocks return real proof objects. Chain them, extract components with proof_json(), verify inline with verify_proof(). Proofs are values, not CLI artifacts."
+  },
+  "featureSolidity": {
+    "title": "On-Chain Verification",
+    "desc": "Export .r1cs and .wtns for snarkjs compatibility. Generate Solidity verifier contracts with --solidity. Deploy and verify proofs directly on Ethereum."
   },
   "comparison": {
     "title": "The difference",
     "subtitle": "Proving a Poseidon commitment: Circom + snarkjs vs Achronyme.",
     "circomLabel": "Circom + snarkjs",
     "achLabel": "Achronyme",
-    "circomSteps": "7 steps, 3 tools, 2 languages",
-    "achSteps": "6 lines, 1 file, 1 command"
+    "circomSteps": "7 steps, 3 tools",
+    "achSteps": "6 lines, 1 file"
   },
-  "code": {
-    "title": "See it in action",
-    "tab1": "Secret Voting",
-    "tab2": "VM Mode",
-    "tab3": "CLI"
+  "stats": {
+    "tests": "1,244+ tests",
+    "backends": "2 proof backends",
+    "natives": "43 natives",
+    "deps": "0 JS deps"
   },
   "footer": {
+    "tagline": "A zero-knowledge DSL. Write code, generate proofs.",
+    "resources": "Resources",
+    "community": "Community",
+    "github": "GitHub",
+    "releases": "Releases",
+    "vsCode": "VS Code Extension",
+    "discussions": "Discussions",
+    "issues": "Issues",
     "builtWith": "Built with Rust",
     "license": "GPL-3.0 License"
   }

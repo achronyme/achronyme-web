@@ -19,6 +19,7 @@
   --color-info: #60A5FA;
 
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", ui-monospace, monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -41,11 +42,9 @@
   }
 }
 
-/* Dot grid pattern */
-.dot-grid {
-  background-image: radial-gradient(circle, var(--color-text-muted) 0.5px, transparent 0.5px);
-  background-size: 24px 24px;
-  opacity: 0.15;
+/* Headings use Inter */
+h1, h2, h3, h4 {
+  font-family: var(--font-sans);
 }
 
 /* Scroll reveal */
@@ -65,26 +64,6 @@
 .reveal-stagger > .reveal:nth-child(2) { transition-delay: 80ms; }
 .reveal-stagger > .reveal:nth-child(3) { transition-delay: 160ms; }
 .reveal-stagger > .reveal:nth-child(4) { transition-delay: 240ms; }
-.reveal-stagger > .reveal:nth-child(5) { transition-delay: 320ms; }
-.reveal-stagger > .reveal:nth-child(6) { transition-delay: 400ms; }
-
-/* Glow border on hover */
-.glow-card {
-  position: relative;
-}
-.glow-card::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, var(--glow-color, var(--color-proof)), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.4s;
-  z-index: -1;
-}
-.glow-card:hover::before {
-  opacity: 1;
-}
 
 /* Gradient text utility */
 .gradient-text {
@@ -94,42 +73,10 @@
   background-clip: text;
 }
 
-/* Typing cursor blink */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-.cursor-blink {
-  animation: blink 1s step-end infinite;
-}
-
-/* Line gradient for section dividers */
-.line-gradient {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-proof), transparent);
-}
-
-/* Schematic frame utilities */
-.corner-node {
-  height: 0.5rem;
-  width: 0.5rem;
-  border-radius: 9999px;
-  background-color: rgba(168, 85, 247, 0.5);
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
-  animation: node-pulse 4s ease-in-out infinite;
-}
-@keyframes node-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
-.frame-label {
-  position: absolute;
-  background-color: var(--color-void);
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--color-text-muted);
-  font-weight: 500;
+/* Grid intersection dot */
+.grid-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-proof) 50%, var(--color-subtle));
 }

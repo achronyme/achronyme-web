@@ -1,0 +1,40 @@
+---
+import type { Locale } from '../i18n';
+import { t, getLocalizedPath } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const altLocale = locale === 'en' ? 'es' : 'en';
+const altPath = locale === 'en' ? '/es/' : '/';
+---
+
+<header>
+  <div class="max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
+    <!-- Logo -->
+    <a href={getLocalizedPath('/', locale)} class="text-lg font-bold tracking-tight text-text-primary hover:text-proof transition-colors">
+      achronyme
+    </a>
+
+    <!-- Right side -->
+    <div class="flex items-center gap-5">
+      <a href={altPath} class="text-sm text-text-muted hover:text-text-primary transition-colors uppercase">
+        {altLocale}
+      </a>
+      <a
+        href="https://github.com/achronyme/achronyme/releases"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 rounded-lg bg-proof px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-proof-dim hover:shadow-[0_0_24px_rgba(168,85,247,0.25)]"
+      >
+        {s.header.cta}
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>

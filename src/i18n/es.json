@@ -1,63 +1,67 @@
 {
   "lang": "es",
-  "nav": {
-    "features": "Funciones",
-    "compare": "Comparar",
-    "code": "Codigo",
-    "getStarted": "Comenzar"
+  "header": {
+    "cta": "Comenzar"
   },
   "hero": {
-    "tagline": "Escribe codigo. Genera pruebas.",
-    "subtitle": "Un DSL de zero-knowledge con doble ejecucion — ejecuta tu codigo en una VM completa o compilalo a circuitos aritmeticos. Misma sintaxis, dos objetivos.",
+    "badge": "v0.1.0-beta.6 — Beta publica",
+    "headline1": "Escribe codigo.",
+    "headline2": "Genera pruebas.",
+    "subtitle": "Un DSL de zero-knowledge con doble ejecucion. Ejecuta tu codigo en una VM completa o compilalo a circuitos aritmeticos. Misma sintaxis, dos objetivos.",
     "cta": "Comenzar",
-    "github": "Ver en GitHub",
-    "betaLabel": "Beta publica",
-    "proofVerified": "Prueba verificada",
-    "proofMeta": "(Groth16, 192 bytes, 0.84s)"
+    "github": "Ver en GitHub"
   },
-  "features": {
-    "title": "Por que Achronyme",
-    "subtitle": "Otras herramientas ZK te obligan a elegir entre expresividad y eficiencia. Achronyme te da ambas.",
-    "dual": {
-      "title": "Doble Ejecucion",
-      "desc": "Un lenguaje, dos objetivos. Escribe closures, recursion y colecciones con GC en modo VM. La misma sintaxis compila a circuitos R1CS o Plonkish. Sin lenguaje de circuitos separado."
-    },
-    "proofs": {
-      "title": "Pruebas First-Class",
-      "desc": "Los bloques prove {} retornan objetos de prueba reales. Encadenalos, extrae componentes con proof_json(), verifica con verify_proof(). Las pruebas son valores, no artefactos de CLI."
-    },
-    "native": {
-      "title": "Provers Nativos",
-      "desc": "Groth16 y PlonK corren en proceso — un solo binario Rust, cero dependencias externas. Sin Node.js, sin ceremonia snarkjs, sin flujo CLI de 5 pasos."
-    },
-    "security": {
-      "title": "Seguridad en Compilacion",
-      "desc": "Los circuitos sub-restringidos son bugs catastróficos en ZK. El analisis de taint de Achronyme detecta variables witness sin probar antes de generar una sola prueba."
-    },
-    "snarkjs": {
-      "title": "Verificacion On-Chain",
-      "desc": "Exporta archivos .r1cs y .wtns para snarkjs. Genera contratos verificadores en Solidity con --solidity y verifica pruebas directamente en Ethereum."
-    },
-    "open": {
-      "title": "Circuitos Optimizados",
-      "desc": "La propagacion booleana rastrea variables probadamente booleanas y omite restricciones redundantes. El constant folding y la eliminacion de codigo muerto reducen circuitos automaticamente."
-    }
+  "ecosystem": {
+    "title": "Construido con Rust. Exporta a todo.",
+    "outputs": [".r1cs", ".wtns", ".sol", "Groth16", "PlonK"]
+  },
+  "sectionDual": {
+    "title": "Motor de doble ejecucion",
+    "subtitle": "Un lenguaje, dos objetivos. Sin compromisos."
+  },
+  "featureVM": {
+    "title": "Modo VM",
+    "desc": "Un lenguaje de programacion real con closures, recursion, GC mark-sweep, 36 opcodes y 43 funciones nativas. Construye desde busqueda binaria hasta protocolos criptograficos."
+  },
+  "featureCircuit": {
+    "title": "Modo Circuito",
+    "desc": "La misma sintaxis compila a restricciones R1CS o Plonkish. Propagacion booleana, constant folding y analisis de taint detectan bugs sub-restringidos antes de generar pruebas."
+  },
+  "sectionProofs": {
+    "title": "Pruebas sin la ceremonia",
+    "subtitle": "Provers nativos Groth16 y PlonK. Un binario, cero Node.js."
+  },
+  "featureProve": {
+    "title": "Pruebas First-Class",
+    "desc": "Los bloques prove {} retornan objetos de prueba reales. Encadenalos, extrae componentes con proof_json(), verifica inline con verify_proof(). Las pruebas son valores, no artefactos CLI."
+  },
+  "featureSolidity": {
+    "title": "Verificacion On-Chain",
+    "desc": "Exporta .r1cs y .wtns para compatibilidad con snarkjs. Genera contratos verificadores en Solidity con --solidity. Despliega y verifica pruebas directamente en Ethereum."
   },
   "comparison": {
     "title": "La diferencia",
     "subtitle": "Probar un compromiso Poseidon: Circom + snarkjs vs Achronyme.",
     "circomLabel": "Circom + snarkjs",
     "achLabel": "Achronyme",
-    "circomSteps": "7 pasos, 3 herramientas, 2 lenguajes",
-    "achSteps": "6 lineas, 1 archivo, 1 comando"
+    "circomSteps": "7 pasos, 3 herramientas",
+    "achSteps": "6 lineas, 1 archivo"
   },
-  "code": {
-    "title": "Velo en accion",
-    "tab1": "Voto Secreto",
-    "tab2": "Modo VM",
-    "tab3": "CLI"
+  "stats": {
+    "tests": "1,244+ tests",
+    "backends": "2 proof backends",
+    "natives": "43 natives",
+    "deps": "0 JS deps"
   },
   "footer": {
+    "tagline": "Un DSL de zero-knowledge. Escribe codigo, genera pruebas.",
+    "resources": "Recursos",
+    "community": "Comunidad",
+    "github": "GitHub",
+    "releases": "Releases",
+    "vsCode": "Extension VS Code",
+    "discussions": "Discusiones",
+    "issues": "Issues",
     "builtWith": "Construido con Rust",
     "license": "Licencia GPL-3.0"
   }

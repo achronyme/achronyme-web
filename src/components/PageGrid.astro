@@ -1,0 +1,371 @@
+---
+import type { Locale } from '../i18n';
+import { t } from '../i18n';
+import TerminalMockup from './TerminalMockup.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+---
+
+<div class="mx-auto max-w-[1400px] border-x border-t border-subtle/30 relative">
+
+  <!-- Outer top corner dots -->
+  <div class="grid-dot absolute -top-[3px] -left-[3px] z-10"></div>
+  <div class="grid-dot absolute -top-[3px] -right-[3px] z-10"></div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- HERO                                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <section class="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] border-b border-subtle/30 relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
+
+    <!-- Left: text -->
+    <div class="p-8 sm:p-10 lg:p-14 border-b lg:border-b-0 lg:border-r border-subtle/30">
+      <div class="reveal mb-8">
+        <span class="inline-flex items-center gap-2 rounded-full border border-subtle bg-surface/60 px-4 py-1.5 text-xs text-text-secondary">
+          <span class="inline-block h-1.5 w-1.5 rounded-full bg-valid animate-pulse"></span>
+          {s.hero.badge}
+        </span>
+      </div>
+
+      <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.08]">
+        <span class="text-text-primary">{s.hero.headline1}</span><br />
+        <span class="gradient-text">{s.hero.headline2}</span>
+      </h1>
+
+      <p class="reveal mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-text-secondary">
+        {s.hero.subtitle}
+      </p>
+
+      <div class="reveal mt-8 flex flex-wrap gap-3">
+        <a
+          href="https://github.com/achronyme/achronyme/releases"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-lg bg-proof px-6 py-3 text-sm font-medium text-white transition-all hover:bg-proof-dim hover:shadow-[0_0_24px_rgba(168,85,247,0.25)]"
+        >
+          {s.hero.cta}
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </a>
+        <a
+          href="https://github.com/achronyme/achronyme"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-lg border border-subtle px-6 py-3 text-sm font-medium text-text-secondary transition-all hover:text-text-primary hover:border-proof/30"
+        >
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          {s.hero.github}
+        </a>
+      </div>
+
+      <!-- Install command -->
+      <div class="reveal mt-14 max-w-md">
+        <div class="rounded-lg border border-subtle/60 bg-[#0D0D14] px-5 py-3.5 font-mono text-sm">
+          <span class="text-text-muted">$</span>
+          <span class="ml-2 text-text-secondary">cargo install achronyme</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: placeholder visual -->
+    <div class="hidden lg:flex items-center justify-center p-14 relative overflow-hidden">
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="w-80 h-80 rounded-full blur-[100px]" style="background: rgba(168,85,247,0.08)"></div>
+      </div>
+      <svg viewBox="0 0 400 400" fill="none" class="w-72 h-72 relative">
+        <path d="M200 20L380 200L200 380L20 200Z" stroke="rgba(168,85,247,0.12)" stroke-width="1"/>
+        <path d="M200 80L320 200L200 320L80 200Z" stroke="rgba(168,85,247,0.25)" stroke-width="1"/>
+        <path d="M200 130L270 200L200 270L130 200Z" stroke="rgba(168,85,247,0.45)" stroke-width="1.5" fill="rgba(168,85,247,0.04)"/>
+        <circle cx="200" cy="200" r="30" stroke="rgba(168,85,247,0.5)" stroke-width="1.5" fill="rgba(168,85,247,0.06)"/>
+        <text x="200" y="206" text-anchor="middle" fill="rgba(168,85,247,0.4)" font-family="monospace" font-size="16" font-weight="600">ach</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ECOSYSTEM BAR                                             -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="border-b border-subtle/30 px-6 sm:px-8 py-5 relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="reveal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <span class="text-sm text-text-muted">{s.ecosystem.title}</span>
+      <div class="flex flex-wrap gap-2">
+        {s.ecosystem.outputs.map((item: string) => (
+          <span class="rounded-md border border-subtle/60 bg-surface/40 px-3 py-1 text-xs font-medium text-proof-light">{item}</span>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION HEADER: Dual Execution                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="border-b border-subtle/30 py-16 lg:py-24 px-8 text-center relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="reveal">
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{s.sectionDual.title}</h2>
+      <p class="mt-4 text-text-secondary text-lg max-w-2xl mx-auto">{s.sectionDual.subtitle}</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- FEATURE ROW: VM Mode + Circuit Mode                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/30 relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
+
+    <!-- VM Mode -->
+    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/30">
+      <div class="reveal">
+        <h3 class="text-xl sm:text-2xl font-bold">{s.featureVM.title}</h3>
+        <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureVM.desc}</p>
+      </div>
+      <div class="reveal mt-8">
+        <TerminalMockup filename="algorithms.ach" badge="VM" badgeColor="text-valid">
+          <pre><code><span class="text-text-muted">// Binary search — full VM mode</span>
+<span class="text-proof-light">fn</span> <span class="text-info">binary_search</span>(arr, target) <span class="text-text-muted">&#123;</span>
+    <span class="text-proof-light">mut</span> lo <span class="text-text-muted">=</span> <span class="text-warn">0</span>
+    <span class="text-proof-light">mut</span> hi <span class="text-text-muted">=</span> <span class="text-info">len</span>(arr) <span class="text-text-muted">-</span> <span class="text-warn">1</span>
+    <span class="text-proof-light">while</span> lo <span class="text-text-muted">&lt;=</span> hi <span class="text-text-muted">&#123;</span>
+        <span class="text-proof-light">let</span> mid <span class="text-text-muted">=</span> (lo <span class="text-text-muted">+</span> hi) <span class="text-text-muted">/</span> <span class="text-warn">2</span>
+        <span class="text-proof-light">if</span> arr[mid] <span class="text-text-muted">==</span> target <span class="text-text-muted">&#123;</span> <span class="text-proof-light">return</span> mid <span class="text-text-muted">&#125;</span>
+        <span class="text-proof-light">if</span> arr[mid] <span class="text-text-muted">&lt;</span> target <span class="text-text-muted">&#123;</span>
+            lo <span class="text-text-muted">=</span> mid <span class="text-text-muted">+</span> <span class="text-warn">1</span>
+        <span class="text-text-muted">&#125;</span> <span class="text-proof-light">else</span> <span class="text-text-muted">&#123;</span>
+            hi <span class="text-text-muted">=</span> mid <span class="text-text-muted">-</span> <span class="text-warn">1</span>
+        <span class="text-text-muted">&#125;</span>
+    <span class="text-text-muted">&#125;</span>
+    <span class="text-proof-light">return</span> <span class="text-warn">-1</span>
+<span class="text-text-muted">&#125;</span>
+
+<span class="text-proof-light">let</span> sorted <span class="text-text-muted">=</span> [<span class="text-warn">2</span>, <span class="text-warn">5</span>, <span class="text-warn">8</span>, <span class="text-warn">12</span>, <span class="text-warn">16</span>, <span class="text-warn">23</span>, <span class="text-warn">38</span>]
+<span class="text-info">assert</span>(<span class="text-info">binary_search</span>(sorted, <span class="text-warn">23</span>) <span class="text-text-muted">==</span> <span class="text-warn">5</span>)</code></pre>
+        </TerminalMockup>
+      </div>
+    </div>
+
+    <!-- Circuit Mode -->
+    <div class="p-8 lg:p-10">
+      <div class="reveal">
+        <h3 class="text-xl sm:text-2xl font-bold">{s.featureCircuit.title}</h3>
+        <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureCircuit.desc}</p>
+      </div>
+      <div class="reveal mt-8">
+        <TerminalMockup filename="terminal" badge="CLI" badgeColor="text-info">
+          <pre><code><span class="text-valid">$</span> ach circuit vote.ach --backend r1cs
+
+<span class="text-text-secondary">Compiling vote.ach...</span>
+<span class="text-text-secondary">  Parsed 24 statements</span>
+<span class="text-text-secondary">  SSA: 18 instructions</span>
+<span class="text-text-secondary">  Optimized: constant folding (3 eliminated)</span>
+<span class="text-text-secondary">  Optimized: boolean propagation (2 skipped)</span>
+
+<span class="text-valid">R1CS generated:</span>
+<span class="text-text-secondary">  Constraints: 2,179</span>
+<span class="text-text-secondary">  Public inputs: 4</span>
+<span class="text-text-secondary">  Private inputs: 5</span>
+<span class="text-text-secondary">  Wrote vote.r1cs</span></code></pre>
+        </TerminalMockup>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION HEADER: Proofs                                    -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="border-b border-subtle/30 py-16 lg:py-24 px-8 text-center relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="reveal">
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{s.sectionProofs.title}</h2>
+      <p class="mt-4 text-text-secondary text-lg max-w-2xl mx-auto">{s.sectionProofs.subtitle}</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- FEATURE ROW: Proofs + On-Chain                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/30 relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
+
+    <!-- First-Class Proofs -->
+    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/30">
+      <div class="reveal">
+        <h3 class="text-xl sm:text-2xl font-bold">{s.featureProve.title}</h3>
+        <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureProve.desc}</p>
+      </div>
+      <div class="reveal mt-8">
+        <TerminalMockup filename="commitment.ach" badge="ZK" badgeColor="text-proof">
+          <pre><code><span class="text-proof-light">let</span> secret <span class="text-text-muted">=</span> <span class="text-warn">0p12345</span>
+<span class="text-proof-light">let</span> blinding <span class="text-text-muted">=</span> <span class="text-warn">0p98765</span>
+
+<span class="text-proof font-bold">prove</span> <span class="text-text-muted">&#123;</span>
+    <span class="text-info">witness</span> secret
+    <span class="text-info">witness</span> blinding
+    <span class="text-valid">public</span> commitment
+    <span class="text-proof-light">let</span> cm <span class="text-text-muted">=</span> <span class="text-info">poseidon</span>(secret, blinding)
+    <span class="text-info">assert_eq</span>(cm, commitment)
+<span class="text-text-muted">&#125;</span>
+
+<span class="text-text-muted">// proof is a first-class value</span>
+<span class="text-proof-light">let</span> json <span class="text-text-muted">=</span> <span class="text-info">proof_json</span>(proof)
+<span class="text-info">assert</span>(<span class="text-info">verify_proof</span>(proof))</code></pre>
+        </TerminalMockup>
+      </div>
+    </div>
+
+    <!-- On-Chain Verification -->
+    <div class="p-8 lg:p-10">
+      <div class="reveal">
+        <h3 class="text-xl sm:text-2xl font-bold">{s.featureSolidity.title}</h3>
+        <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureSolidity.desc}</p>
+      </div>
+      <div class="reveal mt-8">
+        <TerminalMockup filename="terminal" badge="CLI" badgeColor="text-warn">
+          <pre><code><span class="text-valid">$</span> ach run proof.ach --prove --prove-backend r1cs
+<span class="text-valid">Proof generated</span> <span class="text-text-muted">(Groth16, 192 bytes)</span>
+<span class="text-valid">Proof verified</span>
+
+<span class="text-valid">$</span> ach circuit proof.ach --solidity Verifier.sol
+<span class="text-text-secondary">Wrote Verifier.sol</span>
+<span class="text-text-secondary">  Contract: Groth16Verifier</span>
+<span class="text-text-secondary">  Function: verifyProof(uint[2], uint[2][2], uint[2], uint[4])</span>
+
+<span class="text-text-muted">// Deploy and verify on-chain</span></code></pre>
+        </TerminalMockup>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- SECTION HEADER: The difference                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="border-b border-subtle/30 py-16 lg:py-24 px-8 text-center relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="reveal">
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{s.comparison.title}</h2>
+      <p class="mt-4 text-text-secondary text-lg max-w-2xl mx-auto">{s.comparison.subtitle}</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- COMPARISON ROW                                            -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/30 relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
+
+    <!-- Circom side -->
+    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/30">
+      <div class="reveal">
+        <TerminalMockup filename={s.comparison.circomLabel} badge={s.comparison.circomSteps} badgeColor="text-error">
+          <pre><code><span class="text-text-muted">// 1. Write the circuit (Circom DSL)</span>
+<span class="text-text-secondary">template Commitment() &#123;</span>
+<span class="text-text-secondary">    signal input secret;</span>
+<span class="text-text-secondary">    signal input blinding;</span>
+<span class="text-text-secondary">    signal output cm;</span>
+<span class="text-text-secondary">    component h = Poseidon(2);</span>
+<span class="text-text-secondary">    h.inputs[0] &lt;== secret;</span>
+<span class="text-text-secondary">    h.inputs[1] &lt;== blinding;</span>
+<span class="text-text-secondary">    cm &lt;== h.out;</span>
+<span class="text-text-secondary">&#125;</span>
+
+<span class="text-text-muted">// 2. Compile</span>
+<span class="text-text-secondary">$ circom commitment.circom --r1cs --wasm</span>
+
+<span class="text-text-muted">// 3. Witness (JavaScript)</span>
+<span class="text-text-secondary">const input = &#123; secret: "12345", blinding: "98765" &#125;;</span>
+<span class="text-text-secondary">const w = await circuit.calculateWitness(input);</span>
+
+<span class="text-text-muted">// 4. Powers of Tau</span>
+<span class="text-text-secondary">$ wget ptau.hermez.io/powersOfTau28_12.ptau</span>
+
+<span class="text-text-muted">// 5. Trusted setup</span>
+<span class="text-text-secondary">$ snarkjs groth16 setup commitment.r1cs pot.ptau key.zkey</span>
+<span class="text-text-secondary">$ snarkjs zkey contribute key.zkey final.zkey</span>
+
+<span class="text-text-muted">// 6. Prove</span>
+<span class="text-text-secondary">$ snarkjs groth16 prove final.zkey witness.wtns proof.json</span>
+
+<span class="text-text-muted">// 7. Verify</span>
+<span class="text-text-secondary">$ snarkjs groth16 verify vkey.json public.json proof.json</span></code></pre>
+        </TerminalMockup>
+      </div>
+    </div>
+
+    <!-- Achronyme side (highlighted) -->
+    <div class="p-8 lg:p-10">
+      <div class="reveal">
+        <div class="rounded-xl border border-proof/40 bg-[#0D0D14] shadow-2xl shadow-black/20 overflow-hidden relative">
+          <div class="absolute inset-0 rounded-xl bg-gradient-to-b from-proof/5 to-transparent pointer-events-none"></div>
+          <div class="relative flex items-center justify-between border-b border-proof/20 px-4 py-3">
+            <div class="flex items-center gap-2">
+              <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+              <span class="ml-3 text-xs text-proof">{s.comparison.achLabel}</span>
+            </div>
+            <span class="rounded-full px-2 py-0.5 text-[10px] font-medium text-proof" style="background: rgba(168,85,247,0.1)">{s.comparison.achSteps}</span>
+          </div>
+          <div class="relative p-5 text-[13px] leading-relaxed font-mono overflow-x-auto">
+            <pre><code><span class="text-proof-light">let</span> secret <span class="text-text-muted">=</span> <span class="text-warn">0p12345</span>
+<span class="text-proof-light">let</span> blinding <span class="text-text-muted">=</span> <span class="text-warn">0p98765</span>
+
+<span class="text-proof font-bold">prove</span> <span class="text-text-muted">&#123;</span>
+    <span class="text-info">witness</span> secret
+    <span class="text-info">witness</span> blinding
+    <span class="text-valid">public</span> commitment
+    <span class="text-proof-light">let</span> cm <span class="text-text-muted">=</span> <span class="text-info">poseidon</span>(secret, blinding)
+    <span class="text-info">assert_eq</span>(cm, commitment)
+<span class="text-text-muted">&#125;</span>
+
+<span class="text-text-muted">// Proof generated + verified (Groth16)</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- STATS BAR                                                 -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div class="border-b border-subtle/30 px-8 py-8 relative">
+    <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+    <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+    <div class="reveal flex flex-wrap justify-center gap-4">
+      <span class="rounded-full border border-valid/20 bg-valid/10 px-5 py-2.5 text-sm font-medium text-valid">{s.stats.tests}</span>
+      <span class="rounded-full border border-proof/20 bg-proof/10 px-5 py-2.5 text-sm font-medium text-proof-light">{s.stats.backends}</span>
+      <span class="rounded-full border border-info/20 bg-info/10 px-5 py-2.5 text-sm font-medium text-info">{s.stats.natives}</span>
+      <span class="rounded-full border border-warn/20 bg-warn/10 px-5 py-2.5 text-sm font-medium text-warn">{s.stats.deps}</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    },
+    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+  );
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+</script>

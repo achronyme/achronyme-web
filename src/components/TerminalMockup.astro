@@ -1,0 +1,37 @@
+---
+interface Props {
+  filename: string;
+  badge?: string;
+  badgeColor?: string;
+}
+
+const { filename, badge, badgeColor = 'text-proof' } = Astro.props;
+
+const bgMap: Record<string, string> = {
+  'text-valid': 'rgba(52,211,153,0.1)',
+  'text-info': 'rgba(96,165,250,0.1)',
+  'text-proof': 'rgba(168,85,247,0.1)',
+  'text-warn': 'rgba(251,191,36,0.1)',
+  'text-error': 'rgba(248,113,113,0.1)',
+};
+const badgeBg = bgMap[badgeColor] || bgMap['text-proof'];
+---
+
+<div class="rounded-xl border border-subtle bg-[#0D0D14] shadow-2xl shadow-black/20 overflow-hidden">
+  <div class="flex items-center justify-between border-b border-subtle/60 px-4 py-3">
+    <div class="flex items-center gap-2">
+      <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+      <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+      <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+      <span class="ml-3 text-xs text-text-muted">{filename}</span>
+    </div>
+    {badge && (
+      <span class:list={['rounded-full px-2 py-0.5 text-[10px] font-medium', badgeColor]} style={`background: ${badgeBg}`}>
+        {badge}
+      </span>
+    )}
+  </div>
+  <div class="p-5 text-[13px] leading-relaxed font-mono overflow-x-auto">
+    <slot />
+  </div>
+</div>
