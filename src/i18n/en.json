@@ -1,7 +1,9 @@
 {
   "lang": "en",
   "header": {
-    "cta": "Get Started"
+    "cta": "Get Started",
+    "docs": "Docs",
+    "releases": "Releases"
   },
   "hero": {
     "badge": "v0.1.0-beta.7 — Public beta",
