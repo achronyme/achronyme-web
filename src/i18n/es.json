@@ -7,7 +7,7 @@
     "badge": "v0.1.0-beta.7 — Beta publica",
     "headline1": "Escribe codigo.",
     "headline2": "Genera pruebas.",
-    "subtitle": "Un DSL de zero-knowledge con doble ejecucion. Ejecuta tu codigo en una VM completa o compilalo a circuitos aritmeticos. Misma sintaxis, dos objetivos.",
+    "subtitle": "Un lenguaje zero-knowledge. La misma sintaxis se ejecuta en una VM o compila a circuitos aritmeticos.",
     "cta": "Comenzar",
     "github": "Ver en GitHub"
   },

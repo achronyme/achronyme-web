@@ -11,7 +11,7 @@ const { locale } = Astro.props;
 const s = t(locale);
 ---
 
-<div class="mx-auto max-w-[1400px] border-x border-t border-subtle/30 relative">
+<div class="mx-auto max-w-[1400px] border-x border-t border-subtle/77 relative">
 
   <!-- Outer top corner dots -->
   <div class="grid-dot absolute -top-[3px] -left-[3px] z-10"></div>
@@ -20,26 +20,24 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- HERO                                                      -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <section class="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] border-b border-subtle/30 relative">
+  <section class="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] border-b border-subtle/77 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
 
     <!-- Left: text -->
-    <div class="p-8 sm:p-10 lg:p-14 border-b lg:border-b-0 lg:border-r border-subtle/30">
-      <div class="reveal mb-8">
-        <span class="inline-flex items-center gap-2 rounded-full border border-subtle bg-surface/60 px-4 py-1.5 text-xs text-text-secondary">
-          <span class="inline-block h-1.5 w-1.5 rounded-full bg-valid animate-pulse"></span>
-          {s.hero.badge}
-        </span>
+    <div class="p-8 sm:p-10 lg:p-14 border-b lg:border-b-0 lg:border-r border-subtle/77">
+      <div class="reveal mb-10">
+        <span class="text-xs tracking-widest uppercase text-text-muted">BY</span>
+        <a href="https://eddn.dev" target="_blank" rel="noopener noreferrer" class="ml-2 text-xs tracking-widest uppercase font-semibold text-text-primary hover:text-proof-light transition-colors">eddndev</a>
       </div>
 
-      <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.08]">
-        <span class="text-text-primary">{s.hero.headline1}</span><br />
-        <span class="gradient-text">{s.hero.headline2}</span>
+      <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-light tracking-tight leading-[1.08] text-text-primary">
+        {s.hero.headline1}<br />
+        {s.hero.headline2}
       </h1>
 
-      <p class="reveal mt-6 max-w-lg text-base sm:text-lg leading-relaxed text-text-secondary">
+      <p class="reveal mt-6 max-w-md text-base sm:text-lg leading-relaxed text-text-secondary">
         {s.hero.subtitle}
       </p>
 
@@ -66,7 +64,7 @@ const s = t(locale);
 
       <!-- Install command -->
       <div class="reveal mt-14 max-w-md">
-        <div class="rounded-lg border border-subtle/60 bg-[#0D0D14] px-5 py-3.5 font-mono text-sm flex items-center gap-2">
+        <div class="rounded-lg border border-subtle/60 bg-[#0C0C12] px-5 py-3.5 font-mono text-sm flex items-center gap-2">
           <span class="text-text-muted select-none">$</span>
           <el-copyable id="install-cmd" class="text-text-secondary min-w-0 truncate">curl -fsSL https://achrony.me/install.sh | sh</el-copyable>
           <button command="--copy" commandfor="install-cmd" type="button" class="group ml-auto shrink-0 rounded p-1.5 text-text-muted transition-colors hover:text-text-secondary hover:bg-subtle/30" aria-label="Copy install command">
@@ -95,7 +93,7 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- ECOSYSTEM BAR                                             -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="border-b border-subtle/30 px-6 sm:px-8 py-5 relative">
+  <div class="border-b border-subtle/77 px-6 sm:px-8 py-5 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -111,7 +109,7 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- SECTION HEADER: Dual Execution                            -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="border-b border-subtle/30 py-16 lg:py-24 px-8 text-center relative">
+  <div class="border-b border-subtle/77 py-16 lg:py-24 px-8 text-center relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal">
@@ -123,13 +121,13 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- FEATURE ROW: VM Mode + Circuit Mode                       -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/30 relative">
+  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/77 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
 
     <!-- VM Mode -->
-    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/30">
+    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/77">
       <div class="reveal">
         <h3 class="text-xl sm:text-2xl font-bold">{s.featureVM.title}</h3>
         <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureVM.desc}</p>
@@ -187,7 +185,7 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- SECTION HEADER: Proofs                                    -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="border-b border-subtle/30 py-16 lg:py-24 px-8 text-center relative">
+  <div class="border-b border-subtle/77 py-16 lg:py-24 px-8 text-center relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal">
@@ -199,13 +197,13 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- FEATURE ROW: Proofs + On-Chain                            -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/30 relative">
+  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/77 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
 
     <!-- First-Class Proofs -->
-    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/30">
+    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/77">
       <div class="reveal">
         <h3 class="text-xl sm:text-2xl font-bold">{s.featureProve.title}</h3>
         <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureProve.desc}</p>
@@ -256,7 +254,7 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- SECTION HEADER: The difference                            -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="border-b border-subtle/30 py-16 lg:py-24 px-8 text-center relative">
+  <div class="border-b border-subtle/77 py-16 lg:py-24 px-8 text-center relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal">
@@ -268,13 +266,13 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- COMPARISON ROW                                            -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/30 relative">
+  <div class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/77 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
 
     <!-- Circom side -->
-    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/30">
+    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/77">
       <div class="reveal">
         <TerminalMockup filename={s.comparison.circomLabel} badge={s.comparison.circomSteps} badgeColor="text-error">
           <pre><code><span class="text-text-muted">// 1. Write the circuit (Circom DSL)</span>
@@ -314,7 +312,7 @@ const s = t(locale);
     <!-- Achronyme side (highlighted) -->
     <div class="p-8 lg:p-10">
       <div class="reveal">
-        <div class="rounded-xl border border-proof/40 bg-[#0D0D14] shadow-2xl shadow-black/20 overflow-hidden relative">
+        <div class="rounded-xl border border-proof/40 bg-[#0C0C12] shadow-2xl shadow-black/20 overflow-hidden relative">
           <div class="absolute inset-0 rounded-xl bg-gradient-to-b from-proof/5 to-transparent pointer-events-none"></div>
           <div class="relative flex items-center justify-between border-b border-proof/20 px-4 py-3">
             <div class="flex items-center gap-2">
@@ -347,7 +345,7 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
   <!-- STATS BAR                                                 -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="border-b border-subtle/30 px-8 py-8 relative">
+  <div class="border-b border-subtle/77 px-8 py-8 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal flex flex-wrap justify-center gap-4">
