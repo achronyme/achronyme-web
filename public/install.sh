@@ -5,12 +5,12 @@
 #   curl -fsSL https://achrony.me/install.sh | sh
 #   curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.1.0-beta.7
 #
-# Installs the `ach` binary to ~/.achronyme/bin and adds it to PATH.
+# Installs the `ach` binary to ~/.local/bin (XDG standard, usually already in PATH).
 
 set -e
 
 REPO="achronyme/achronyme"
-INSTALL_DIR="$HOME/.achronyme/bin"
+INSTALL_DIR="$HOME/.local/bin"
 VERSION=""
 
 # --- Parse arguments ---
@@ -100,49 +100,11 @@ mkdir -p "$INSTALL_DIR"
 mv "$TMPFILE" "$INSTALL_DIR/ach"
 chmod +x "$INSTALL_DIR/ach"
 
-# --- Update PATH ---
-
-SHELL_NAME="$(basename "$SHELL")"
-EXPORT_LINE="export PATH=\"$INSTALL_DIR:\$PATH\""
+# --- Verify PATH ---
 
 path_configured() {
     echo "$PATH" | tr ':' '\n' | grep -qx "$INSTALL_DIR"
 }
-
-add_to_rc() {
-    RC_FILE="$1"
-    if [ -f "$RC_FILE" ] && grep -qF "$INSTALL_DIR" "$RC_FILE" 2>/dev/null; then
-        return  # already configured
-    fi
-    echo "" >> "$RC_FILE"
-    echo "# Achronyme" >> "$RC_FILE"
-    echo "$EXPORT_LINE" >> "$RC_FILE"
-}
-
-if ! path_configured; then
-    case "$SHELL_NAME" in
-        zsh)  add_to_rc "$HOME/.zshrc" ;;
-        bash)
-            if [ -f "$HOME/.bash_profile" ]; then
-                add_to_rc "$HOME/.bash_profile"
-            else
-                add_to_rc "$HOME/.bashrc"
-            fi
-            ;;
-        fish)
-            FISH_CONFIG="$HOME/.config/fish/config.fish"
-            if ! grep -qF "$INSTALL_DIR" "$FISH_CONFIG" 2>/dev/null; then
-                mkdir -p "$(dirname "$FISH_CONFIG")"
-                echo "" >> "$FISH_CONFIG"
-                echo "# Achronyme" >> "$FISH_CONFIG"
-                echo "set -gx PATH $INSTALL_DIR \$PATH" >> "$FISH_CONFIG"
-            fi
-            ;;
-        *)  add_to_rc "$HOME/.profile" ;;
-    esac
-fi
-
-# --- Verify ---
 
 ACH_VERSION=$("$INSTALL_DIR/ach" --version 2>/dev/null || echo "unknown")
 
@@ -154,8 +116,8 @@ echo "  Version: $ACH_VERSION"
 echo ""
 
 if ! path_configured; then
-    echo "  Restart your shell or run:"
-    echo "    $EXPORT_LINE"
+    echo "  ~/.local/bin is not in your PATH. Add it with:"
+    echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
     echo ""
 fi
 
