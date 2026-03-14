@@ -4,7 +4,7 @@
     "cta": "Comenzar"
   },
   "hero": {
-    "badge": "v0.1.0-beta.6 — Beta publica",
+    "badge": "v0.1.0-beta.7 — Beta publica",
     "headline1": "Escribe codigo.",
     "headline2": "Genera pruebas.",
     "subtitle": "Un DSL de zero-knowledge con doble ejecucion. Ejecuta tu codigo en una VM completa o compilalo a circuitos aritmeticos. Misma sintaxis, dos objetivos.",
@@ -48,7 +48,7 @@
     "achSteps": "6 lineas, 1 archivo"
   },
   "stats": {
-    "tests": "1,244+ tests",
+    "tests": "1,300+ tests",
     "backends": "2 proof backends",
     "natives": "43 natives",
     "deps": "0 JS deps"

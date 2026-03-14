@@ -4,7 +4,7 @@
     "cta": "Get Started"
   },
   "hero": {
-    "badge": "v0.1.0-beta.6 — Public beta",
+    "badge": "v0.1.0-beta.7 — Public beta",
     "headline1": "Write code.",
     "headline2": "Generate proofs.",
     "subtitle": "A zero-knowledge DSL with dual execution. Run your code in a full VM or compile it to arithmetic circuits. Same syntax, two targets.",
@@ -48,7 +48,7 @@
     "achSteps": "6 lines, 1 file"
   },
   "stats": {
-    "tests": "1,244+ tests",
+    "tests": "1,300+ tests",
     "backends": "2 proof backends",
     "natives": "43 natives",
     "deps": "0 JS deps"
