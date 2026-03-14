@@ -10,9 +10,24 @@ const { locale } = Astro.props;
 const s = t(locale);
 const altLocale = locale === 'en' ? 'es' : 'en';
 const altPath = locale === 'en' ? '/es/' : '/';
+const blogUrl = locale === 'en'
+  ? 'https://eddn.dev/blog/achronyme-release/'
+  : 'https://eddn.dev/es/blog/achronyme-release/';
 ---
 
-<header class="sticky top-0 z-50 bg-void/80 backdrop-blur-md">
+<div class="sticky top-0 z-50">
+  <!-- Announcement banner -->
+  <a
+    href={blogUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="block w-full bg-gradient-to-r from-proof-dim via-proof to-proof-dim py-2 text-center text-xs sm:text-sm font-medium text-white hover:brightness-110 transition-all"
+  >
+    {s.header.banner}
+    <span class="ml-1.5 inline-block">→</span>
+  </a>
+
+<header class="bg-void/80 backdrop-blur-md">
   <div class="mx-auto max-w-[1400px] border-x border-b border-subtle/50 flex items-center justify-between px-8 lg:px-10 h-14">
     <!-- Left: logo + nav -->
     <div class="flex items-center gap-8">
@@ -47,3 +62,4 @@ const altPath = locale === 'en' ? '/es/' : '/';
     </div>
   </div>
 </header>
+</div>
