@@ -66,9 +66,13 @@ const s = t(locale);
 
       <!-- Install command -->
       <div class="reveal mt-14 max-w-md">
-        <div class="rounded-lg border border-subtle/60 bg-[#0D0D14] px-5 py-3.5 font-mono text-sm">
-          <span class="text-text-muted">$</span>
-          <span class="ml-2 text-text-secondary">curl -fsSL https://achrony.me/install.sh | sh</span>
+        <div class="rounded-lg border border-subtle/60 bg-[#0D0D14] px-5 py-3.5 font-mono text-sm flex items-center gap-2">
+          <span class="text-text-muted select-none">$</span>
+          <el-copyable id="install-cmd" class="text-text-secondary min-w-0 truncate">curl -fsSL https://achrony.me/install.sh | sh</el-copyable>
+          <button command="--copy" commandfor="install-cmd" type="button" class="group ml-auto shrink-0 rounded p-1.5 text-text-muted transition-colors hover:text-text-secondary hover:bg-subtle/30" aria-label="Copy install command">
+            <svg class="h-4 w-4 group-data-[copied]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            <svg class="hidden h-4 w-4 text-valid group-data-[copied]:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+          </button>
         </div>
       </div>
     </div>
