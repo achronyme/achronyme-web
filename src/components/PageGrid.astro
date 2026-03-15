@@ -2,6 +2,7 @@
 import type { Locale } from '../i18n';
 import { t } from '../i18n';
 import TerminalMockup from './TerminalMockup.astro';
+import HeroCircuit from './HeroCircuit.astro';
 
 interface Props {
   locale: Locale;
@@ -23,10 +24,9 @@ const s = t(locale);
   <section class="grid grid-cols-1 lg:grid-cols-2 border-b border-subtle/77 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
-    <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
 
     <!-- Left: text -->
-    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/77">
+    <div class="p-8 lg:p-10">
       <div class="reveal mb-10">
         <span class="text-xs tracking-widest uppercase text-text-muted">BY</span>
         <a href="https://eddn.dev" target="_blank" rel="noopener noreferrer" class="ml-2 text-xs tracking-widest uppercase font-semibold text-text-primary hover:text-proof-light transition-colors">eddndev</a>
@@ -75,18 +75,9 @@ const s = t(locale);
       </div>
     </div>
 
-    <!-- Right: placeholder visual -->
-    <div class="hidden lg:flex items-center justify-center p-14 relative overflow-hidden">
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="w-80 h-80 rounded-full blur-[100px]" style="background: rgba(168,85,247,0.08)"></div>
-      </div>
-      <svg viewBox="0 0 400 400" fill="none" class="w-72 h-72 relative">
-        <path d="M200 20L380 200L200 380L20 200Z" stroke="rgba(168,85,247,0.12)" stroke-width="1"/>
-        <path d="M200 80L320 200L200 320L80 200Z" stroke="rgba(168,85,247,0.25)" stroke-width="1"/>
-        <path d="M200 130L270 200L200 270L130 200Z" stroke="rgba(168,85,247,0.45)" stroke-width="1.5" fill="rgba(168,85,247,0.04)"/>
-        <circle cx="200" cy="200" r="30" stroke="rgba(168,85,247,0.5)" stroke-width="1.5" fill="rgba(168,85,247,0.06)"/>
-        <text x="200" y="206" text-anchor="middle" fill="rgba(168,85,247,0.4)" font-family="monospace" font-size="16" font-weight="600">ach</text>
-      </svg>
+    <!-- Right: circuit visual -->
+    <div class="hidden lg:block relative overflow-hidden text-proof">
+      <HeroCircuit />
     </div>
   </section>
 

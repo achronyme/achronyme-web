@@ -1,0 +1,140 @@
+---
+---
+
+<div class="hero-circuit absolute inset-0 pointer-events-none overflow-hidden">
+  <svg
+    id="hero-svg"
+    viewBox="0 0 1024 1080"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    class="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 w-full h-auto opacity-[0.25]"
+  >
+    <!-- Chips (nodes) -->
+    <g id="ChipVM" class="chip">
+      <path d="M704 576L448 832L192 576L448 320L704 576Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M643.052 576L448 768L256 576L448 384L643.052 576Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+    </g>
+    <g id="ChipCompiler" class="chip">
+      <path d="M256 768L128 640L0 768L128 896L256 768Z" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="ChipBackend" class="chip">
+      <path d="M576 128L448 256L320 128L448 2.9966L576 128Z" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <path id="ChipDeco1" class="chip" d="M768 384L832 448L896 384L832 320L768 384Z" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Wires -->
+    <g id="OutputBusFromVM1" class="wire-group">
+      <path d="M464 816L528 880V1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M480 800L544 864V1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M496 784L560 848V1040L600 1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M512 768L576 832V1024L632 1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M528 752L592 816V1008L656 1072H768" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="OutputBusFromVM2" class="wire-group">
+      <path d="M544 736L608 800H672L704 832V1024L736 1056H784" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M560 720L624 784H688L720 816V1008L752 1040H800" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M576 704L640 768H704L736 800V992L768 1024H816" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M592 688L656 752H720L752 784V976L784 1008H832" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M608 672L672 736H736L768 768H832L864 800V1008L792 1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M624 656L688 720H752L784 752H848L880 784V1024L824 1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M640 640L704 704H768L800 736H864L896 768V1040L856 1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M656 624L720 688H784L816 720H880L912 752V1040L960 1080" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M672 608L736 672H800L832 704H896L928 736V1024L976 1064H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M688 592L752 656H816L848 688H912L944 720V1008L992 1048H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="OutputBusFromVM3" class="wire-group">
+      <path d="M688 560L784 464H848L912 400H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M672 544L768 448H800L816 432" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M656 528L752 432H784L800 416" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M640 512L736 416H768L784 400" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M624 496L832 288H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M608 480L816 272V208L848 176H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M592 464L800 256V192L832 160H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M576 448L784 240V176L816 144H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M560 432L768 224V160L736 128V0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M544 416L752 208V176L720 144V0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M528 400L704 224V0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M512 384L688 208V0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M496 368L672 192V0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M480 352L656 176V80L576 0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M464 336L640 160V96L544 0" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="OutputBusFromChipDeco" class="wire-group">
+      <path d="M880 368L912 336H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M864 352L896 320H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M848 336L880 304H1024" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="InputToVMFromBackend" class="wire-group">
+      <path d="M432 336L400 304V272L432 240" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M416 352L384 320V256L416 224" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M400 368L368 336V240L400 208" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="InputToBackendFromVm" class="wire-group">
+      <path d="M384 384L352 352V224L384 192" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M368 400C367.78 400.732 346.575 378.972 336 368V208L368 176" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M352 416L320 384V192L352 160" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M336 432L304 400V176L336 144" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="InputToVmFromCompiler" class="wire-group">
+      <path d="M208 592L144 656" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M224 608L160 672" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M240 624L176 688" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M256 640L192 704" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M272 656L208 720" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M288 672L224 736" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M304 688L240 752" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M240 784L272 816H336L384 768" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M224 800L256 832H352L400 784" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M208 816L240 848H368L416 800" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M192 832L224 864H384L432 816" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+</div>
+
+<script>
+  import { gsap } from 'gsap';
+
+  function initHeroCircuit() {
+    const svg = document.getElementById('hero-svg');
+    if (!svg) return;
+
+    // -- Chip pulse (glow on nodes) --
+    const chips = svg.querySelectorAll('.chip');
+    chips.forEach((chip, i) => {
+      gsap.to(chip, {
+        opacity: 0.6,
+        duration: 2 + i * 0.5,
+        repeat: -1,
+        yoyo: true,
+        ease: 'power1.inOut',
+        delay: i * 1.2,
+      });
+    });
+
+    // -- Wire current flow (opacity pulse per group) --
+    const wireGroups = svg.querySelectorAll('.wire-group');
+    wireGroups.forEach((group, gi) => {
+      const wires = group.querySelectorAll('path');
+      wires.forEach((wire, wi) => {
+        gsap.fromTo(wire,
+          { opacity: 0.4 },
+          {
+            opacity: 1,
+            duration: 1.5,
+            repeat: -1,
+            yoyo: true,
+            ease: 'power1.inOut',
+            delay: wi * 0.08 + gi * 1.5,
+          }
+        );
+      });
+    });
+  }
+
+  // Run after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroCircuit);
+  } else {
+    initHeroCircuit();
+  }
+</script>
