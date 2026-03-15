@@ -91,7 +91,7 @@ const s = t(locale);
       <span class="text-sm text-text-muted">{s.ecosystem.title}</span>
       <div class="flex flex-wrap gap-2">
         {s.ecosystem.outputs.map((item: string) => (
-          <span class="rounded-md border border-subtle/60 bg-surface/40 px-3 py-1 text-xs font-medium text-proof-light">{item}</span>
+          <span class="rounded-full border border-subtle/60 bg-surface/40 px-3 py-1 text-xs font-medium text-proof-light">{item}</span>
         ))}
       </div>
     </div>
@@ -323,11 +323,23 @@ const s = t(locale);
   <div class="border-b border-subtle/77 px-8 py-8 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
-    <div class="reveal flex flex-wrap justify-center gap-4">
-      <span class="rounded-full border border-valid/20 bg-valid/10 px-5 py-2.5 text-sm font-medium text-valid">{s.stats.tests}</span>
-      <span class="rounded-full border border-proof/20 bg-proof/10 px-5 py-2.5 text-sm font-medium text-proof-light">{s.stats.backends}</span>
-      <span class="rounded-full border border-info/20 bg-info/10 px-5 py-2.5 text-sm font-medium text-info">{s.stats.natives}</span>
-      <span class="rounded-full border border-warn/20 bg-warn/10 px-5 py-2.5 text-sm font-medium text-warn">{s.stats.deps}</span>
+    <div class="reveal flex flex-wrap justify-center gap-6 sm:gap-10">
+      <div class="text-center">
+        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">1,300+</span>
+        <span class="text-xs text-text-muted uppercase tracking-wider">tests</span>
+      </div>
+      <div class="text-center">
+        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">2</span>
+        <span class="text-xs text-text-muted uppercase tracking-wider">proof backends</span>
+      </div>
+      <div class="text-center">
+        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">43</span>
+        <span class="text-xs text-text-muted uppercase tracking-wider">natives</span>
+      </div>
+      <div class="text-center">
+        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">0</span>
+        <span class="text-xs text-text-muted uppercase tracking-wider">JS deps</span>
+      </div>
     </div>
   </div>
 
