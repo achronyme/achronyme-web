@@ -157,19 +157,19 @@ const s = t(locale);
       <div class="absolute inset-0" style="background-image: repeating-linear-gradient(115deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px);"></div>
       <div class="relative p-6 lg:p-8">
         <TerminalMockup filename="terminal" badge="CLI" badgeColor="text-info">
-          <pre><code><span class="text-valid">$</span> ach circuit vote.ach --backend r1cs
+          <pre><code><span class="text-valid">$</span> ach circuit vote.ach --inputs "..." --backend r1cs
 
-<span class="text-text-secondary">Compiling vote.ach...</span>
-<span class="text-text-secondary">  Parsed 24 statements</span>
-<span class="text-text-secondary">  SSA: 18 instructions</span>
-<span class="text-text-secondary">  Optimized: constant folding (3 eliminated)</span>
-<span class="text-text-secondary">  Optimized: boolean propagation (2 skipped)</span>
+<span class="text-valid">Compiling</span> <span class="text-text-secondary">vote.ach...</span>
+<span class="text-text-secondary">    IR: 18 instructions</span>
+<span class="text-text-secondary">    Optimized: 3 eliminated (constant folding + DCE)</span>
+<span class="text-text-secondary">    Boolean propagation: 2 proven</span>
 
 <span class="text-valid">R1CS generated:</span>
-<span class="text-text-secondary">  Constraints: 2,179</span>
-<span class="text-text-secondary">  Public inputs: 4</span>
-<span class="text-text-secondary">  Private inputs: 5</span>
-<span class="text-text-secondary">  Wrote vote.r1cs</span></code></pre>
+<span class="text-text-secondary">    Constraints:    2,179</span>
+<span class="text-text-secondary">    Public inputs:  4</span>
+<span class="text-text-secondary">    Private inputs: 5</span>
+<span class="text-text-secondary">    Wrote vote.r1cs (932 bytes)</span>
+<span class="text-text-secondary">    Wrote witness.wtns (236 bytes)</span> <span class="text-text-muted">—</span> <span class="text-valid">verified OK</span></code></pre>
         </TerminalMockup>
       </div>
     </div>
@@ -186,14 +186,12 @@ const s = t(locale);
     </div>
     <div class="p-6 lg:p-8">
       <TerminalMockup filename="terminal" badge="CLI" badgeColor="text-warn">
-        <pre><code><span class="text-valid">$</span> ach run proof.ach --prove --prove-backend r1cs
-<span class="text-valid">Proof generated</span> <span class="text-text-muted">(Groth16, 192 bytes)</span>
-<span class="text-valid">Proof verified</span>
+        <pre><code><span class="text-valid">$</span> ach run proof.ach --prove-backend r1cs
+<span class="text-valid">Proof generated</span> <span class="text-text-muted">(Groth16, 855 bytes)</span>
+<span class="text-valid">Proof verified</span> <span class="text-text-muted">— 5 constraints</span>
 
 <span class="text-valid">$</span> ach circuit proof.ach --solidity Verifier.sol
-<span class="text-text-secondary">Wrote Verifier.sol</span>
-<span class="text-text-secondary">  Contract: Groth16Verifier</span>
-<span class="text-text-secondary">  Function: verifyProof(uint[2], uint[2][2], uint[2], uint[4])</span>
+<span class="text-text-secondary">    Wrote Verifier.sol</span> <span class="text-text-muted">(Solidity Groth16 verifier)</span>
 
 <span class="text-text-muted">// Deploy and verify on-chain</span></code></pre>
       </TerminalMockup>
@@ -317,12 +315,8 @@ const s = t(locale);
           <TerminalMockup filename="terminal" badge="output" badgeColor="text-valid">
             <pre><code><span class="text-valid">$</span> ach run commitment.ach
 
-<span class="text-valid">Proof generated</span> <span class="text-text-muted">(Groth16, 192 bytes)</span>
-<span class="text-valid">Proof verified</span> <span class="text-text-muted">— 1 constraint system, 361 constraints</span>
-
-<span class="text-text-secondary">proof.json  </span><span class="text-text-muted">written</span>
-<span class="text-text-secondary">public.json </span><span class="text-text-muted">written</span>
-<span class="text-text-secondary">vkey.json   </span><span class="text-text-muted">written</span></code></pre>
+<span class="text-valid">Proof generated</span> <span class="text-text-muted">(Groth16, 855 bytes)</span>
+<span class="text-valid">Proof verified</span> <span class="text-text-muted">— 361 constraints</span></code></pre>
           </TerminalMockup>
           </div>
         </div>
