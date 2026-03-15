@@ -157,12 +157,17 @@ const s = t(locale);
     </div>
 
     <!-- Circuit Mode -->
-    <div class="p-8 lg:p-10">
-      <div class="reveal">
-        <h3 class="text-xl sm:text-2xl font-bold">{s.featureCircuit.title}</h3>
-        <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureCircuit.desc}</p>
+    <div class="flex flex-col">
+      <div class="p-8 lg:p-10">
+        <div class="reveal">
+          <h3 class="text-xl sm:text-2xl font-bold">{s.featureCircuit.title}</h3>
+          <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureCircuit.desc}</p>
+        </div>
       </div>
-      <div class="reveal mt-8">
+      <div class="relative overflow-hidden flex-1">
+        <div class="absolute inset-0 bg-gradient-to-r from-proof-dim via-proof to-proof-dim"></div>
+        <div class="absolute inset-0" style="background-image: repeating-linear-gradient(115deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px);"></div>
+        <div class="relative p-6 pt-8">
         <TerminalMockup filename="terminal" badge="CLI" badgeColor="text-info">
           <pre><code><span class="text-valid">$</span> ach circuit vote.ach --backend r1cs
 
@@ -178,6 +183,7 @@ const s = t(locale);
 <span class="text-text-secondary">  Private inputs: 5</span>
 <span class="text-text-secondary">  Wrote vote.r1cs</span></code></pre>
         </TerminalMockup>
+        </div>
       </div>
     </div>
   </div>
@@ -203,12 +209,17 @@ const s = t(locale);
     <div class="grid-dot absolute -bottom-[3px] left-1/2 -translate-x-1/2 z-10 hidden lg:block"></div>
 
     <!-- First-Class Proofs -->
-    <div class="p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-subtle/77">
-      <div class="reveal">
-        <h3 class="text-xl sm:text-2xl font-bold">{s.featureProve.title}</h3>
-        <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureProve.desc}</p>
+    <div class="flex flex-col border-b lg:border-b-0 lg:border-r border-subtle/77">
+      <div class="p-8 lg:p-10">
+        <div class="reveal">
+          <h3 class="text-xl sm:text-2xl font-bold">{s.featureProve.title}</h3>
+          <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureProve.desc}</p>
+        </div>
       </div>
-      <div class="reveal mt-8">
+      <div class="relative overflow-hidden flex-1">
+        <div class="absolute inset-0 bg-gradient-to-r from-proof-dim via-proof to-proof-dim"></div>
+        <div class="absolute inset-0" style="background-image: repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px);"></div>
+        <div class="relative p-6 pt-8">
         <TerminalMockup filename="commitment.ach" badge="ZK" badgeColor="text-proof">
           <pre><code><span class="text-proof-light">let</span> secret <span class="text-text-muted">=</span> <span class="text-warn">0p12345</span>
 <span class="text-proof-light">let</span> blinding <span class="text-text-muted">=</span> <span class="text-warn">0p98765</span>
@@ -225,6 +236,7 @@ const s = t(locale);
 <span class="text-proof-light">let</span> json <span class="text-text-muted">=</span> <span class="text-info">proof_json</span>(proof)
 <span class="text-info">assert</span>(<span class="text-info">verify_proof</span>(proof))</code></pre>
         </TerminalMockup>
+        </div>
       </div>
     </div>
 
@@ -310,20 +322,12 @@ const s = t(locale);
     </div>
 
     <!-- Achronyme side (highlighted) -->
-    <div class="p-8 lg:p-10">
-      <div class="reveal">
-        <div class="rounded-xl border border-proof/40 bg-[#0C0C12] shadow-2xl shadow-black/20 overflow-hidden relative">
-          <div class="absolute inset-0 rounded-xl bg-gradient-to-b from-proof/5 to-transparent pointer-events-none"></div>
-          <div class="relative flex items-center justify-between border-b border-proof/20 px-4 py-3">
-            <div class="flex items-center gap-2">
-              <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
-              <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
-              <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
-              <span class="ml-3 text-xs text-proof">{s.comparison.achLabel}</span>
-            </div>
-            <span class="rounded-full px-2 py-0.5 text-[10px] font-medium text-proof" style="background: rgba(168,85,247,0.1)">{s.comparison.achSteps}</span>
-          </div>
-          <div class="relative p-5 text-[13px] leading-relaxed font-mono overflow-x-auto">
+    <div class="flex flex-col">
+      <div class="relative overflow-hidden flex-1">
+        <div class="absolute inset-0 bg-gradient-to-r from-proof-dim via-proof to-proof-dim"></div>
+        <div class="absolute inset-0" style="background-image: repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px);"></div>
+        <div class="relative p-6 pt-8 flex flex-col h-full justify-center">
+          <TerminalMockup filename={s.comparison.achLabel} badge={s.comparison.achSteps} badgeColor="text-proof">
             <pre><code><span class="text-proof-light">let</span> secret <span class="text-text-muted">=</span> <span class="text-warn">0p12345</span>
 <span class="text-proof-light">let</span> blinding <span class="text-text-muted">=</span> <span class="text-warn">0p98765</span>
 
@@ -336,7 +340,7 @@ const s = t(locale);
 <span class="text-text-muted">&#125;</span>
 
 <span class="text-text-muted">// Proof generated + verified (Groth16)</span></code></pre>
-          </div>
+          </TerminalMockup>
         </div>
       </div>
     </div>
