@@ -7,7 +7,7 @@
     "banner": "Presentamos Achronyme — un lenguaje para pruebas zero-knowledge. Lee el anuncio"
   },
   "hero": {
-    "badge": "v0.1.0-beta.7 — Beta publica",
+    "badge": "v0.1.0-beta.13 — Beta publica",
     "headline1": "Escribe codigo.",
     "headline2": "Genera pruebas.",
     "subtitle": "Un lenguaje zero-knowledge. La misma sintaxis se ejecuta en una VM o compila a circuitos aritmeticos.",
@@ -24,7 +24,7 @@
   },
   "featureVM": {
     "title": "Modo VM",
-    "desc": "Un lenguaje de programacion real con closures, recursion, GC mark-sweep, 36 opcodes y 43 funciones nativas. Construye desde busqueda binaria hasta protocolos criptograficos."
+    "desc": "Un lenguaje de programacion real con closures, recursion, GC mark-sweep, 37 opcodes y 50 metodos de tipo. Construye desde busqueda binaria hasta protocolos criptograficos."
   },
   "featureCircuit": {
     "title": "Modo Circuito",
@@ -53,7 +53,7 @@
   "stats": {
     "tests": "2,000+ tests",
     "backends": "2 proof backends",
-    "natives": "43 natives",
+    "natives": "50 metodos",
     "deps": "0 JS deps"
   },
   "footer": {
