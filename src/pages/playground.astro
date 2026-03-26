@@ -1,0 +1,922 @@
+---
+// Standalone playground page — no layout import, self-contained
+---
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Achronyme Playground — Write and run ZK programs in your browser" />
+  <title>Playground — Achronyme</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-titlebar: #17171c;
+      --bg-sidebar: #1c1c22;
+      --bg-editor: #121217;
+      --bg-terminal: #0e0e12;
+      --bg-statusbar: #7c3aed;
+      --bg-active-tab: #121217;
+      --bg-inactive-tab: #19191e;
+      --bg-hover: rgba(168, 85, 247, 0.08);
+      --bg-gutter: #16161b;
+      --border: #2a2a32;
+      --text-primary: #f5f5fa;
+      --text-secondary: #b0b0c4;
+      --text-muted: #606070;
+      --text-gutter: #4a4a58;
+      --accent: #a855f7;
+      --accent-dim: #7c3aed;
+      --green: #34d399;
+      --green-dim: #059669;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --blue: #60a5fa;
+      --orange: #fb923c;
+      --cyan: #22d3ee;
+      --font-mono: "JetBrains Mono", "Fira Code", "Consolas", ui-monospace, monospace;
+      --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-editor);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection {
+      background: rgba(168, 85, 247, 0.3);
+      color: var(--text-primary);
+    }
+
+    /* ═══════════ SHELL LAYOUT ═══════════ */
+    .shell {
+      display: grid;
+      grid-template-rows: 38px 36px 1fr 24px;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ═══════════ TITLE BAR ═══════════ */
+    .titlebar {
+      background: var(--bg-titlebar);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      -webkit-app-region: drag;
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+    .window-dots span {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+    .dot-close { background: #ff5f57; }
+    .dot-min { background: #ffbd2e; }
+    .dot-max { background: #28c840; }
+
+    .titlebar-title {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+    .titlebar-title em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .titlebar-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .titlebar-links a {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .titlebar-links a:hover { color: var(--text-primary); }
+
+    /* ═══════════ TAB BAR ═══════════ */
+    .tabbar {
+      background: var(--bg-inactive-tab);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      overflow-x: auto;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg-inactive-tab);
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text-secondary); }
+    .tab.active {
+      background: var(--bg-active-tab);
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--accent);
+      margin-bottom: -1px;
+    }
+    .tab-icon {
+      width: 14px; height: 14px;
+      fill: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .tab-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+    }
+
+    /* Example selector */
+    .example-select {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-editor);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .example-select:hover,
+    .example-select:focus { border-color: var(--accent-dim); }
+    .example-select option { background: var(--bg-editor); }
+
+    /* Run button */
+    .run-btn {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+      background: linear-gradient(135deg, var(--green-dim), var(--green));
+      border: none;
+      border-radius: 4px;
+      padding: 5px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
+    }
+    .run-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 20px rgba(52, 211, 153, 0.3);
+    }
+    .run-btn:active { transform: translateY(0); }
+    .run-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .run-btn svg { width: 10px; height: 12px; fill: #fff; }
+
+    /* ═══════════ MAIN PANELS ═══════════ */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      .panels { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    }
+
+    /* Resize handle */
+    .panel-divider {
+      width: 2px;
+      background: var(--border);
+      cursor: col-resize;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .panel-divider:hover,
+    .panel-divider.dragging { background: var(--accent); }
+
+    /* ═══════════ EDITOR PANEL ═══════════ */
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    .editor-container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background: var(--bg-editor);
+    }
+
+    .gutter {
+      width: 52px;
+      flex-shrink: 0;
+      background: var(--bg-gutter);
+      padding: 10px 0;
+      text-align: right;
+      overflow: hidden;
+      user-select: none;
+      border-right: 1px solid var(--border);
+    }
+    .gutter-line {
+      font-size: 13px;
+      line-height: 20px;
+      padding-right: 12px;
+      color: var(--text-gutter);
+      height: 20px;
+    }
+    .gutter-line.active { color: var(--text-secondary); }
+
+    .editor-scroll {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+    }
+
+    .code-wrapper {
+      position: relative;
+      flex: 1;
+      overflow: auto;
+    }
+
+    .code-highlight,
+    .code-textarea {
+      width: 100%;
+      min-height: 100%;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 20px;
+      padding: 10px 16px;
+      white-space: pre;
+      tab-size: 4;
+      word-wrap: normal;
+      overflow-wrap: normal;
+    }
+
+    .code-highlight {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      color: var(--text-primary);
+      z-index: 1;
+    }
+
+    .code-textarea {
+      position: relative;
+      z-index: 2;
+      background: transparent;
+      color: transparent;
+      caret-color: var(--accent);
+      border: none;
+      outline: none;
+      resize: none;
+    }
+
+    .code-textarea::placeholder { color: var(--text-gutter); }
+    .code-textarea::selection { background: rgba(168, 85, 247, 0.25); }
+
+    /* ═══════════ OUTPUT PANEL ═══════════ */
+    .output-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      height: 32px;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .output-tab {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      cursor: default;
+      padding-bottom: 1px;
+    }
+    .output-tab.active {
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--accent);
+    }
+
+    .output-clear {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s;
+    }
+    .output-clear:hover {
+      color: var(--text-secondary);
+      border-color: var(--text-muted);
+    }
+
+    .output-scroll {
+      flex: 1;
+      overflow: auto;
+      background: var(--bg-terminal);
+      padding: 12px 16px;
+    }
+
+    .output-line {
+      font-size: 12px;
+      line-height: 20px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .output-line.stdout { color: var(--green); }
+    .output-line.error { color: var(--red); }
+    .output-line.info { color: var(--text-muted); font-style: italic; }
+    .output-line.timing { color: var(--yellow); }
+
+    .output-cursor {
+      display: inline-block;
+      width: 7px;
+      height: 14px;
+      background: var(--green);
+      animation: blink 1s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ═══════════ STATUS BAR ═══════════ */
+    .statusbar {
+      background: var(--bg-statusbar);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 11px;
+      color: #fff;
+      font-family: var(--font-sans);
+    }
+    .statusbar-left,
+    .statusbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      opacity: 0.85;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+    }
+    .status-dot.loading {
+      background: var(--yellow);
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .status-dot.error {
+      background: var(--red);
+      box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* ═══════════ LOADING OVERLAY ═══════════ */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-editor);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+      transition: opacity 0.4s ease, visibility 0.4s;
+    }
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .loading-spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-gutter); }
+  </style>
+</head>
+
+<body>
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Initializing Achronyme VM...</div>
+  </div>
+
+  <div class="shell">
+    <!-- ═══ TITLE BAR ═══ -->
+    <div class="titlebar">
+      <div class="titlebar-left">
+        <div class="window-dots">
+          <span class="dot-close"></span>
+          <span class="dot-min"></span>
+          <span class="dot-max"></span>
+        </div>
+        <div class="titlebar-title"><em>ach</em>&ensp;playground</div>
+      </div>
+      <div class="titlebar-links">
+        <a href="https://docs.achrony.me" target="_blank">docs</a>
+        <a href="https://github.com/achronyme/achronyme" target="_blank">github</a>
+        <a href="/">home</a>
+      </div>
+    </div>
+
+    <!-- ═══ TAB BAR ═══ -->
+    <div class="tabbar">
+      <div class="tab active">
+        <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span id="tab-name">main.ach</span>
+      </div>
+      <div class="tab-actions">
+        <select class="example-select" id="examples">
+          <option value="hello">Hello World</option>
+          <option value="fibonacci">Fibonacci</option>
+          <option value="field">Field Arithmetic</option>
+          <option value="prove">Prove Block</option>
+        </select>
+        <button class="run-btn" id="run-btn" disabled>
+          <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
+          Run
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ MAIN PANELS ═══ -->
+    <div class="panels" id="panels">
+      <!-- Editor -->
+      <div class="editor-panel" id="editor-panel">
+        <div class="editor-container">
+          <div class="gutter" id="gutter"></div>
+          <div class="code-wrapper" id="editor-scroll">
+            <pre class="code-highlight" id="highlight" aria-hidden="true"></pre>
+            <textarea
+              class="code-textarea"
+              id="editor"
+              spellcheck="false"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              placeholder="// Write Achronyme code here..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="output-panel">
+        <div class="output-header">
+          <span class="output-tab active">output</span>
+          <button class="output-clear" id="clear-btn">clear</button>
+        </div>
+        <div class="output-scroll" id="output">
+          <div class="output-line info">// Press Run or Ctrl+Enter to execute</div>
+          <span class="output-cursor"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STATUS BAR ═══ -->
+    <div class="statusbar">
+      <div class="statusbar-left">
+        <span class="status-item">achronyme playground</span>
+        <span class="status-item" id="status-line">Ln 1, Col 1</span>
+      </div>
+      <div class="statusbar-right">
+        <span class="status-item">v0.1.0-beta.16</span>
+        <span class="status-item" id="wasm-status">
+          <span class="status-dot loading" id="wasm-dot"></span>
+          <span id="wasm-label">Loading WASM...</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // ═══════════════════════════════════════════════════════════════════
+    // EXAMPLES (taken from actual Achronyme test files)
+    // ═══════════════════════════════════════════════════════════════════
+    const EXAMPLES = {
+      hello: {
+        name: "hello.ach",
+        code: `// Hello World — Achronyme basics
+
+let name = "Achronyme"
+print("Hello from " + name + "!")
+
+// Arithmetic
+let x = 6
+let y = 7
+let product = x * y
+print("The answer is: " + product.to_string())
+
+// Arrays
+let primes = [2, 3, 5, 7, 11]
+mut sum = 0
+for p in primes {
+    sum = sum + p
+}
+print("Sum of first 5 primes: " + sum.to_string())
+
+// Maps
+let user = { name: "alice", age: 30 }
+print("User: " + user.name + ", age " + user.age.to_string())
+`
+      },
+      fibonacci: {
+        name: "fibonacci.ach",
+        code: `// Recursion: fibonacci, factorial, GCD
+
+fn fib(n) {
+    if n < 2 { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+
+print("Fibonacci sequence:")
+for i in 0..10 {
+    print("  fib(" + i.to_string() + ") = " + fib(i).to_string())
+}
+
+// Factorial
+fn factorial(n) {
+    if n <= 1 { return 1 }
+    return n * factorial(n - 1)
+}
+print("")
+print("factorial(10) = " + factorial(10).to_string())
+
+// GCD (Euclidean algorithm)
+fn gcd(a, b) {
+    if b == 0 { return a }
+    return gcd(b, a % b)
+}
+print("gcd(12, 8) = " + gcd(12, 8).to_string())
+print("gcd(100, 75) = " + gcd(100, 75).to_string())
+
+// Recursive power
+fn power(base, exp) {
+    if exp == 0 { return 1 }
+    return base * power(base, exp - 1)
+}
+print("2^10 = " + power(2, 10).to_string())
+`
+      },
+      field: {
+        name: "field_math.ach",
+        code: `// BN254 Field Arithmetic
+// All values are elements of the BN254 scalar field
+
+let a = 0p42
+let b = 0pxFF
+
+print("a = " + a.to_string())
+print("b = " + b.to_string())
+
+// Arithmetic in the field
+print("a + b = " + (a + b).to_string())
+print("a * b = " + (a * b).to_string())
+print("a / b = " + (a / b).to_string())
+
+// Negation: -a + a = 0
+let neg = -0p5
+print("-5 + 5 = " + (neg + 0p5).to_string())
+
+// Distributive: (a + b) * c == a*c + b*c
+let c = 0p7
+let lhs = (a + b) * c
+let rhs = a * c + b * c
+print("Distributive check: " + (lhs == rhs).to_string())
+
+// Poseidon hash (ZK-friendly hash)
+let h = poseidon(a, b)
+print("")
+print("poseidon(a, b) = " + h.to_string())
+
+// Hash chain
+let h2 = poseidon(h, a)
+let h3 = poseidon(h2, b)
+print("hash chain[3] = " + h3.to_string())
+
+print("")
+print("Field::ONE  = " + Field::ONE.to_string())
+print("Field::ZERO = " + Field::ZERO.to_string())
+print("Int::MAX    = " + Int::MAX.to_string())
+`
+      },
+      prove: {
+        name: "prove_demo.ach",
+        code: `// Zero-Knowledge Prove Block
+//
+// Provers (Groth16/halo2) require native code
+// and don't run in WASM. This shows the syntax
+// and compilation — the block will error at runtime.
+
+let secret = 0p42
+let public_hash = poseidon(secret, 0p0)
+
+print("Secret:      " + secret.to_string())
+print("Public hash: " + public_hash.to_string())
+print("")
+
+// This compiles to ProveIR constraints but
+// can't generate a proof in the browser
+prove demo(public_hash: Public) {
+    assert_eq(
+        poseidon(secret, 0p0),
+        public_hash,
+        "hash mismatch"
+    )
+}
+
+print("Proof generated!")
+`
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════
+    // DOM
+    // ═══════════════════════════════════════════════════════════════════
+    const editor = document.getElementById("editor");
+    const highlight = document.getElementById("highlight");
+    const gutter = document.getElementById("gutter");
+    const output = document.getElementById("output");
+    const runBtn = document.getElementById("run-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const exampleSelect = document.getElementById("examples");
+    const tabName = document.getElementById("tab-name");
+    const statusLine = document.getElementById("status-line");
+    const wasmDot = document.getElementById("wasm-dot");
+    const wasmLabel = document.getElementById("wasm-label");
+    const loading = document.getElementById("loading");
+    const editorScroll = document.getElementById("editor-scroll");
+
+    let wasmRun = null;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // GUTTER + HIGHLIGHT
+    // ═══════════════════════════════════════════════════════════════════
+    function updateEditor() {
+      const code = editor.value;
+
+      // Update syntax highlight overlay
+      highlight.innerHTML = highlightCode(code) + "\n";
+
+      // Update line numbers
+      const lines = code.split("\n").length;
+      const cursorLine = code.substring(0, editor.selectionStart).split("\n").length;
+      let gutterHtml = "";
+      for (let i = 1; i <= Math.max(lines, 20); i++) {
+        gutterHtml += `<div class="gutter-line${i === cursorLine ? " active" : ""}">${i}</div>`;
+      }
+      gutter.innerHTML = gutterHtml;
+    }
+
+    function updateCursor() {
+      const before = editor.value.substring(0, editor.selectionStart);
+      const lines = before.split("\n");
+      const ln = lines.length;
+      const col = lines[lines.length - 1].length + 1;
+      statusLine.textContent = `Ln ${ln}, Col ${col}`;
+      updateEditor();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // OUTPUT
+    // ═══════════════════════════════════════════════════════════════════
+    function clearOutput() {
+      output.innerHTML = '<span class="output-cursor"></span>';
+    }
+
+    function appendOutput(text, cls = "stdout") {
+      const cursor = output.querySelector(".output-cursor");
+      const line = document.createElement("div");
+      line.className = `output-line ${cls}`;
+      line.textContent = text;
+      output.insertBefore(line, cursor);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SYNTAX HIGHLIGHTING (overlay)
+    // ═══════════════════════════════════════════════════════════════════
+    const KEYWORDS = /\b(let|mut|fn|if|else|return|for|in|while|forever|break|continue|import|export|as|from|prove|circuit|assert|assert_eq|print|poseidon|typeof|true|false|nil|Public|Witness|Field|Int|BigInt)\b/g;
+    const STRINGS = /"(?:[^"\\]|\\.)*"/g;
+    const COMMENTS = /\/\/.*$/gm;
+    const NUMBERS = /\b(\d+(\.\d+)?)\b/g;
+    const FIELD_LIT = /\b0p[x]?[0-9a-fA-F]+\b/g;
+    const STATIC_ACCESS = /\b(Field|Int|BigInt)::([A-Z_]+)\b/g;
+
+    function highlightCode(code) {
+      // Escape HTML
+      let html = code
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Order matters: comments last so they override
+      html = html.replace(FIELD_LIT, '<span style="color: var(--cyan)">$&</span>');
+      html = html.replace(STATIC_ACCESS, '<span style="color: var(--blue)">$1</span>::<span style="color: var(--cyan)">$2</span>');
+      html = html.replace(NUMBERS, '<span style="color: var(--cyan)">$&</span>');
+      html = html.replace(STRINGS, '<span style="color: var(--green)">$&</span>');
+      html = html.replace(KEYWORDS, '<span style="color: var(--accent)">$&</span>');
+      html = html.replace(COMMENTS, '<span style="color: var(--text-gutter)">$&</span>');
+      return html;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // RUN
+    // ═══════════════════════════════════════════════════════════════════
+    function runCode() {
+      if (!wasmRun) return;
+
+      clearOutput();
+      const source = editor.value;
+      if (!source.trim()) {
+        appendOutput("// Nothing to run", "info");
+        return;
+      }
+
+      const t0 = performance.now();
+      let result;
+      try {
+        result = wasmRun(source);
+      } catch (e) {
+        appendOutput(`Fatal: ${e.message || e}`, "error");
+        return;
+      }
+      const elapsed = (performance.now() - t0).toFixed(1);
+
+      // Display captured output from the Rust thread_local buffer
+      if (result.output) {
+        for (const line of result.output.split("\n")) {
+          appendOutput(line, "stdout");
+        }
+      }
+
+      if (!result.success) {
+        appendOutput("", "stdout");
+        appendOutput(result.error, "error");
+      }
+
+      appendOutput("", "stdout");
+      appendOutput(`[${elapsed}ms]`, "timing");
+
+      result.free();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // EXAMPLES
+    // ═══════════════════════════════════════════════════════════════════
+    function loadExample(key) {
+      const ex = EXAMPLES[key];
+      if (!ex) return;
+      editor.value = ex.code;
+      tabName.textContent = ex.name;
+      updateEditor();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // EVENTS
+    // ═══════════════════════════════════════════════════════════════════
+    editor.addEventListener("input", updateEditor);
+    editor.addEventListener("click", updateCursor);
+    editor.addEventListener("keyup", updateCursor);
+
+    // Sync scroll between textarea, highlight overlay, and gutter
+    editorScroll.addEventListener("scroll", () => {
+      gutter.style.transform = `translateY(-${editorScroll.scrollTop}px)`;
+    });
+
+    // Tab key inserts spaces
+    editor.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 4;
+        updateEditor();
+      }
+      // Ctrl/Cmd + Enter to run
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        runCode();
+      }
+    });
+
+    runBtn.addEventListener("click", runCode);
+    clearBtn.addEventListener("click", clearOutput);
+
+    exampleSelect.addEventListener("change", (e) => {
+      loadExample(e.target.value);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════════════════
+    loadExample("hello");
+
+    async function initWasm() {
+      try {
+        // Dynamically fetch and instantiate the WASM module
+        const jsModule = await import("/wasm/achronyme_wasm.js");
+        await jsModule.default("/wasm/achronyme_wasm_bg.wasm");
+        wasmRun = jsModule.run;
+
+        // Ready
+        wasmDot.classList.remove("loading");
+        wasmLabel.textContent = "WASM Ready";
+        runBtn.disabled = false;
+        loading.classList.add("hidden");
+      } catch (e) {
+        wasmDot.classList.remove("loading");
+        wasmDot.classList.add("error");
+        wasmLabel.textContent = "WASM Failed";
+        loading.querySelector(".loading-text").textContent = `Failed to load: ${e.message}`;
+        loading.querySelector(".loading-spinner").style.display = "none";
+        console.error("WASM init failed:", e);
+      }
+    }
+
+    initWasm();
+  </script>
+</body>
+</html>
