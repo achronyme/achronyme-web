@@ -1,11 +1,5 @@
-// File tree component for the playground mini-IDE.
-// Renders a VS Code-like explorer with folder hierarchy.
+// File tree component — VS Code-style explorer with folder hierarchy.
 
-/**
- * Build a tree structure from flat file list.
- * @param {Array<{path: string, size: number}>} files
- * @returns {Array} Tree nodes
- */
 function buildTree(files) {
   const root = [];
   const dirs = {};
@@ -29,42 +23,32 @@ function buildTree(files) {
     }
   }
 
-  // Sort: dirs first, then files. achronyme.toml always first.
   root.sort((a, b) => {
     if (a.path === "achronyme.toml") return -1;
     if (b.path === "achronyme.toml") return 1;
     if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
-
   for (const dir of Object.values(dirs)) {
     dir.children.sort((a, b) => a.name.localeCompare(b.name));
   }
-
   return root;
 }
 
-/**
- * Get file icon SVG based on file type.
- */
-function fileIcon(name) {
-  if (name === "achronyme.toml") {
-    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4.5v7l6 3 6-3v-7L8 1.5z" stroke="#8b8b9a" stroke-width="1.2" fill="none"/><circle cx="8" cy="8" r="2" fill="#8b8b9a"/></svg>`;
+function fileIconSvg(name) {
+  if (name.endsWith(".toml")) {
+    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4.5v7l6 3 6-3v-7L8 1.5z" stroke="#7d7d8a" stroke-width="1" fill="none"/><circle cx="8" cy="8" r="1.8" fill="#7d7d8a"/></svg>`;
   }
-  // .ach files get the diamond icon in accent color
-  return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L13 8L8 14L3 8L8 2Z" fill="none" stroke="#a855f7" stroke-width="1.3"/><path d="M8 5L10.5 8L8 11L5.5 8L8 5Z" fill="#a855f7" opacity="0.3"/></svg>`;
+  return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2.5L12.5 8L8 13.5L3.5 8L8 2.5Z" stroke="#a855f7" stroke-width="1.2" fill="rgba(168,85,247,0.12)"/></svg>`;
 }
 
-function dirIcon(expanded) {
+function dirIconSvg(expanded) {
   if (expanded) {
-    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.5 3h5l1.5 1.5H14.5v9h-13V3z" stroke="#c4a24d" stroke-width="1.1" fill="rgba(196,162,77,0.12)"/><path d="M1.5 6.5h13" stroke="#c4a24d" stroke-width="0.8" opacity="0.5"/></svg>`;
+    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.5 3.5h4.5l1.5 1.5H14.5V13h-13V3.5z" stroke="#c09553" stroke-width="1" fill="rgba(192,149,83,0.15)"/></svg>`;
   }
-  return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.5 3h5l1.5 1.5H14.5v9h-13V3z" stroke="#c4a24d" stroke-width="1.1" fill="rgba(196,162,77,0.08)"/></svg>`;
+  return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1.5 3.5h4.5l1.5 1.5H14.5V13h-13V3.5z" stroke="#c09553" stroke-width="1" fill="rgba(192,149,83,0.05)"/></svg>`;
 }
 
-/**
- * Render the file tree into a container element.
- */
 export function renderFileTree(container, files, activeFile, callbacks) {
   container.innerHTML = "";
   const tree = buildTree(files);
@@ -74,10 +58,9 @@ export function renderFileTree(container, files, activeFile, callbacks) {
 function renderNodes(container, nodes, depth, activeFile, callbacks) {
   for (const node of nodes) {
     if (node.type === "dir") {
-      // Directory row
       const row = document.createElement("div");
       row.className = "file-row dir-row";
-      row.style.paddingLeft = (12 + depth * 16) + "px";
+      row.style.paddingLeft = (8 + depth * 8) + "px";
 
       const chevron = document.createElement("span");
       chevron.className = "tree-chevron" + (node.expanded ? " expanded" : "");
@@ -85,7 +68,7 @@ function renderNodes(container, nodes, depth, activeFile, callbacks) {
 
       const icon = document.createElement("span");
       icon.className = "file-icon";
-      icon.innerHTML = dirIcon(node.expanded);
+      icon.innerHTML = dirIconSvg(node.expanded);
 
       const name = document.createElement("span");
       name.className = "file-name";
@@ -102,7 +85,7 @@ function renderNodes(container, nodes, depth, activeFile, callbacks) {
       row.addEventListener("click", () => {
         node.expanded = !node.expanded;
         chevron.classList.toggle("expanded");
-        icon.innerHTML = dirIcon(node.expanded);
+        icon.innerHTML = dirIconSvg(node.expanded);
         childContainer.style.display = node.expanded ? "" : "none";
       });
 
@@ -110,38 +93,41 @@ function renderNodes(container, nodes, depth, activeFile, callbacks) {
       renderNodes(childContainer, node.children, depth + 1, activeFile, callbacks);
       container.appendChild(childContainer);
     } else {
-      // File row
       const row = document.createElement("div");
-      row.className = "file-row" + (node.path === activeFile ? " active" : "");
-      row.style.paddingLeft = (12 + depth * 16 + (depth > 0 ? 0 : 0)) + "px";
+      const isActive = node.path === activeFile;
+      row.className = "file-row" + (isActive ? " active focused" : "");
+      // Files inside dirs get extra indent for missing chevron
+      const indent = 8 + depth * 8 + (depth > 0 ? 18 : 0);
+      row.style.paddingLeft = indent + "px";
       row.dataset.path = node.path;
-
-      // Indent spacer for files inside directories (no chevron)
-      if (depth > 0) {
-        const spacer = document.createElement("span");
-        spacer.style.width = "10px";
-        spacer.style.flexShrink = "0";
-        row.appendChild(spacer);
-      }
 
       const icon = document.createElement("span");
       icon.className = "file-icon";
-      icon.innerHTML = fileIcon(node.path);
+      icon.innerHTML = fileIconSvg(node.path);
 
       const name = document.createElement("span");
       name.className = "file-name";
       name.textContent = node.name;
-      name.title = node.path;
 
       row.appendChild(icon);
       row.appendChild(name);
 
-      row.addEventListener("click", () => callbacks.onFileClick(node.path));
+      row.addEventListener("click", () => {
+        // Remove focused from all rows
+        container.closest(".file-tree").querySelectorAll(".file-row.focused").forEach(r => r.classList.remove("focused"));
+        row.classList.add("focused");
+        callbacks.onFileClick(node.path);
+      });
 
       if (node.path !== "achronyme.toml") {
         row.addEventListener("contextmenu", (e) => {
           e.preventDefault();
-          showContextMenu(e.clientX, e.clientY, node.path, callbacks);
+          showContextMenu(e.clientX, e.clientY, node.path, row, callbacks);
+        });
+        // Double-click to rename
+        row.addEventListener("dblclick", (e) => {
+          e.stopPropagation();
+          startInlineRename(row, node.path, node.name, callbacks);
         });
       }
 
@@ -150,7 +136,44 @@ function renderNodes(container, nodes, depth, activeFile, callbacks) {
   }
 }
 
-function showContextMenu(x, y, path, callbacks) {
+/** Start inline rename — replaces file name with an input field. */
+function startInlineRename(row, path, currentName, callbacks) {
+  const nameEl = row.querySelector(".file-name");
+  if (!nameEl) return;
+
+  const input = document.createElement("input");
+  input.className = "rename-input";
+  input.type = "text";
+  input.value = currentName;
+
+  // Compute new path helper
+  const dir = path.substring(0, path.length - currentName.length);
+
+  nameEl.style.display = "none";
+  row.insertBefore(input, nameEl.nextSibling);
+  input.focus();
+  // Select name without extension
+  const dotIdx = currentName.lastIndexOf(".");
+  input.setSelectionRange(0, dotIdx > 0 ? dotIdx : currentName.length);
+
+  const commit = () => {
+    const newName = input.value.trim();
+    input.remove();
+    nameEl.style.display = "";
+    if (newName && newName !== currentName) {
+      const newPath = dir + newName;
+      callbacks.onFileRename(path, newPath);
+    }
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commit(); }
+    if (e.key === "Escape") { input.remove(); nameEl.style.display = ""; }
+  });
+  input.addEventListener("blur", commit);
+}
+
+function showContextMenu(x, y, path, row, callbacks) {
   const old = document.getElementById("file-context-menu");
   if (old) old.remove();
 
@@ -161,14 +184,32 @@ function showContextMenu(x, y, path, callbacks) {
   menu.style.top = y + "px";
 
   const items = [
-    { label: "Rename", action: () => callbacks.onFileRename(path) },
-    { label: "Delete", cls: "danger", action: () => callbacks.onFileDelete(path) },
+    {
+      label: "Rename",
+      shortcut: "F2",
+      action: () => {
+        const name = path.split("/").pop();
+        startInlineRename(row, path, name, callbacks);
+      },
+    },
+    { label: "Delete", shortcut: "Del", cls: "danger", action: () => callbacks.onFileDelete(path) },
   ];
 
   for (const item of items) {
     const el = document.createElement("div");
     el.className = "context-item" + (item.cls ? ` ${item.cls}` : "");
-    el.textContent = item.label;
+
+    const label = document.createElement("span");
+    label.textContent = item.label;
+    el.appendChild(label);
+
+    if (item.shortcut) {
+      const sc = document.createElement("span");
+      sc.className = "context-shortcut";
+      sc.textContent = item.shortcut;
+      el.appendChild(sc);
+    }
+
     el.addEventListener("click", () => { menu.remove(); item.action(); });
     menu.appendChild(el);
   }
