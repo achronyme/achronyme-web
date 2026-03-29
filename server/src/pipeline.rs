@@ -4,12 +4,34 @@
 //! adapted for server-side use with captured print output.
 
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use compiler::Compiler;
 use memory::{Closure, Function, Value};
 use vm::error::RuntimeError;
 use vm::native::NativeObj;
 use vm::{CallFrame, ValueOps, VM};
+
+use crate::prove_handler::ServerProveHandler;
+
+/// Wrapper to share `ServerProveHandler` via Rc (orphan rule workaround).
+struct SharedHandler(Rc<ServerProveHandler>);
+
+impl vm::ProveHandler for SharedHandler {
+    fn execute_prove_ir(
+        &self,
+        prove_ir_bytes: &[u8],
+        scope_values: &std::collections::HashMap<String, memory::FieldElement>,
+    ) -> Result<vm::ProveResult, vm::ProveError> {
+        self.0.execute_prove_ir(prove_ir_bytes, scope_values)
+    }
+}
+
+impl vm::VerifyHandler for SharedHandler {
+    fn verify_proof(&self, proof: &memory::ProofObject) -> Result<bool, String> {
+        self.0.verify_proof(proof)
+    }
+}
 
 // Thread-local buffer for capturing print() output.
 // Safe because each request runs in its own `spawn_blocking` thread.
@@ -99,6 +121,11 @@ fn run_inner(source: &str, budget: u64, max_heap: usize) -> Result<(), String> {
     // Set resource limits
     vm.instruction_budget = budget;
     vm.heap.max_heap_bytes = max_heap;
+
+    // Register prove/verify handlers for prove {} blocks
+    let handler = Rc::new(ServerProveHandler::new());
+    vm.prove_handler = Some(Box::new(SharedHandler(Rc::clone(&handler))));
+    vm.verify_handler = Some(Box::new(SharedHandler(handler)));
 
     // 3. Transfer artifacts from compiler to VM
     vm.import_strings(compiler.interner.strings);

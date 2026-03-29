@@ -20,6 +20,7 @@ use tower_http::timeout::TimeoutLayer;
 
 mod error;
 mod pipeline;
+mod prove_handler;
 mod routes;
 mod sandbox;
 
