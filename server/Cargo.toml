@@ -26,6 +26,11 @@ serde_json = "1"
 # Proving backends (shared crate)
 proving = { git = "https://github.com/achronyme/achronyme" }
 
+# Session management
+dashmap = "6"
+uuid = { version = "1", features = ["v4"] }
+toml = "0.8"
+
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
