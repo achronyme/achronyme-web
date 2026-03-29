@@ -13,7 +13,10 @@ pub struct FormatResponse {
     formatted: String,
 }
 
-pub async fn handler(Json(req): Json<FormatRequest>) -> Json<FormatResponse> {
+pub async fn handler(
+    axum::extract::State(_store): axum::extract::State<crate::session::SessionStore>,
+    Json(req): Json<FormatRequest>,
+) -> Json<FormatResponse> {
     Json(FormatResponse {
         formatted: req.source,
     })

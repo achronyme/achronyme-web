@@ -20,7 +20,10 @@ pub struct CompileResponse {
     diagnostics: Vec<pipeline::DiagnosticInfo>,
 }
 
-pub async fn handler(Json(req): Json<CompileRequest>) -> Result<Json<CompileResponse>, ApiError> {
+pub async fn handler(
+    axum::extract::State(_store): axum::extract::State<crate::session::SessionStore>,
+    Json(req): Json<CompileRequest>,
+) -> Result<Json<CompileResponse>, ApiError> {
     let source = req.source;
 
     let result = sandboxed(move || pipeline::check_source(&source), COMPILE_TIMEOUT_SECS).await?;

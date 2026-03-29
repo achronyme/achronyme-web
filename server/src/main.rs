@@ -11,7 +11,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use axum::http::{header, Method};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -23,6 +23,9 @@ mod pipeline;
 mod prove_handler;
 mod routes;
 mod sandbox;
+mod session;
+mod templates;
+mod workspace;
 
 #[tokio::main]
 async fn main() {
@@ -47,16 +50,33 @@ async fn main() {
                 .parse::<axum::http::HeaderValue>()
                 .expect("invalid CORS origin"),
         )
-        .allow_methods([Method::POST, Method::OPTIONS])
-        .allow_headers([header::CONTENT_TYPE]);
+        .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
+        .allow_headers([header::CONTENT_TYPE, "X-Ach-Session".parse().unwrap()])
+        .expose_headers(["X-Ach-Session".parse().unwrap()]);
+
+    // Session store (shared state)
+    let store = session::SessionStore::new();
+    store.spawn_reaper();
 
     let app = Router::new()
+        // Existing endpoints
         .route("/api/run", post(routes::run::handler))
         .route("/api/compile", post(routes::compile::handler))
         .route("/api/inspect", post(routes::inspect::handler))
         .route("/api/prove", post(routes::prove::handler))
         .route("/api/format", post(routes::format::handler))
+        // Session endpoints
+        .route("/api/session/create", post(routes::session::create))
+        .route("/api/session", delete(routes::session::delete))
+        // File system endpoints
+        .route("/api/fs/write", post(routes::fs::write))
+        .route("/api/fs/read", post(routes::fs::read))
+        .route("/api/fs/delete", post(routes::fs::delete))
+        .route("/api/fs/list", get(routes::fs::list))
+        .route("/api/fs/rename", post(routes::fs::rename))
+        // Health
         .route("/health", get(|| async { "ok" }))
+        .with_state(store)
         .layer(cors)
         .layer(RequestBodyLimitLayer::new(64 * 1024))
         .layer(TimeoutLayer::with_status_code(

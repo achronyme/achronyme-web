@@ -23,6 +23,7 @@ pub struct InspectRequest {
 }
 
 pub async fn handler(
+    axum::extract::State(_store): axum::extract::State<crate::session::SessionStore>,
     Json(req): Json<InspectRequest>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
     let source = req.source;

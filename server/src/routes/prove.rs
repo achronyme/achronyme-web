@@ -38,7 +38,10 @@ pub struct ProveResponse {
     constraints: usize,
 }
 
-pub async fn handler(Json(req): Json<ProveRequest>) -> Result<Json<ProveResponse>, ApiError> {
+pub async fn handler(
+    axum::extract::State(_store): axum::extract::State<crate::session::SessionStore>,
+    Json(req): Json<ProveRequest>,
+) -> Result<Json<ProveResponse>, ApiError> {
     if req.inputs.is_empty() {
         return Err(ApiError::BadRequest("inputs are required for proving".into()));
     }
