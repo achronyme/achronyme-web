@@ -12,187 +12,411 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --bg-titlebar: #17171c;
-      --bg-sidebar: #1c1c22;
-      --bg-editor: #121217;
-      --bg-terminal: #0e0e12;
+      --bg-titlebar: #1e1e1e;
+      --bg-activitybar: #181818;
+      --bg-sidebar: #1e1e1e;
+      --bg-editor: #1e1e1e;
+      --bg-terminal: #181818;
       --bg-statusbar: #7c3aed;
-      --bg-active-tab: #121217;
-      --bg-inactive-tab: #19191e;
-      --border: #2a2a32;
-      --text-primary: #f5f5fa;
-      --text-secondary: #b0b0c4;
-      --text-muted: #606070;
+      --bg-active-tab: #1e1e1e;
+      --bg-inactive-tab: #2d2d2d;
+      --bg-tab-row: #181818;
+      --bg-breadcrumb: #1e1e1e;
+      --bg-input: #313131;
+      --border: #2b2b2b;
+      --border-active: #414141;
+      --text-primary: #cccccc;
+      --text-secondary: #969696;
+      --text-muted: #5a5a5a;
+      --text-bright: #e8e8e8;
       --accent: #a855f7;
       --accent-dim: #7c3aed;
-      --green: #34d399;
-      --green-dim: #059669;
-      --red: #f87171;
-      --yellow: #fbbf24;
-      --font-mono: "JetBrains Mono", "Fira Code", "Consolas", ui-monospace, monospace;
-      --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+      --focus: rgba(168, 85, 247, 0.4);
+      --green: #4ec9b0;
+      --green-bright: #73d0b5;
+      --red: #f14c4c;
+      --yellow: #cca700;
+      --blue: #569cd6;
+      --orange: #ce9178;
+      --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: var(--bg-editor); color: var(--text-primary); font-family: var(--font-mono); -webkit-font-smoothing: antialiased; }
-    ::selection { background: rgba(168, 85, 247, 0.3); color: var(--text-primary); }
+    html, body { height: 100%; overflow: hidden; background: var(--bg-editor); color: var(--text-primary); font-family: var(--font-mono); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    ::selection { background: rgba(168, 85, 247, 0.35); }
 
+    /* ═══ SHELL GRID ═══ */
     .shell {
       display: grid;
-      grid-template-rows: 38px 36px 1fr 24px;
-      grid-template-columns: 220px 1fr;
+      grid-template-rows: 30px 35px 1fr 22px;
+      grid-template-columns: 48px 240px 1fr;
       height: 100vh; width: 100vw;
     }
 
     /* ═══ TITLE BAR ═══ */
-    .titlebar { grid-column: 1 / -1; background: var(--bg-titlebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
-    .titlebar-left { display: flex; align-items: center; gap: 14px; }
+    .titlebar {
+      grid-column: 1 / -1;
+      background: var(--bg-titlebar);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      -webkit-app-region: drag;
+    }
+    .titlebar-left { position: absolute; left: 12px; display: flex; align-items: center; gap: 8px; -webkit-app-region: no-drag; }
     .window-dots { display: flex; gap: 8px; }
     .window-dots span { width: 12px; height: 12px; border-radius: 50%; }
     .dot-close { background: #ff5f57; } .dot-min { background: #ffbd2e; } .dot-max { background: #28c840; }
-    .titlebar-title { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.02em; }
-    .titlebar-title em { font-style: normal; color: var(--accent); }
-    .titlebar-links { display: flex; align-items: center; gap: 16px; }
-    .titlebar-links a { font-size: 11px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
-    .titlebar-links a:hover { color: var(--text-primary); }
+    .titlebar-center { font-family: var(--font-sans); font-size: 11px; color: var(--text-secondary); letter-spacing: 0.01em; }
+    .titlebar-center em { font-style: normal; color: var(--text-primary); font-weight: 500; }
+    .titlebar-right { position: absolute; right: 12px; display: flex; gap: 14px; -webkit-app-region: no-drag; }
+    .titlebar-right a { font-family: var(--font-sans); font-size: 11px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .titlebar-right a:hover { color: var(--text-primary); }
+
+    /* ═══ ACTIVITY BAR ═══ */
+    .activitybar {
+      grid-row: 2 / 4;
+      background: var(--bg-activitybar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 4px; gap: 2px;
+    }
+    .activity-icon {
+      width: 48px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-left: 2px solid transparent;
+      color: var(--text-muted); transition: color 0.15s;
+    }
+    .activity-icon:hover { color: var(--text-primary); }
+    .activity-icon.active { color: var(--text-primary); border-left-color: var(--text-primary); }
+    .activity-icon svg { width: 22px; height: 22px; }
+    .activity-spacer { flex: 1; }
 
     /* ═══ SIDEBAR ═══ */
-    .sidebar { grid-row: 2 / 4; background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-    .sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 36px; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-sans); font-weight: 600; }
-    .sidebar-btn { background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 2px 4px; border-radius: 3px; }
-    .sidebar-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-    .file-tree { flex: 1; overflow-y: auto; padding: 4px 0; }
-    .file-row { display: flex; align-items: center; gap: 8px; padding: 4px 12px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+    .sidebar {
+      grid-row: 2 / 4;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sidebar-title {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px 0 20px; height: 35px;
+      font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary);
+    }
+    .sidebar-actions { display: flex; gap: 4px; }
+    .sidebar-btn {
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; border-radius: 4px;
+    }
+    .sidebar-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+    .sidebar-section {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 8px 4px 8px; height: 22px;
+      font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-primary);
+      cursor: pointer; user-select: none;
+    }
+    .sidebar-section:hover { background: rgba(255,255,255,0.04); }
+    .sidebar-section svg { width: 10px; height: 10px; color: var(--text-secondary); transition: transform 0.15s; }
+    .sidebar-section.collapsed svg { transform: rotate(-90deg); }
+    .file-tree { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 2px 0; }
+    .file-row {
+      display: flex; align-items: center; gap: 4px;
+      padding: 1px 8px; height: 22px;
+      font-size: 13px; color: var(--text-primary);
+      cursor: pointer; user-select: none;
+    }
     .file-row:hover { background: rgba(255,255,255,0.04); }
-    .file-row.active { background: rgba(168, 85, 247, 0.12); color: var(--text-primary); }
-    .file-icon { font-size: 11px; flex-shrink: 0; width: 14px; text-align: center; }
-    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); }
-    .template-select { width: 100%; font-family: var(--font-mono); font-size: 10px; background: var(--bg-editor); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 5px 6px; cursor: pointer; outline: none; }
-    .template-select:hover, .template-select:focus { border-color: var(--accent-dim); }
+    .file-row.active { background: rgba(168, 85, 247, 0.15); }
+    .file-row.dir-row { color: var(--text-secondary); }
+    .file-icon { display: flex; align-items: center; flex-shrink: 0; }
+    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+    .tree-chevron {
+      width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); transition: transform 0.12s; flex-shrink: 0;
+    }
+    .tree-chevron.expanded { transform: rotate(90deg); }
+    .tree-children { }
+
+    .sidebar-footer {
+      padding: 8px 8px; border-top: 1px solid var(--border);
+    }
+    .template-select {
+      width: 100%; font-family: var(--font-sans); font-size: 11px;
+      background: var(--bg-input); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 4px 8px; cursor: pointer; outline: none;
+    }
+    .template-select:hover, .template-select:focus { border-color: var(--accent); }
+    .template-select option { background: var(--bg-input); }
 
     /* ═══ TAB BAR ═══ */
-    .tabbar { background: var(--bg-inactive-tab); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; overflow-x: auto; }
-    .tab { display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: 12px; color: var(--text-muted); background: var(--bg-inactive-tab); border-right: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; min-width: 0; }
-    .tab.active { background: var(--bg-active-tab); color: var(--text-primary); border-bottom: 2px solid var(--accent); margin-bottom: -1px; }
-    .tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; display: none; }
-    .tab.modified .tab-dot { display: block; background: var(--accent); }
-    .tab-close { font-size: 14px; opacity: 0; margin-left: 4px; padding: 0 2px; border: none; background: none; color: var(--text-muted); cursor: pointer; }
-    .tab:hover .tab-close, .tab.active .tab-close { opacity: 0.6; }
-    .tab-close:hover { opacity: 1 !important; color: var(--red); }
-    .tab-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 0 12px; flex-shrink: 0; }
-    .run-btn { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: linear-gradient(135deg, var(--green-dim), var(--green)); border: none; border-radius: 4px; padding: 5px 16px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 0 12px rgba(52, 211, 153, 0.15); }
-    .run-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 20px rgba(52, 211, 153, 0.3); }
-    .run-btn:active { transform: translateY(0); }
-    .run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-    .run-btn svg { width: 10px; height: 12px; fill: #fff; }
+    .tabbar {
+      background: var(--bg-tab-row);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: stretch; overflow-x: auto;
+    }
+    .tabbar::-webkit-scrollbar { height: 3px; }
+    .tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 12px; height: 35px;
+      font-family: var(--font-sans); font-size: 13px;
+      color: var(--text-muted); background: transparent;
+      border-right: 1px solid var(--border);
+      cursor: pointer; white-space: nowrap; user-select: none;
+      position: relative;
+    }
+    .tab.active {
+      color: var(--text-bright); background: var(--bg-active-tab);
+    }
+    .tab.active::after {
+      content: ""; position: absolute; top: 0; left: 0; right: 0;
+      height: 1px; background: var(--accent);
+    }
+    .tab:hover:not(.active) { background: rgba(255,255,255,0.03); }
+    .tab-icon { display: flex; align-items: center; flex-shrink: 0; }
+    .tab-icon svg { width: 14px; height: 14px; }
+    .tab-label { font-size: 13px; }
+    .tab-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; display: none;
+    }
+    .tab.modified .tab-dot { display: block; background: var(--text-primary); }
+    .tab.modified .tab-close { display: none; }
+    .tab.modified:hover .tab-dot { display: none; }
+    .tab.modified:hover .tab-close { display: flex; }
+    .tab-close {
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none; color: var(--text-muted);
+      cursor: pointer; border-radius: 4px; font-size: 16px;
+      opacity: 0;
+    }
+    .tab:hover .tab-close, .tab.active .tab-close { opacity: 1; }
+    .tab-close:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+    .tab-actions {
+      margin-left: auto; display: flex; align-items: center; gap: 8px;
+      padding: 0 10px; flex-shrink: 0;
+    }
+    .run-btn {
+      font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #fff; background: var(--accent-dim);
+      border: none; border-radius: 3px; padding: 4px 14px;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .run-btn:hover { background: var(--accent); }
+    .run-btn:active { background: #6d28d9; }
+    .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .run-btn svg { width: 10px; height: 10px; fill: #fff; }
 
     /* ═══ MAIN AREA ═══ */
-    .main-area { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
+    .main-area { display: flex; flex-direction: column; overflow: hidden; }
 
-    /* ═══ EDITOR ═══ */
-    .editor-panel { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+    /* ═══ BREADCRUMB ═══ */
+    .breadcrumb {
+      height: 22px; padding: 0 12px;
+      display: flex; align-items: center;
+      font-family: var(--font-sans); font-size: 11px; color: var(--text-muted);
+      background: var(--bg-breadcrumb); border-bottom: 1px solid var(--border);
+      gap: 4px; flex-shrink: 0;
+    }
+    .breadcrumb-sep { color: var(--text-muted); font-size: 10px; }
+    .breadcrumb-item { color: var(--text-secondary); }
+    .breadcrumb-item:last-child { color: var(--text-primary); }
+
+    /* ═══ EDITOR + OUTPUT SPLIT ═══ */
+    .editor-output-split { display: flex; flex: 1; overflow: hidden; }
+    .editor-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
     #editor-container { flex: 1; overflow: hidden; }
-    #editor-container .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; }
+    #editor-container .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
     #editor-container .cm-editor .cm-scroller { font-family: var(--font-mono) !important; }
     #editor-container .cm-editor.cm-focused { outline: none; }
-    #editor-container .cm-gutters { background: #16161b; border-right: 1px solid var(--border); color: #4a4a58; }
+    #editor-container .cm-gutters { background: var(--bg-editor); border-right: none; color: var(--text-muted); min-width: 48px; padding-right: 8px; }
+    #editor-container .cm-lineNumbers .cm-gutterElement { font-size: 12px; padding: 0; text-align: right; min-width: 32px; }
     #editor-container .cm-activeLineGutter { color: var(--text-secondary); }
-    #editor-container .cm-cursor { border-left-color: var(--accent); }
+    #editor-container .cm-cursor { border-left: 2px solid var(--text-bright); }
     #editor-container .cm-selectionBackground { background: rgba(168, 85, 247, 0.25) !important; }
+    #editor-container .cm-activeLine { background: rgba(255,255,255,0.02); }
+    #editor-container .cm-matchingBracket { color: var(--text-bright) !important; outline: 1px solid var(--text-muted); background: rgba(255,255,255,0.06); }
+
+    /* ═══ RESIZE HANDLE ═══ */
+    .resize-handle {
+      width: 4px; cursor: col-resize; background: transparent;
+      transition: background 0.15s; flex-shrink: 0; position: relative;
+    }
+    .resize-handle::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 1px;
+      width: 2px; background: var(--border);
+    }
+    .resize-handle:hover::after, .resize-handle.dragging::after {
+      background: var(--accent); width: 2px;
+    }
 
     /* ═══ OUTPUT ═══ */
-    .output-panel { display: flex; flex-direction: column; overflow: hidden; }
-    .output-header { display: flex; align-items: center; gap: 16px; padding: 0 16px; height: 32px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .output-tab { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); cursor: default; padding-bottom: 1px; }
-    .output-tab.active { color: var(--text-primary); border-bottom: 1px solid var(--accent); }
-    .output-clear { margin-left: auto; font-size: 10px; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; cursor: pointer; font-family: var(--font-mono); }
-    .output-clear:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-    .output-scroll { flex: 1; overflow: auto; background: var(--bg-terminal); padding: 12px 16px; }
-    .output-line { font-size: 12px; line-height: 20px; white-space: pre-wrap; word-break: break-all; }
-    .output-line.stdout { color: var(--green); }
+    .output-panel { width: 40%; min-width: 200px; display: flex; flex-direction: column; overflow: hidden; }
+    .output-header {
+      display: flex; align-items: center;
+      padding: 0 12px; height: 35px;
+      background: var(--bg-terminal);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .output-tabs { display: flex; gap: 0; }
+    .output-tab {
+      font-family: var(--font-sans); font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--text-muted); cursor: pointer;
+      padding: 8px 12px; border-bottom: 1px solid transparent;
+    }
+    .output-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+    .output-clear {
+      margin-left: auto; font-family: var(--font-sans); font-size: 11px;
+      color: var(--text-muted); background: none; border: none;
+      cursor: pointer; padding: 4px 8px; border-radius: 3px;
+    }
+    .output-clear:hover { color: var(--text-secondary); background: rgba(255,255,255,0.06); }
+    .output-scroll { flex: 1; overflow: auto; background: var(--bg-terminal); padding: 8px 16px; }
+    .output-line { font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+    .output-line.stdout { color: var(--text-primary); }
     .output-line.error { color: var(--red); }
-    .output-line.info { color: var(--text-muted); font-style: italic; }
-    .output-line.timing { color: var(--yellow); }
-    .output-cursor { display: inline-block; width: 7px; height: 14px; background: var(--green); animation: blink 1s step-end infinite; vertical-align: text-bottom; margin-left: 2px; }
+    .output-line.info { color: var(--text-muted); }
+    .output-line.timing { color: var(--yellow); font-size: 12px; }
+    .output-cursor {
+      display: inline-block; width: 7px; height: 14px;
+      background: var(--text-primary); animation: blink 1s step-end infinite;
+      vertical-align: text-bottom; margin-left: 2px; opacity: 0.7;
+    }
     @keyframes blink { 50% { opacity: 0; } }
 
     /* ═══ STATUS BAR ═══ */
-    .statusbar { grid-column: 1 / -1; background: var(--bg-statusbar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 11px; color: #fff; font-family: var(--font-sans); }
-    .statusbar-left, .statusbar-right { display: flex; align-items: center; gap: 16px; }
-    .status-item { display: flex; align-items: center; gap: 5px; opacity: 0.85; }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px rgba(52, 211, 153, 0.5); }
-    .status-dot.loading { background: var(--yellow); box-shadow: 0 0 6px rgba(251, 191, 36, 0.5); animation: pulse 1.2s ease-in-out infinite; }
-    .status-dot.error { background: var(--red); box-shadow: 0 0 6px rgba(248, 113, 113, 0.5); }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .statusbar {
+      grid-column: 1 / -1;
+      background: var(--bg-statusbar);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 10px; font-size: 12px; color: rgba(255,255,255,0.85);
+      font-family: var(--font-sans); z-index: 10;
+    }
+    .statusbar-left, .statusbar-right { display: flex; align-items: center; gap: 14px; }
+    .status-item { display: flex; align-items: center; gap: 4px; cursor: default; }
+    .status-item a { color: inherit; text-decoration: none; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4ec9b0; box-shadow: 0 0 4px rgba(78, 201, 176, 0.5);
+    }
+    .status-dot.loading { background: var(--yellow); animation: pulse 1.2s ease-in-out infinite; }
+    .status-dot.error { background: var(--red); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     /* ═══ LINT / HOVER / AUTOCOMPLETE ═══ */
     .cm-diagnostic { font-family: var(--font-mono); font-size: 12px; padding: 4px 8px; }
     .cm-diagnostic-error { border-left: 3px solid var(--red); }
     .cm-diagnostic-warning { border-left: 3px solid var(--yellow); }
-    .cm-lintRange-error { background: none; text-decoration: wavy underline var(--red); text-underline-offset: 3px; }
-    .cm-lintRange-warning { background: none; text-decoration: wavy underline var(--yellow); text-underline-offset: 3px; }
-    .cm-tooltip { background: #1e1e28 !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
-    .ach-hover-tooltip { padding: 10px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--text-primary); max-width: 480px; }
-    .ach-hover-code { background: #13131a; border-radius: 4px; padding: 8px 10px; margin: 6px 0; font-size: 12px; color: var(--green); overflow-x: auto; }
-    .ach-hover-inline { background: rgba(168, 85, 247, 0.15); border-radius: 3px; padding: 1px 5px; font-size: 11px; color: var(--accent); }
-    .cm-tooltip-autocomplete { background: #1e1e28 !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
-    .cm-tooltip-autocomplete ul li { font-family: var(--font-mono); font-size: 12px; }
-    .cm-tooltip-autocomplete ul li[aria-selected] { background: rgba(168, 85, 247, 0.2) !important; }
+    .cm-lintRange-error { background: rgba(241, 76, 76, 0.1); text-decoration: wavy underline var(--red); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .cm-lintRange-warning { background: rgba(204, 167, 0, 0.08); text-decoration: wavy underline var(--yellow); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .cm-tooltip { background: #252526 !important; border: 1px solid #454545 !important; border-radius: 3px !important; box-shadow: 0 2px 8px rgba(0,0,0,0.36) !important; }
+    .ach-hover-tooltip { padding: 8px 12px; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; color: var(--text-primary); max-width: 520px; }
+    .ach-hover-code { background: #1a1a1a; border-radius: 3px; padding: 6px 10px; margin: 4px 0; font-size: 13px; color: var(--green); }
+    .ach-hover-inline { background: rgba(168, 85, 247, 0.12); border-radius: 3px; padding: 1px 4px; font-size: 12px; color: var(--accent); }
+    .cm-tooltip-autocomplete { background: #252526 !important; border: 1px solid #454545 !important; border-radius: 3px !important; }
+    .cm-tooltip-autocomplete ul { font-family: var(--font-mono); }
+    .cm-tooltip-autocomplete ul li { padding: 2px 8px !important; font-size: 13px; }
+    .cm-tooltip-autocomplete ul li[aria-selected] { background: #062f4a !important; color: #fff; }
+    .cm-completionIcon { display: none; }
 
     /* ═══ CONTEXT MENU ═══ */
-    .context-menu { position: fixed; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; padding: 4px 0; z-index: 100; min-width: 120px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
-    .context-item { padding: 6px 14px; font-size: 12px; color: var(--text-secondary); cursor: pointer; font-family: var(--font-sans); }
-    .context-item:hover { background: rgba(168, 85, 247, 0.15); color: var(--text-primary); }
-    .context-item.danger:hover { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+    .context-menu {
+      position: fixed; background: #252526; border: 1px solid #454545;
+      border-radius: 4px; padding: 4px 0; z-index: 100;
+      min-width: 160px; box-shadow: 0 2px 8px rgba(0,0,0,0.36);
+    }
+    .context-item {
+      padding: 4px 24px; font-family: var(--font-sans); font-size: 13px;
+      color: var(--text-primary); cursor: pointer;
+    }
+    .context-item:hover { background: #062f4a; }
+    .context-item.danger:hover { background: rgba(241, 76, 76, 0.15); color: var(--red); }
 
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    /* ═══ SCROLLBARS ═══ */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #4a4a58; }
+    ::-webkit-scrollbar-thumb { background: rgba(121, 121, 121, 0.3); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(121, 121, 121, 0.5); border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-corner { background: transparent; }
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
-      .sidebar { display: none; }
-      .main-area { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+      .activitybar, .sidebar { display: none; }
+      .editor-output-split { flex-direction: column; }
+      .output-panel { width: 100%; min-width: 0; }
+      .resize-handle { display: none; }
     }
   </style>
 </head>
 
 <body>
   <div class="shell">
+    <!-- TITLE BAR -->
     <div class="titlebar">
       <div class="titlebar-left">
         <div class="window-dots"><span class="dot-close"></span><span class="dot-min"></span><span class="dot-max"></span></div>
-        <div class="titlebar-title"><em>ach</em>&ensp;playground</div>
       </div>
-      <div class="titlebar-links">
-        <a href="https://docs.achrony.me" target="_blank">docs</a>
-        <a href="https://github.com/achronyme/achronyme" target="_blank">github</a>
-        <a href="/">home</a>
+      <div class="titlebar-center"><em>Achronyme</em> &mdash; Playground</div>
+      <div class="titlebar-right">
+        <a href="https://docs.achrony.me" target="_blank">Docs</a>
+        <a href="https://github.com/achronyme/achronyme" target="_blank">GitHub</a>
+        <a href="/">Home</a>
       </div>
     </div>
 
+    <!-- ACTIVITY BAR -->
+    <div class="activitybar">
+      <div class="activity-icon active" title="Explorer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v13h18V7M3 7l4-4h6l2 2h7v2"/><path d="M8 14h8M8 11h5"/></svg>
+      </div>
+      <div class="activity-icon" title="Run" id="activity-run">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l14 9-14 9V3z"/></svg>
+      </div>
+      <div class="activity-spacer"></div>
+      <div class="activity-icon" title="Settings" style="margin-bottom: 4px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
     <div class="sidebar">
-      <div class="sidebar-header">
+      <div class="sidebar-title">
         <span>Explorer</span>
-        <button class="sidebar-btn" id="new-file-btn" title="New File">+</button>
+        <div class="sidebar-actions">
+          <button class="sidebar-btn" id="new-file-btn" title="New File">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 3v10M3 8h10"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar-section" id="section-files">
+        <svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span id="project-name">Project</span>
       </div>
       <div class="file-tree" id="file-tree"></div>
       <div class="sidebar-footer">
         <select class="template-select" id="template-select">
           <option value="">Load Template...</option>
-          <option value="hello-world">Hello World (multi-file)</option>
-          <option value="merkle-proof">Merkle Proof (ZK)</option>
-          <option value="voting-circuit">Voting Circuit (ZK)</option>
+          <option value="hello-world">Hello World</option>
+          <option value="merkle-proof">Merkle Proof</option>
+          <option value="voting-circuit">Voting Circuit</option>
         </select>
       </div>
     </div>
 
+    <!-- TAB BAR -->
     <div class="tabbar" id="tabbar">
       <div class="tab-actions">
         <button class="run-btn" id="run-btn">
@@ -202,34 +426,48 @@
       </div>
     </div>
 
+    <!-- MAIN AREA -->
     <div class="main-area">
-      <div class="editor-panel">
-        <div id="editor-container"></div>
+      <div class="breadcrumb" id="breadcrumb">
+        <span class="breadcrumb-item">src</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-item">main.ach</span>
       </div>
-      <div class="output-panel">
-        <div class="output-header">
-          <span class="output-tab active">output</span>
-          <button class="output-clear" id="clear-btn">clear</button>
+      <div class="editor-output-split">
+        <div class="editor-panel">
+          <div id="editor-container"></div>
         </div>
-        <div class="output-scroll" id="output">
-          <div class="output-line info">// Select a template to get started</div>
-          <span class="output-cursor"></span>
+        <div class="resize-handle" id="resize-handle"></div>
+        <div class="output-panel" id="output-panel">
+          <div class="output-header">
+            <div class="output-tabs">
+              <span class="output-tab active">Terminal</span>
+              <span class="output-tab">Problems</span>
+            </div>
+            <button class="output-clear" id="clear-btn">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 2l12 12M14 2L2 14"/></svg>
+            </button>
+          </div>
+          <div class="output-scroll" id="output">
+            <span class="output-cursor"></span>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- STATUS BAR -->
     <div class="statusbar">
       <div class="statusbar-left">
-        <span class="status-item">achronyme playground</span>
-        <span class="status-item" id="status-line">Ln 1, Col 1</span>
-      </div>
-      <div class="statusbar-right">
-        <span class="status-item" id="lsp-status" style="opacity:0.4">LSP...</span>
-        <span class="status-item">v0.1.0-beta.17</span>
         <span class="status-item" id="server-status">
           <span class="status-dot" id="server-dot"></span>
           <span id="server-label">Server</span>
         </span>
+        <span class="status-item" id="lsp-status" style="opacity:0.5">LSP</span>
+      </div>
+      <div class="statusbar-right">
+        <span class="status-item" id="status-line">Ln 1, Col 1</span>
+        <span class="status-item">Achronyme</span>
+        <span class="status-item">UTF-8</span>
       </div>
     </div>
   </div>
@@ -259,6 +497,34 @@
     const statusLine = document.getElementById("status-line");
     const serverDot = document.getElementById("server-dot");
     const serverLabel = document.getElementById("server-label");
+    const breadcrumb = document.getElementById("breadcrumb");
+    const resizeHandle = document.getElementById("resize-handle");
+    const outputPanel = document.getElementById("output-panel");
+
+    // ═══ RESIZE HANDLE ═══
+    let resizing = false;
+    resizeHandle.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      resizing = true;
+      resizeHandle.classList.add("dragging");
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!resizing) return;
+      const split = resizeHandle.parentElement;
+      const rect = split.getBoundingClientRect();
+      const pct = ((e.clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.max(25, Math.min(80, pct));
+      outputPanel.style.width = (100 - clamped) + "%";
+    });
+    document.addEventListener("mouseup", () => {
+      if (!resizing) return;
+      resizing = false;
+      resizeHandle.classList.remove("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    });
 
     // ═══ EDITOR EXTENSIONS ═══
     function editorExtensions() {
@@ -278,12 +544,7 @@
         achLinter,
         achAutocompletion,
         achHover,
-        keymap.of([
-          indentWithTab,
-          ...closeBracketsKeymap,
-          ...defaultKeymap,
-          ...historyKeymap,
-        ]),
+        keymap.of([indentWithTab, ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
         runKeymap,
         cursorTracker,
         autoSaveListener,
@@ -291,13 +552,10 @@
       ];
     }
 
-    const runKeymap = keymap.of([{
-      key: "Ctrl-Enter", mac: "Cmd-Enter",
-      run: () => { runCode(); return true; },
-    }, {
-      key: "Ctrl-s", mac: "Cmd-s",
-      run: () => { saveActiveFile(); return true; },
-    }]);
+    const runKeymap = keymap.of([
+      { key: "Ctrl-Enter", mac: "Cmd-Enter", run: () => { runCode(); return true; } },
+      { key: "Ctrl-s", mac: "Cmd-s", run: () => { saveActiveFile(); return true; } },
+    ]);
 
     const cursorTracker = EditorView.updateListener.of((update) => {
       if (update.selectionSet || update.docChanged) {
@@ -310,13 +568,10 @@
     let saveTimeout = null;
     const autoSaveListener = EditorView.updateListener.of((update) => {
       if (update.docChanged && session.isProjectMode()) {
-        const tab = tabs.getActiveTab();
-        if (tab) {
-          const content = update.state.doc.toString();
-          const idx = tabs.getActiveIndex();
-          tabs.setModified(idx, tabs.isModified(idx, content));
-          renderTabs();
-        }
+        const idx = tabs.getActiveIndex();
+        const content = update.state.doc.toString();
+        tabs.setModified(idx, tabs.isModified(idx, content));
+        renderTabs();
         clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => saveActiveFile(), 1000);
       }
@@ -324,20 +579,18 @@
 
     const editorTheme = EditorView.theme({
       "&": { backgroundColor: "var(--bg-editor)" },
-      ".cm-content": { caretColor: "var(--accent)", fontFamily: "var(--font-mono)" },
-      ".cm-gutters": { backgroundColor: "#16161b", borderRight: "1px solid var(--border)", color: "#4a4a58" },
+      ".cm-content": { caretColor: "var(--text-bright)", fontFamily: "var(--font-mono)", padding: "4px 0" },
+      ".cm-gutters": { backgroundColor: "var(--bg-editor)", borderRight: "none", color: "var(--text-muted)" },
       ".cm-activeLineGutter": { color: "var(--text-secondary)", backgroundColor: "transparent" },
-      ".cm-activeLine": { backgroundColor: "rgba(168, 85, 247, 0.04)" },
-      "&.cm-focused .cm-cursor": { borderLeftColor: "var(--accent)" },
+      ".cm-activeLine": { backgroundColor: "rgba(255,255,255,0.02)" },
+      "&.cm-focused .cm-cursor": { borderLeftColor: "var(--text-bright)", borderLeftWidth: "2px" },
       "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": { backgroundColor: "rgba(168, 85, 247, 0.25) !important" },
+      ".cm-foldGutter": { width: "12px" },
     }, { dark: true });
 
     // ═══ EDITOR INSTANCE ═══
     let view = new EditorView({
-      state: EditorState.create({
-        doc: "// Select a template from the sidebar to get started\n",
-        extensions: editorExtensions(),
-      }),
+      state: EditorState.create({ doc: "", extensions: editorExtensions() }),
       parent: document.getElementById("editor-container"),
     });
 
@@ -352,7 +605,24 @@
       output.scrollTop = output.scrollHeight;
     }
 
+    // ═══ BREADCRUMB ═══
+    function updateBreadcrumb(path) {
+      if (!path) { breadcrumb.innerHTML = ""; return; }
+      const parts = path.split("/");
+      breadcrumb.innerHTML = parts.map((p, i) =>
+        (i > 0 ? '<span class="breadcrumb-sep">&rsaquo;</span>' : "") +
+        `<span class="breadcrumb-item">${p}</span>`
+      ).join("");
+    }
+
     // ═══ TAB RENDERING ═══
+    function fileTabIcon(path) {
+      if (path.endsWith(".toml")) {
+        return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4.5v7l6 3 6-3v-7L8 1.5z" stroke="#8b8b9a" stroke-width="1.2"/><circle cx="8" cy="8" r="1.5" fill="#8b8b9a"/></svg>`;
+      }
+      return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L13 8L8 14L3 8L8 2Z" fill="none" stroke="#a855f7" stroke-width="1.2"/></svg>`;
+    }
+
     function renderTabs() {
       const actions = tabbar.querySelector(".tab-actions");
       tabbar.innerHTML = "";
@@ -362,51 +632,50 @@
         const tab = document.createElement("div");
         tab.className = "tab" + (i === tabs.getActiveIndex() ? " active" : "") + (t.modified ? " modified" : "");
 
+        const icon = document.createElement("span");
+        icon.className = "tab-icon";
+        icon.innerHTML = fileTabIcon(t.path);
+
+        const label = document.createElement("span");
+        label.className = "tab-label";
+        label.textContent = t.path.split("/").pop();
+        label.title = t.path;
+
         const dot = document.createElement("span");
         dot.className = "tab-dot";
 
-        const name = document.createElement("span");
-        name.textContent = t.path.split("/").pop();
-        name.title = t.path;
-
         const close = document.createElement("button");
         close.className = "tab-close";
-        close.textContent = "\u00D7";
-        close.addEventListener("click", (e) => {
-          e.stopPropagation();
-          closeTabAt(i);
-        });
+        close.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+        close.addEventListener("click", (e) => { e.stopPropagation(); closeTabAt(i); });
 
+        tab.appendChild(icon);
+        tab.appendChild(label);
         tab.appendChild(dot);
-        tab.appendChild(name);
         tab.appendChild(close);
         tab.addEventListener("click", () => switchToTab(i));
         tabbar.appendChild(tab);
       }
 
       tabbar.appendChild(actions);
+
+      // Update breadcrumb
+      const active = tabs.getActiveTab();
+      updateBreadcrumb(active?.path || "");
     }
 
     // ═══ FILE OPERATIONS ═══
     async function openFile(path) {
       const existing = tabs.findTab(path);
-      if (existing >= 0) {
-        switchToTab(existing);
-        return;
-      }
-
+      if (existing >= 0) { switchToTab(existing); return; }
       try {
         const content = await session.readFile(path);
         tabs.saveEditorState(view.state);
         tabs.openTab(path, content, editorExtensions());
-
-        const tab = tabs.getActiveTab();
-        view.setState(tab.editorState);
+        view.setState(tabs.getActiveTab().editorState);
         renderTabs();
         refreshFileTree();
-      } catch (e) {
-        appendOutput(`Error: ${e.message}`, "error");
-      }
+      } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
     }
 
     function switchToTab(index) {
@@ -421,13 +690,10 @@
 
     function closeTabAt(index) {
       tabs.saveEditorState(view.state);
-      const newIdx = tabs.closeTab(index);
+      tabs.closeTab(index);
       const tab = tabs.getActiveTab();
-      if (tab) {
-        view.setState(tab.editorState);
-      } else {
-        view.setState(EditorState.create({ doc: "", extensions: editorExtensions() }));
-      }
+      if (tab) { view.setState(tab.editorState); }
+      else { view.setState(EditorState.create({ doc: "", extensions: editorExtensions() })); }
       renderTabs();
     }
 
@@ -440,9 +706,7 @@
         await session.writeFile(tab.path, content);
         tabs.markSaved(tabs.getActiveIndex(), content);
         renderTabs();
-      } catch (e) {
-        appendOutput(`Save error: ${e.message}`, "error");
-      }
+      } catch (e) { appendOutput(`Save error: ${e.message}`, "error"); }
     }
 
     async function refreshFileTree() {
@@ -458,114 +722,73 @@
             tabs.removeTabByPath(path);
             const tab = tabs.getActiveTab();
             if (tab) view.setState(tab.editorState);
-            renderTabs();
-            refreshFileTree();
+            renderTabs(); refreshFileTree();
           },
           onFileRename: async (path) => {
             const newName = prompt("New name:", path);
             if (!newName || newName === path) return;
             await session.renameFile(path, newName);
             tabs.updateTabPath(path, newName);
-            renderTabs();
-            refreshFileTree();
+            renderTabs(); refreshFileTree();
           },
         });
-      } catch (e) {
-        console.warn("file tree refresh failed:", e);
-      }
+      } catch (e) { console.warn("file tree refresh:", e); }
     }
 
     // ═══ RUN ═══
     let running = false;
     async function runCode() {
       if (running) return;
-
-      // Auto-save all modified files first
-      if (session.isProjectMode()) {
-        await saveActiveFile();
-      }
-
+      if (session.isProjectMode()) await saveActiveFile();
       clearOutput();
-      running = true;
-      runBtn.disabled = true;
-      serverDot.classList.add("loading");
-      serverLabel.textContent = "Running...";
-
+      running = true; runBtn.disabled = true;
+      serverDot.classList.add("loading"); serverLabel.textContent = "Running...";
       try {
         const source = session.isProjectMode() ? null : view.state.doc.toString();
-        if (!session.isProjectMode() && (!source || !source.trim())) {
-          appendOutput("// Nothing to run", "info");
-          return;
-        }
+        if (!session.isProjectMode() && (!source || !source.trim())) { appendOutput("// Nothing to run", "info"); return; }
         const data = await session.runProject(source);
-
-        if (data.output) {
-          for (const line of data.output.split("\n")) {
-            if (line) appendOutput(line, "stdout");
-          }
-        }
-        if (!data.success) {
-          if (data.output) appendOutput("", "stdout");
-          appendOutput(data.error, "error");
-        }
+        if (data.output) { for (const line of data.output.split("\n")) { if (line) appendOutput(line, "stdout"); } }
+        if (!data.success) { if (data.output) appendOutput("", "stdout"); appendOutput(data.error, "error"); }
         appendOutput("", "stdout");
-        appendOutput(`[${data.time_ms}ms server]`, "timing");
+        appendOutput(`[${data.time_ms}ms]`, "timing");
       } catch (e) {
         appendOutput(e.message, "error");
-        serverDot.classList.add("error");
-        serverLabel.textContent = "Offline";
-        return;
+        serverDot.classList.add("error"); serverLabel.textContent = "Offline"; return;
       } finally {
-        running = false;
-        runBtn.disabled = false;
-        serverDot.classList.remove("loading");
-        serverLabel.textContent = "Server";
+        running = false; runBtn.disabled = false;
+        serverDot.classList.remove("loading"); serverLabel.textContent = "Server";
       }
     }
 
-    // ═══ TEMPLATE LOADING ═══
+    // ═══ TEMPLATE ═══
     async function loadTemplate(name) {
       if (!name) return;
       try {
-        clearOutput();
-        appendOutput("// Creating project...", "info");
-
-        // Delete old session if any
-        if (session.isProjectMode()) {
-          await session.deleteSession();
-        }
+        clearOutput(); appendOutput("$ ach init --template " + name, "info");
+        if (session.isProjectMode()) await session.deleteSession();
         tabs.resetTabs();
-
         const data = await session.createSession(name);
-        appendOutput(`// Project created (${data.files.length} files)`, "info");
-
+        const projName = name.replace(/-/g, "_");
+        document.getElementById("project-name").textContent = projName.toUpperCase();
+        appendOutput(`Project created (${data.files.length} files)`, "info");
+        appendOutput("", "info");
         await refreshFileTree();
-
-        // Open the entry file
         const entry = data.files.find(f => f.path.endsWith("main.ach")) || data.files[0];
         if (entry) await openFile(entry.path);
-
         templateSelect.value = "";
-      } catch (e) {
-        appendOutput(`Template error: ${e.message}`, "error");
-      }
+      } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
     }
 
     // ═══ NEW FILE ═══
     async function createNewFile() {
-      if (!session.isProjectMode()) {
-        appendOutput("// Create a project first (select a template)", "info");
-        return;
-      }
+      if (!session.isProjectMode()) { appendOutput("Select a template first", "info"); return; }
       const name = promptNewFile();
       if (!name) return;
       try {
         await session.writeFile(name, `// ${name.split("/").pop()}\n`);
         await refreshFileTree();
         await openFile(name);
-      } catch (e) {
-        appendOutput(`Error: ${e.message}`, "error");
-      }
+      } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
     }
 
     // ═══ EVENTS ═══
@@ -573,6 +796,7 @@
     clearBtn.addEventListener("click", clearOutput);
     templateSelect.addEventListener("change", (e) => loadTemplate(e.target.value));
     newFileBtn.addEventListener("click", createNewFile);
+    document.getElementById("activity-run").addEventListener("click", runCode);
 
     // ═══ INIT ═══
     session.healthCheck().then(ok => {
@@ -584,7 +808,6 @@
       if (el) { el.textContent = "LSP"; el.style.opacity = "0.85"; }
     });
 
-    // Auto-load hello-world template on first visit
     loadTemplate("hello-world");
   </script>
 </body>
