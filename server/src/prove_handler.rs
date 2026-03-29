@@ -1,25 +1,32 @@
-//! Server-side prove handler — simplified version of cli/src/prove_handler.rs.
+//! Server-side prove handler — supports R1CS (Groth16) and Plonkish (Halo2).
 //!
-//! No CLI dependencies (no Styler, ErrorFormat, colored). Just compiles
-//! ProveIR, verifies constraints, and generates Groth16 proofs.
+//! Simplified version of cli/src/prove_handler.rs without CLI dependencies.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use compiler::plonkish_backend::PlonkishCompiler;
 use compiler::r1cs_backend::R1CSCompiler;
 use memory::FieldElement;
 use vm::{ProveError, ProveHandler, ProveResult, VerifyHandler};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProveBackend {
+    R1cs,
+    Plonkish,
+}
+
 pub struct ServerProveHandler {
     cache_dir: PathBuf,
+    pub backend: ProveBackend,
 }
 
 impl ServerProveHandler {
-    pub fn new() -> Self {
+    pub fn new(backend: ProveBackend) -> Self {
         let cache_dir = std::env::var("HOME")
             .map(|h| PathBuf::from(h).join(".achronyme").join("cache"))
             .unwrap_or_else(|_| std::env::temp_dir().join("achronyme-cache"));
-        Self { cache_dir }
+        Self { cache_dir, backend }
     }
 }
 
@@ -79,21 +86,52 @@ impl ProveHandler for ServerProveHandler {
             inputs.insert(cap.name.clone(), *fe);
         }
 
-        // 5. Compile to R1CS
+        match self.backend {
+            ProveBackend::R1cs => self.prove_r1cs(&program, &inputs),
+            ProveBackend::Plonkish => self.prove_plonkish(&program, &inputs),
+        }
+    }
+}
+
+impl ServerProveHandler {
+    fn prove_r1cs(
+        &self,
+        program: &ir::IrProgram,
+        inputs: &HashMap<String, FieldElement>,
+    ) -> Result<ProveResult, ProveError> {
         let mut r1cs = R1CSCompiler::new();
-        let proven = ir::passes::bool_prop::compute_proven_boolean(&program);
+        let proven = ir::passes::bool_prop::compute_proven_boolean(program);
         r1cs.set_proven_boolean(proven);
         let witness = r1cs
-            .compile_ir_with_witness(&program, &inputs)
+            .compile_ir_with_witness(program, inputs)
             .map_err(|e| ProveError::Compilation(format!("{e}")))?;
 
-        // 6. Verify constraints
         r1cs.cs
             .verify(&witness)
             .map_err(|e| ProveError::Verification(format!("{e}")))?;
 
-        // 7. Generate Groth16 proof
         proving::groth16::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
+            .map_err(ProveError::ProofGeneration)
+    }
+
+    fn prove_plonkish(
+        &self,
+        program: &ir::IrProgram,
+        inputs: &HashMap<String, FieldElement>,
+    ) -> Result<ProveResult, ProveError> {
+        let mut compiler = PlonkishCompiler::new();
+        let proven = ir::passes::bool_prop::compute_proven_boolean(program);
+        compiler.set_proven_boolean(proven);
+        compiler
+            .compile_ir_with_witness(program, inputs)
+            .map_err(|e| ProveError::Compilation(format!("{e}")))?;
+
+        compiler
+            .system
+            .verify()
+            .map_err(|e| ProveError::Verification(format!("plonkish: {e}")))?;
+
+        proving::halo2_proof::generate_plonkish_proof(compiler, &self.cache_dir)
             .map_err(ProveError::ProofGeneration)
     }
 }

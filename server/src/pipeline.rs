@@ -79,19 +79,26 @@ pub struct DiagnosticInfo {
 /// `budget` controls the maximum number of VM instructions (0 = unlimited).
 /// `max_heap` controls the maximum heap size in bytes.
 pub fn run_source(source: &str, budget: u64, max_heap: usize) -> RunOutput {
-    run_source_with_base_path(source, budget, max_heap, None)
+    run_source_with_base_path(
+        source,
+        budget,
+        max_heap,
+        None,
+        crate::prove_handler::ProveBackend::R1cs,
+    )
 }
 
-/// Compile and run with an optional base_path for import resolution.
+/// Compile and run with an optional base_path and prove backend.
 pub fn run_source_with_base_path(
     source: &str,
     budget: u64,
     max_heap: usize,
     base_path: Option<std::path::PathBuf>,
+    backend: crate::prove_handler::ProveBackend,
 ) -> RunOutput {
     OUTPUT.with(|buf| buf.borrow_mut().clear());
 
-    match run_inner(source, budget, max_heap, base_path) {
+    match run_inner(source, budget, max_heap, base_path, backend) {
         Ok(()) => {
             let output = OUTPUT.with(|buf| buf.borrow().join("\n"));
             RunOutput {
@@ -116,6 +123,7 @@ fn run_inner(
     budget: u64,
     max_heap: usize,
     base_path: Option<std::path::PathBuf>,
+    backend: crate::prove_handler::ProveBackend,
 ) -> Result<(), String> {
     // 1. Compile
     let mut compiler = Compiler::new();
@@ -141,7 +149,7 @@ fn run_inner(
     vm.heap.max_heap_bytes = max_heap;
 
     // Register prove/verify handlers for prove {} blocks
-    let handler = Rc::new(ServerProveHandler::new());
+    let handler = Rc::new(ServerProveHandler::new(backend));
     vm.prove_handler = Some(Box::new(SharedHandler(Rc::clone(&handler))));
     vm.verify_handler = Some(Box::new(SharedHandler(handler)));
 
