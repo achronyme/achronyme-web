@@ -207,6 +207,37 @@
     .status-dot.error { background: var(--red); box-shadow: 0 0 6px rgba(248, 113, 113, 0.5); }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+    /* ═══ LINT DIAGNOSTICS ═══ */
+    .cm-diagnostic { font-family: var(--font-mono); font-size: 12px; padding: 4px 8px; }
+    .cm-diagnostic-error { border-left: 3px solid var(--red); }
+    .cm-diagnostic-warning { border-left: 3px solid var(--yellow); }
+    .cm-diagnostic-info { border-left: 3px solid var(--accent); }
+    .cm-lint-marker { width: 6px !important; }
+    .cm-lintRange-error { background: none; text-decoration: wavy underline var(--red); text-underline-offset: 3px; }
+    .cm-lintRange-warning { background: none; text-decoration: wavy underline var(--yellow); text-underline-offset: 3px; }
+
+    /* ═══ HOVER TOOLTIP ═══ */
+    .cm-tooltip { background: #1e1e28 !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
+    .ach-hover-tooltip {
+      padding: 10px 14px; font-family: var(--font-mono); font-size: 12px;
+      line-height: 1.5; color: var(--text-primary); max-width: 480px;
+    }
+    .ach-hover-code {
+      background: #13131a; border-radius: 4px; padding: 8px 10px;
+      margin: 6px 0; font-size: 12px; color: var(--green); overflow-x: auto;
+    }
+    .ach-hover-inline {
+      background: rgba(168, 85, 247, 0.15); border-radius: 3px;
+      padding: 1px 5px; font-size: 11px; color: var(--accent);
+    }
+
+    /* ═══ AUTOCOMPLETE ═══ */
+    .cm-tooltip-autocomplete { background: #1e1e28 !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
+    .cm-tooltip-autocomplete ul li { font-family: var(--font-mono); font-size: 12px; }
+    .cm-tooltip-autocomplete ul li[aria-selected] { background: rgba(168, 85, 247, 0.2) !important; }
+    .cm-completionLabel { color: var(--text-primary); }
+    .cm-completionDetail { color: var(--text-muted); font-size: 11px; }
+
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -273,6 +304,7 @@
         <span class="status-item" id="status-line">Ln 1, Col 1</span>
       </div>
       <div class="statusbar-right">
+        <span class="status-item" id="lsp-status" style="opacity:0.4">LSP...</span>
         <span class="status-item">v0.1.0-beta.17</span>
         <span class="status-item" id="server-status">
           <span class="status-dot" id="server-dot"></span>
@@ -291,6 +323,7 @@
     import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
     import { highlightSelectionMatches } from "@codemirror/search";
     import { achronymeLanguage } from "../lib/achronyme-lang.js";
+    import { initLspWasm, achLinter, achAutocompletion, achHover } from "../lib/achronyme-lsp.js";
 
     // ═══════════════════════════════════════════════════════════════
     // EXAMPLES (from actual Achronyme test files)
@@ -495,6 +528,9 @@ print("Proof generated and verified!")
           editorTheme,
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
           achronymeLanguage,
+          achLinter,
+          achAutocompletion,
+          achHover,
           keymap.of([
             indentWithTab,
             ...closeBracketsKeymap,
@@ -614,6 +650,12 @@ print("Proof generated and verified!")
     }).catch(() => {
       serverDot.classList.add("error");
       serverLabel.textContent = "Offline";
+    });
+
+    // Load LSP WASM (non-blocking — extensions degrade gracefully before load)
+    initLspWasm().then(() => {
+      const lspStatus = document.getElementById("lsp-status");
+      if (lspStatus) lspStatus.textContent = "LSP";
     });
   </script>
 </body>
