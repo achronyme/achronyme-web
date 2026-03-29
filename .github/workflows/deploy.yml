@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
-    name: Deploy to Cloudflare Pages
+  frontend:
+    name: Deploy Frontend
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -22,3 +22,16 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  server:
+    name: Deploy ach-server
+    runs-on: self-hosted
+    steps:
+      - name: Build and restart
+        run: |
+          cd /opt/achronyme-web
+          git pull
+          source ~/.cargo/env
+          cd server
+          cargo build --release
+          sudo systemctl restart ach-server
