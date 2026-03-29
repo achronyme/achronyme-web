@@ -207,17 +207,6 @@
     .status-dot.error { background: var(--red); box-shadow: 0 0 6px rgba(248, 113, 113, 0.5); }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    /* ═══ LOADING ═══ */
-    .loading-overlay {
-      position: fixed; inset: 0; background: var(--bg-editor);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 20px; z-index: 100; transition: opacity 0.4s ease, visibility 0.4s;
-    }
-    .loading-overlay.hidden { opacity: 0; visibility: hidden; }
-    .loading-spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 12px; color: var(--text-muted); letter-spacing: 0.05em; }
-
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -226,11 +215,6 @@
 </head>
 
 <body>
-  <div class="loading-overlay" id="loading">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Initializing Achronyme VM...</div>
-  </div>
-
   <div class="shell">
     <div class="titlebar">
       <div class="titlebar-left">
@@ -260,7 +244,7 @@
           <option value="field">Field Arithmetic</option>
           <option value="prove">Prove Block (ZK)</option>
         </select>
-        <button class="run-btn" id="run-btn" disabled>
+        <button class="run-btn" id="run-btn">
           <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
           Run
         </button>
@@ -290,9 +274,9 @@
       </div>
       <div class="statusbar-right">
         <span class="status-item">v0.1.0-beta.17</span>
-        <span class="status-item" id="wasm-status">
-          <span class="status-dot loading" id="wasm-dot"></span>
-          <span id="wasm-label">Loading WASM...</span>
+        <span class="status-item" id="server-status">
+          <span class="status-dot" id="server-dot"></span>
+          <span id="server-label">Server</span>
         </span>
       </div>
     </div>
@@ -422,9 +406,9 @@ print("Int::MAX    = " + Int::MAX.to_string())
         name: "prove_demo.ach",
         code: `// Zero-Knowledge Prove Block
 //
-// Provers (Groth16/halo2) require native code
-// and don't run in WASM. This shows the syntax
-// and compilation — the block will error at runtime.
+// Generates a real Groth16 proof server-side.
+// The prover runs natively on the server —
+// no WASM limitations.
 
 let secret = 0p42
 let public_hash = poseidon(secret, 0p0)
@@ -433,8 +417,10 @@ print("Secret:      " + secret.to_string())
 print("Public hash: " + public_hash.to_string())
 print("")
 
-// This compiles to ProveIR constraints but
-// can't generate a proof in the browser
+// This generates a real ZK proof:
+// - Compiles to R1CS constraints
+// - Runs Groth16 trusted setup
+// - Generates proof + verification key
 prove demo(public_hash: Public) {
     assert_eq(
         poseidon(secret, 0p0),
@@ -443,7 +429,7 @@ prove demo(public_hash: Public) {
     )
 }
 
-print("Proof generated!")
+print("Proof generated and verified!")
 `
       }
     };
@@ -457,11 +443,12 @@ print("Proof generated!")
     const exampleSelect = document.getElementById("examples");
     const tabName = document.getElementById("tab-name");
     const statusLine = document.getElementById("status-line");
-    const wasmDot = document.getElementById("wasm-dot");
-    const wasmLabel = document.getElementById("wasm-label");
-    const loadingEl = document.getElementById("loading");
+    const serverDot = document.getElementById("server-dot");
+    const serverLabel = document.getElementById("server-label");
 
-    let wasmRun = null;
+    // API base: dev server on :3100, production on same origin
+    const IS_DEV = window.location.port === "4321";
+    const API_BASE = IS_DEV ? "http://localhost:3100" : "";
 
     // ═══════════════════════════════════════════════════════════════
     // CODEMIRROR EDITOR
@@ -541,8 +528,10 @@ print("Proof generated!")
     // ═══════════════════════════════════════════════════════════════
     // RUN
     // ═══════════════════════════════════════════════════════════════
-    function runCode() {
-      if (!wasmRun) return;
+    let running = false;
+
+    async function runCode() {
+      if (running) return;
 
       clearOutput();
       const source = view.state.doc.toString();
@@ -551,32 +540,50 @@ print("Proof generated!")
         return;
       }
 
-      const t0 = performance.now();
-      let result;
+      running = true;
+      runBtn.disabled = true;
+      serverDot.classList.add("loading");
+      serverLabel.textContent = "Running...";
+
       try {
-        result = wasmRun(source);
-      } catch (e) {
-        appendOutput(`Fatal: ${e.message || e}`, "error");
-        return;
-      }
-      const elapsed = (performance.now() - t0).toFixed(1);
+        const res = await fetch(`${API_BASE}/api/run`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source }),
+        });
 
-      // Display captured output from the Rust thread_local buffer
-      if (result.output) {
-        for (const line of result.output.split("\n")) {
-          appendOutput(line, "stdout");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          appendOutput(err.error || `Server error (${res.status})`, "error");
+          return;
         }
+
+        const data = await res.json();
+
+        if (data.output) {
+          for (const line of data.output.split("\n")) {
+            if (line) appendOutput(line, "stdout");
+          }
+        }
+
+        if (!data.success) {
+          if (data.output) appendOutput("", "stdout");
+          appendOutput(data.error, "error");
+        }
+
+        appendOutput("", "stdout");
+        appendOutput(`[${data.time_ms}ms server]`, "timing");
+      } catch (e) {
+        appendOutput("Server unavailable — is ach-server running?", "error");
+        serverDot.classList.add("error");
+        serverLabel.textContent = "Offline";
+        return;
+      } finally {
+        running = false;
+        runBtn.disabled = false;
+        serverDot.classList.remove("loading");
+        serverLabel.textContent = "Server";
       }
-
-      if (!result.success) {
-        if (result.output) appendOutput("", "stdout");
-        appendOutput(result.error, "error");
-      }
-
-      appendOutput("", "stdout");
-      appendOutput(`[${elapsed}ms]`, "timing");
-
-      result.free();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -598,32 +605,16 @@ print("Proof generated!")
     clearBtn.addEventListener("click", clearOutput);
     exampleSelect.addEventListener("change", (e) => loadExample(e.target.value));
 
-    // ═══════════════════════════════════════════════════════════════
-    // INIT WASM
-    // ═══════════════════════════════════════════════════════════════
-    async function initWasm() {
-      try {
-        const wasmJsUrl = new URL("/wasm/achronyme_wasm.js", window.location.origin).href;
-        const wasmBinUrl = new URL("/wasm/achronyme_wasm_bg.wasm", window.location.origin).href;
-        const jsModule = await import(/* @vite-ignore */ wasmJsUrl);
-        await jsModule.default(wasmBinUrl);
-        wasmRun = jsModule.run;
-
-        wasmDot.classList.remove("loading");
-        wasmLabel.textContent = "WASM Ready";
-        runBtn.disabled = false;
-        loadingEl.classList.add("hidden");
-      } catch (e) {
-        wasmDot.classList.remove("loading");
-        wasmDot.classList.add("error");
-        wasmLabel.textContent = "WASM Failed";
-        loadingEl.querySelector(".loading-text").textContent = `Failed to load: ${e.message}`;
-        loadingEl.querySelector(".loading-spinner").style.display = "none";
-        console.error("WASM init failed:", e);
+    // Health check — verify server is reachable
+    fetch(`${API_BASE}/health`).then(r => {
+      if (r.ok) {
+        serverDot.classList.remove("loading", "error");
+        serverLabel.textContent = "Server";
       }
-    }
-
-    initWasm();
+    }).catch(() => {
+      serverDot.classList.add("error");
+      serverLabel.textContent = "Offline";
+    });
   </script>
 </body>
 </html>
