@@ -1,0 +1,28 @@
+[package]
+name = "ach-server"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0"
+
+[dependencies]
+# Achronyme crates (from main repo)
+compiler = { git = "https://github.com/achronyme/achronyme" }
+vm = { git = "https://github.com/achronyme/achronyme" }
+memory = { git = "https://github.com/achronyme/achronyme" }
+ir = { git = "https://github.com/achronyme/achronyme" }
+constraints = { git = "https://github.com/achronyme/achronyme" }
+achronyme-std = { git = "https://github.com/achronyme/achronyme" }
+achronyme-parser = { git = "https://github.com/achronyme/achronyme" }
+
+# Web framework
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "limit", "timeout"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
