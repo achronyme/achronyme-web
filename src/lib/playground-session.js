@@ -2,7 +2,7 @@
 // Manages workspace sessions, file CRUD, and run operations.
 
 const IS_DEV = typeof window !== 'undefined' && window.location.port === "4321";
-const API_BASE = IS_DEV ? "http://localhost:3100" : "";
+const API_BASE = IS_DEV ? "http://localhost:3100" : "https://play.achrony.me";
 
 let sessionId = null;
 
