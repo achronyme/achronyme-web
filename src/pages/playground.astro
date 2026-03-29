@@ -426,10 +426,10 @@
       <div class="file-tree" id="file-tree"></div>
       <div class="sidebar-footer">
         <select class="template-select" id="template-select">
-          <option value="">Load Template...</option>
-          <option value="hello-world">Hello World</option>
-          <option value="merkle-proof">Merkle Proof</option>
-          <option value="voting-circuit">Voting Circuit</option>
+          <option value="">ach init --template</option>
+          <option value="circuit">circuit</option>
+          <option value="vm">vm</option>
+          <option value="prove">prove</option>
         </select>
       </div>
     </div>
@@ -783,13 +783,13 @@
     async function loadTemplate(name) {
       if (!name) return;
       try {
-        clearOutput(); appendOutput("$ ach init --template " + name, "info");
+        clearOutput();
+        appendOutput("$ ach init " + name + " --template " + name, "info");
         if (session.isProjectMode()) await session.deleteSession();
         tabs.resetTabs();
         const data = await session.createSession(name);
-        const projName = name.replace(/-/g, "_");
-        document.getElementById("project-name").textContent = projName.toUpperCase();
-        appendOutput(`Project created (${data.files.length} files)`, "info");
+        document.getElementById("project-name").textContent = name.toUpperCase();
+        appendOutput(`Created project \`${name}\` with template \`${name}\``, "info");
         appendOutput("", "info");
         await refreshFileTree();
         const entry = data.files.find(f => f.path.endsWith("main.ach")) || data.files[0];
@@ -827,7 +827,7 @@
       if (el) { el.textContent = "LSP"; el.style.opacity = "0.85"; }
     });
 
-    loadTemplate("hello-world");
+    loadTemplate("vm");
   </script>
 </body>
 </html>
