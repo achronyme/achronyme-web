@@ -384,8 +384,7 @@ print("-5 + 5 = " + (neg + 0p5).to_string())
 let c = 0p7
 let lhs = (a + b) * c
 let rhs = a * c + b * c
-let eq = lhs == rhs
-if eq { print("Distributive: PASS") } else { print("Distributive: FAIL") }
+print("Distributive check: " + (lhs == rhs).to_string())
 
 // Poseidon hash (ZK-friendly hash)
 let h = poseidon(a, b)
