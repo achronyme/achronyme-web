@@ -79,9 +79,19 @@ pub struct DiagnosticInfo {
 /// `budget` controls the maximum number of VM instructions (0 = unlimited).
 /// `max_heap` controls the maximum heap size in bytes.
 pub fn run_source(source: &str, budget: u64, max_heap: usize) -> RunOutput {
+    run_source_with_base_path(source, budget, max_heap, None)
+}
+
+/// Compile and run with an optional base_path for import resolution.
+pub fn run_source_with_base_path(
+    source: &str,
+    budget: u64,
+    max_heap: usize,
+    base_path: Option<std::path::PathBuf>,
+) -> RunOutput {
     OUTPUT.with(|buf| buf.borrow_mut().clear());
 
-    match run_inner(source, budget, max_heap) {
+    match run_inner(source, budget, max_heap, base_path) {
         Ok(()) => {
             let output = OUTPUT.with(|buf| buf.borrow().join("\n"));
             RunOutput {
@@ -101,9 +111,17 @@ pub fn run_source(source: &str, budget: u64, max_heap: usize) -> RunOutput {
     }
 }
 
-fn run_inner(source: &str, budget: u64, max_heap: usize) -> Result<(), String> {
+fn run_inner(
+    source: &str,
+    budget: u64,
+    max_heap: usize,
+    base_path: Option<std::path::PathBuf>,
+) -> Result<(), String> {
     // 1. Compile
     let mut compiler = Compiler::new();
+    if let Some(bp) = base_path {
+        compiler.base_path = Some(bp);
+    }
     let bytecode = compiler.compile(source).map_err(|e| format!("{e}"))?;
 
     // 2. Create VM
