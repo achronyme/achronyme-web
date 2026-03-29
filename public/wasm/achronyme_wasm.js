@@ -62,6 +62,108 @@ export class RunResult {
 if (Symbol.dispose) RunResult.prototype[Symbol.dispose] = RunResult.prototype.free;
 
 /**
+ * Check source code for diagnostics. Returns JSON array of LspDiagnostic[].
+ * @param {string} source
+ * @returns {string}
+ */
+export function check(source) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.check(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Get all completion items. Returns JSON array of CompletionItem[].
+ * This is static data (keywords + builtins + snippets), no source needed.
+ * @returns {string}
+ */
+export function completions() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.completions();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Extract document symbols. Returns JSON array of DocumentSymbol[].
+ * @param {string} source
+ * @returns {string}
+ */
+export function document_symbols(source) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.document_symbols(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Go to definition for the word at (line, col). Returns JSON Range or "".
+ * @param {string} source
+ * @param {number} line
+ * @param {number} col
+ * @returns {string}
+ */
+export function goto_definition(source, line, col) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.goto_definition(ptr0, len0, line, col);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Get hover documentation for the word at (line, col). Returns markdown string or "".
+ * @param {string} source
+ * @param {number} line
+ * @param {number} col
+ * @returns {string}
+ */
+export function hover(source, line, col) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.hover(ptr0, len0, line, col);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Compile and run an Achronyme source program.
  *
  * Returns a `RunResult` with captured output, success status, and error message.
