@@ -159,8 +159,20 @@
     }
 
     .sidebar-footer {
-      padding: 8px 8px; border-top: 1px solid var(--border);
+      padding: 8px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px;
     }
+    .footer-actions {
+      display: flex; gap: 4px;
+    }
+    .footer-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+      font-family: var(--font-sans); font-size: 11px;
+      background: var(--bg-input); color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 3px 6px; cursor: pointer;
+    }
+    .footer-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
     .template-select {
       width: 100%; font-family: var(--font-sans); font-size: 11px;
       background: var(--bg-input); color: var(--text-primary);
@@ -431,6 +443,17 @@
           <option value="vm">vm</option>
           <option value="prove">prove</option>
         </select>
+        <div class="footer-actions">
+          <button class="footer-btn" id="export-btn" title="Export project as JSON">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10v3h10v-3"/><path d="M8 2v8M5 7l3 3 3-3"/></svg>
+            Export
+          </button>
+          <button class="footer-btn" id="import-btn" title="Import project from JSON">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10v3h10v-3"/><path d="M8 10V2M5 5l3-3 3 3"/></svg>
+            Import
+          </button>
+          <input type="file" id="import-input" accept=".json" style="display:none" />
+        </div>
       </div>
     </div>
 
@@ -817,6 +840,30 @@
     newFileBtn.addEventListener("click", createNewFile);
     document.getElementById("activity-run").addEventListener("click", runCode);
 
+    document.getElementById("export-btn").addEventListener("click", async () => {
+      try { await session.exportProject(); }
+      catch (e) { appendOutput(`Export error: ${e.message}`, "error"); }
+    });
+
+    const importInput = document.getElementById("import-input");
+    document.getElementById("import-btn").addEventListener("click", () => importInput.click());
+    importInput.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        tabs.resetTabs();
+        clearOutput();
+        appendOutput("Importing project...", "info");
+        const files = await session.importProject(text);
+        appendOutput(`Imported ${files.length} files`, "info");
+        await refreshFileTree();
+        const entry = files.find(f => f.path.endsWith("main.ach")) || files[0];
+        if (entry) await openFile(entry.path);
+      } catch (err) { appendOutput(`Import error: ${err.message}`, "error"); }
+      importInput.value = "";
+    });
+
     // ═══ INIT ═══
     session.healthCheck().then(ok => {
       if (ok) { serverDot.classList.remove("loading", "error"); serverLabel.textContent = "Server"; }
@@ -827,7 +874,19 @@
       if (el) { el.textContent = "LSP"; el.style.opacity = "0.85"; }
     });
 
-    loadTemplate("vm");
+    // Try to restore previous session, otherwise load default template
+    (async () => {
+      const restored = await session.restoreSession();
+      if (restored) {
+        appendOutput("Session restored", "info");
+        await refreshFileTree();
+        const files = await session.listFiles();
+        const entry = files.find(f => f.path.endsWith("main.ach")) || files[0];
+        if (entry) await openFile(entry.path);
+      } else {
+        loadTemplate("vm");
+      }
+    })();
   </script>
 </body>
 </html>
