@@ -1,5 +1,5 @@
 ---
-// Standalone playground page — self-contained, no layout import
+// Standalone playground page — mini-IDE with file system
 ---
 
 <!doctype html>
@@ -38,168 +38,91 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      background: var(--bg-editor);
-      color: var(--text-primary);
-      font-family: var(--font-mono);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    ::selection {
-      background: rgba(168, 85, 247, 0.3);
-      color: var(--text-primary);
-    }
+    html, body { height: 100%; overflow: hidden; background: var(--bg-editor); color: var(--text-primary); font-family: var(--font-mono); -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(168, 85, 247, 0.3); color: var(--text-primary); }
 
     .shell {
       display: grid;
       grid-template-rows: 38px 36px 1fr 24px;
-      height: 100vh;
-      width: 100vw;
+      grid-template-columns: 220px 1fr;
+      height: 100vh; width: 100vw;
     }
 
     /* ═══ TITLE BAR ═══ */
-    .titlebar {
-      background: var(--bg-titlebar);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-    }
+    .titlebar { grid-column: 1 / -1; background: var(--bg-titlebar); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
     .titlebar-left { display: flex; align-items: center; gap: 14px; }
     .window-dots { display: flex; gap: 8px; }
     .window-dots span { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-close { background: #ff5f57; }
-    .dot-min { background: #ffbd2e; }
-    .dot-max { background: #28c840; }
+    .dot-close { background: #ff5f57; } .dot-min { background: #ffbd2e; } .dot-max { background: #28c840; }
     .titlebar-title { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.02em; }
     .titlebar-title em { font-style: normal; color: var(--accent); }
     .titlebar-links { display: flex; align-items: center; gap: 16px; }
     .titlebar-links a { font-size: 11px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .titlebar-links a:hover { color: var(--text-primary); }
 
+    /* ═══ SIDEBAR ═══ */
+    .sidebar { grid-row: 2 / 4; background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 0 12px; height: 36px; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-family: var(--font-sans); font-weight: 600; }
+    .sidebar-btn { background: none; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 2px 4px; border-radius: 3px; }
+    .sidebar-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .file-tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .file-row { display: flex; align-items: center; gap: 8px; padding: 4px 12px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+    .file-row:hover { background: rgba(255,255,255,0.04); }
+    .file-row.active { background: rgba(168, 85, 247, 0.12); color: var(--text-primary); }
+    .file-icon { font-size: 11px; flex-shrink: 0; width: 14px; text-align: center; }
+    .file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-footer { padding: 8px; border-top: 1px solid var(--border); }
+    .template-select { width: 100%; font-family: var(--font-mono); font-size: 10px; background: var(--bg-editor); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 5px 6px; cursor: pointer; outline: none; }
+    .template-select:hover, .template-select:focus { border-color: var(--accent-dim); }
+
     /* ═══ TAB BAR ═══ */
-    .tabbar {
-      background: var(--bg-inactive-tab);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: stretch;
-    }
-    .tab {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0 16px; font-size: 12px; color: var(--text-muted);
-      background: var(--bg-inactive-tab); border-right: 1px solid var(--border);
-      cursor: pointer; white-space: nowrap; user-select: none;
-    }
-    .tab.active {
-      background: var(--bg-active-tab); color: var(--text-primary);
-      border-bottom: 2px solid var(--accent); margin-bottom: -1px;
-    }
-    .tab-icon { width: 14px; height: 14px; fill: var(--accent); flex-shrink: 0; }
-    .tab-actions {
-      margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 0 12px;
-    }
-    .example-select {
-      font-family: var(--font-mono); font-size: 11px;
-      background: var(--bg-editor); color: var(--text-secondary);
-      border: 1px solid var(--border); border-radius: 4px;
-      padding: 4px 8px; cursor: pointer; outline: none;
-    }
-    .example-select:hover, .example-select:focus { border-color: var(--accent-dim); }
-    .example-select option { background: var(--bg-editor); }
-    .run-btn {
-      font-family: var(--font-sans); font-size: 11px; font-weight: 600;
-      letter-spacing: 0.04em; text-transform: uppercase;
-      color: #fff; background: linear-gradient(135deg, var(--green-dim), var(--green));
-      border: none; border-radius: 4px; padding: 5px 16px;
-      cursor: pointer; display: flex; align-items: center; gap: 6px;
-      transition: all 0.2s; box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
-    }
+    .tabbar { background: var(--bg-inactive-tab); border-bottom: 1px solid var(--border); display: flex; align-items: stretch; overflow-x: auto; }
+    .tab { display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: 12px; color: var(--text-muted); background: var(--bg-inactive-tab); border-right: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; min-width: 0; }
+    .tab.active { background: var(--bg-active-tab); color: var(--text-primary); border-bottom: 2px solid var(--accent); margin-bottom: -1px; }
+    .tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; display: none; }
+    .tab.modified .tab-dot { display: block; background: var(--accent); }
+    .tab-close { font-size: 14px; opacity: 0; margin-left: 4px; padding: 0 2px; border: none; background: none; color: var(--text-muted); cursor: pointer; }
+    .tab:hover .tab-close, .tab.active .tab-close { opacity: 0.6; }
+    .tab-close:hover { opacity: 1 !important; color: var(--red); }
+    .tab-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 0 12px; flex-shrink: 0; }
+    .run-btn { font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; background: linear-gradient(135deg, var(--green-dim), var(--green)); border: none; border-radius: 4px; padding: 5px 16px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 0 12px rgba(52, 211, 153, 0.15); }
     .run-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 20px rgba(52, 211, 153, 0.3); }
     .run-btn:active { transform: translateY(0); }
     .run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
     .run-btn svg { width: 10px; height: 12px; fill: #fff; }
 
-    /* ═══ PANELS ═══ */
-    .panels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      overflow: hidden;
-    }
-    @media (max-width: 768px) {
-      .panels { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-    }
+    /* ═══ MAIN AREA ═══ */
+    .main-area { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
 
     /* ═══ EDITOR ═══ */
-    .editor-panel {
-      display: flex; flex-direction: column; overflow: hidden;
-      border-right: 1px solid var(--border);
-    }
-    #editor-container {
-      flex: 1;
-      overflow: hidden;
-    }
-    /* CodeMirror overrides */
-    #editor-container .cm-editor {
-      height: 100%;
-      font-family: var(--font-mono);
-      font-size: 13px;
-    }
-    #editor-container .cm-editor .cm-scroller {
-      font-family: var(--font-mono) !important;
-    }
+    .editor-panel { display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); }
+    #editor-container { flex: 1; overflow: hidden; }
+    #editor-container .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; }
+    #editor-container .cm-editor .cm-scroller { font-family: var(--font-mono) !important; }
     #editor-container .cm-editor.cm-focused { outline: none; }
-    #editor-container .cm-gutters {
-      background: #16161b;
-      border-right: 1px solid var(--border);
-      color: #4a4a58;
-    }
+    #editor-container .cm-gutters { background: #16161b; border-right: 1px solid var(--border); color: #4a4a58; }
     #editor-container .cm-activeLineGutter { color: var(--text-secondary); }
     #editor-container .cm-cursor { border-left-color: var(--accent); }
     #editor-container .cm-selectionBackground { background: rgba(168, 85, 247, 0.25) !important; }
 
     /* ═══ OUTPUT ═══ */
     .output-panel { display: flex; flex-direction: column; overflow: hidden; }
-    .output-header {
-      display: flex; align-items: center; gap: 16px;
-      padding: 0 16px; height: 32px;
-      background: var(--bg-sidebar); border-bottom: 1px solid var(--border); flex-shrink: 0;
-    }
-    .output-tab {
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
-      color: var(--text-muted); cursor: default; padding-bottom: 1px;
-    }
+    .output-header { display: flex; align-items: center; gap: 16px; padding: 0 16px; height: 32px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .output-tab { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); cursor: default; padding-bottom: 1px; }
     .output-tab.active { color: var(--text-primary); border-bottom: 1px solid var(--accent); }
-    .output-clear {
-      margin-left: auto; font-size: 10px; color: var(--text-muted);
-      background: none; border: 1px solid var(--border); border-radius: 3px;
-      padding: 2px 8px; cursor: pointer; font-family: var(--font-mono);
-    }
+    .output-clear { margin-left: auto; font-size: 10px; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; cursor: pointer; font-family: var(--font-mono); }
     .output-clear:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-    .output-scroll {
-      flex: 1; overflow: auto; background: var(--bg-terminal); padding: 12px 16px;
-    }
+    .output-scroll { flex: 1; overflow: auto; background: var(--bg-terminal); padding: 12px 16px; }
     .output-line { font-size: 12px; line-height: 20px; white-space: pre-wrap; word-break: break-all; }
     .output-line.stdout { color: var(--green); }
     .output-line.error { color: var(--red); }
     .output-line.info { color: var(--text-muted); font-style: italic; }
     .output-line.timing { color: var(--yellow); }
-    .output-cursor {
-      display: inline-block; width: 7px; height: 14px;
-      background: var(--green); animation: blink 1s step-end infinite;
-      vertical-align: text-bottom; margin-left: 2px;
-    }
+    .output-cursor { display: inline-block; width: 7px; height: 14px; background: var(--green); animation: blink 1s step-end infinite; vertical-align: text-bottom; margin-left: 2px; }
     @keyframes blink { 50% { opacity: 0; } }
 
     /* ═══ STATUS BAR ═══ */
-    .statusbar {
-      background: var(--bg-statusbar);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 12px; font-size: 11px; color: #fff; font-family: var(--font-sans);
-    }
+    .statusbar { grid-column: 1 / -1; background: var(--bg-statusbar); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 11px; color: #fff; font-family: var(--font-sans); }
     .statusbar-left, .statusbar-right { display: flex; align-items: center; gap: 16px; }
     .status-item { display: flex; align-items: center; gap: 5px; opacity: 0.85; }
     .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px rgba(52, 211, 153, 0.5); }
@@ -207,41 +130,36 @@
     .status-dot.error { background: var(--red); box-shadow: 0 0 6px rgba(248, 113, 113, 0.5); }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    /* ═══ LINT DIAGNOSTICS ═══ */
+    /* ═══ LINT / HOVER / AUTOCOMPLETE ═══ */
     .cm-diagnostic { font-family: var(--font-mono); font-size: 12px; padding: 4px 8px; }
     .cm-diagnostic-error { border-left: 3px solid var(--red); }
     .cm-diagnostic-warning { border-left: 3px solid var(--yellow); }
-    .cm-diagnostic-info { border-left: 3px solid var(--accent); }
-    .cm-lint-marker { width: 6px !important; }
     .cm-lintRange-error { background: none; text-decoration: wavy underline var(--red); text-underline-offset: 3px; }
     .cm-lintRange-warning { background: none; text-decoration: wavy underline var(--yellow); text-underline-offset: 3px; }
-
-    /* ═══ HOVER TOOLTIP ═══ */
     .cm-tooltip { background: #1e1e28 !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
-    .ach-hover-tooltip {
-      padding: 10px 14px; font-family: var(--font-mono); font-size: 12px;
-      line-height: 1.5; color: var(--text-primary); max-width: 480px;
-    }
-    .ach-hover-code {
-      background: #13131a; border-radius: 4px; padding: 8px 10px;
-      margin: 6px 0; font-size: 12px; color: var(--green); overflow-x: auto;
-    }
-    .ach-hover-inline {
-      background: rgba(168, 85, 247, 0.15); border-radius: 3px;
-      padding: 1px 5px; font-size: 11px; color: var(--accent);
-    }
-
-    /* ═══ AUTOCOMPLETE ═══ */
+    .ach-hover-tooltip { padding: 10px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--text-primary); max-width: 480px; }
+    .ach-hover-code { background: #13131a; border-radius: 4px; padding: 8px 10px; margin: 6px 0; font-size: 12px; color: var(--green); overflow-x: auto; }
+    .ach-hover-inline { background: rgba(168, 85, 247, 0.15); border-radius: 3px; padding: 1px 5px; font-size: 11px; color: var(--accent); }
     .cm-tooltip-autocomplete { background: #1e1e28 !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }
     .cm-tooltip-autocomplete ul li { font-family: var(--font-mono); font-size: 12px; }
     .cm-tooltip-autocomplete ul li[aria-selected] { background: rgba(168, 85, 247, 0.2) !important; }
-    .cm-completionLabel { color: var(--text-primary); }
-    .cm-completionDetail { color: var(--text-muted); font-size: 11px; }
+
+    /* ═══ CONTEXT MENU ═══ */
+    .context-menu { position: fixed; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; padding: 4px 0; z-index: 100; min-width: 120px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .context-item { padding: 6px 14px; font-size: 12px; color: var(--text-secondary); cursor: pointer; font-family: var(--font-sans); }
+    .context-item:hover { background: rgba(168, 85, 247, 0.15); color: var(--text-primary); }
+    .context-item.danger:hover { background: rgba(248, 113, 113, 0.15); color: var(--red); }
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #4a4a58; }
+
+    @media (max-width: 768px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main-area { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+    }
   </style>
 </head>
 
@@ -249,11 +167,7 @@
   <div class="shell">
     <div class="titlebar">
       <div class="titlebar-left">
-        <div class="window-dots">
-          <span class="dot-close"></span>
-          <span class="dot-min"></span>
-          <span class="dot-max"></span>
-        </div>
+        <div class="window-dots"><span class="dot-close"></span><span class="dot-min"></span><span class="dot-max"></span></div>
         <div class="titlebar-title"><em>ach</em>&ensp;playground</div>
       </div>
       <div class="titlebar-links">
@@ -263,18 +177,24 @@
       </div>
     </div>
 
-    <div class="tabbar">
-      <div class="tab active">
-        <svg class="tab-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        <span id="tab-name">hello.ach</span>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span>Explorer</span>
+        <button class="sidebar-btn" id="new-file-btn" title="New File">+</button>
       </div>
-      <div class="tab-actions">
-        <select class="example-select" id="examples">
-          <option value="hello">Hello World</option>
-          <option value="fibonacci">Fibonacci & Recursion</option>
-          <option value="field">Field Arithmetic</option>
-          <option value="prove">Prove Block (ZK)</option>
+      <div class="file-tree" id="file-tree"></div>
+      <div class="sidebar-footer">
+        <select class="template-select" id="template-select">
+          <option value="">Load Template...</option>
+          <option value="hello-world">Hello World (multi-file)</option>
+          <option value="merkle-proof">Merkle Proof (ZK)</option>
+          <option value="voting-circuit">Voting Circuit (ZK)</option>
         </select>
+      </div>
+    </div>
+
+    <div class="tabbar" id="tabbar">
+      <div class="tab-actions">
         <button class="run-btn" id="run-btn">
           <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
           Run
@@ -282,7 +202,7 @@
       </div>
     </div>
 
-    <div class="panels">
+    <div class="main-area">
       <div class="editor-panel">
         <div id="editor-container"></div>
       </div>
@@ -292,7 +212,7 @@
           <button class="output-clear" id="clear-btn">clear</button>
         </div>
         <div class="output-scroll" id="output">
-          <div class="output-line info">// Press Run or Ctrl+Enter to execute</div>
+          <div class="output-line info">// Select a template to get started</div>
           <span class="output-cursor"></span>
         </div>
       </div>
@@ -324,181 +244,81 @@
     import { highlightSelectionMatches } from "@codemirror/search";
     import { achronymeLanguage } from "../lib/achronyme-lang.js";
     import { initLspWasm, achLinter, achAutocompletion, achHover } from "../lib/achronyme-lsp.js";
+    import { renderFileTree, promptNewFile } from "../lib/playground-filetree.js";
+    import * as tabs from "../lib/playground-tabs.js";
+    import * as session from "../lib/playground-session.js";
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXAMPLES (from actual Achronyme test files)
-    // ═══════════════════════════════════════════════════════════════
-    const EXAMPLES = {
-      hello: {
-        name: "hello.ach",
-        code: `// Hello World — Achronyme basics
-
-let name = "Achronyme"
-print("Hello from " + name + "!")
-
-// Arithmetic
-let x = 6
-let y = 7
-let product = x * y
-print("The answer is: " + product.to_string())
-
-// Arrays
-let primes = [2, 3, 5, 7, 11]
-mut sum = 0
-for p in primes {
-    sum = sum + p
-}
-print("Sum of first 5 primes: " + sum.to_string())
-
-// Maps
-let user = { name: "alice", age: 30 }
-print("User: " + user.name + ", age " + user.age.to_string())
-`
-      },
-      fibonacci: {
-        name: "fibonacci.ach",
-        code: `// Recursion: fibonacci, factorial, GCD
-
-fn fib(n) {
-    if n < 2 { return n }
-    return fib(n - 1) + fib(n - 2)
-}
-
-print("Fibonacci sequence:")
-for i in 0..10 {
-    print("  fib(" + i.to_string() + ") = " + fib(i).to_string())
-}
-
-// Factorial
-fn factorial(n) {
-    if n <= 1 { return 1 }
-    return n * factorial(n - 1)
-}
-print("")
-print("factorial(10) = " + factorial(10).to_string())
-
-// GCD (Euclidean algorithm)
-fn gcd(a, b) {
-    if b == 0 { return a }
-    return gcd(b, a % b)
-}
-print("gcd(12, 8) = " + gcd(12, 8).to_string())
-print("gcd(100, 75) = " + gcd(100, 75).to_string())
-
-// Recursive power
-fn power(base, exp) {
-    if exp == 0 { return 1 }
-    return base * power(base, exp - 1)
-}
-print("2^10 = " + power(2, 10).to_string())
-`
-      },
-      field: {
-        name: "field_math.ach",
-        code: `// BN254 Field Arithmetic
-// All values are elements of the BN254 scalar field
-
-let a = 0p42
-let b = 0pxFF
-
-print("a = " + a.to_string())
-print("b = " + b.to_string())
-
-// Arithmetic in the field
-print("a + b = " + (a + b).to_string())
-print("a * b = " + (a * b).to_string())
-print("a / b = " + (a / b).to_string())
-
-// Negation: -a + a = 0
-let neg = -0p5
-print("-5 + 5 = " + (neg + 0p5).to_string())
-
-// Distributive: (a + b) * c == a*c + b*c
-let c = 0p7
-let lhs = (a + b) * c
-let rhs = a * c + b * c
-print("Distributive check: " + (lhs == rhs).to_string())
-
-// Poseidon hash (ZK-friendly hash)
-let h = poseidon(a, b)
-print("")
-print("poseidon(a, b) = " + h.to_string())
-
-// Hash chain
-let h2 = poseidon(h, a)
-let h3 = poseidon(h2, b)
-print("hash chain[3] = " + h3.to_string())
-
-print("")
-print("Field::ONE  = " + Field::ONE.to_string())
-print("Field::ZERO = " + Field::ZERO.to_string())
-print("Int::MAX    = " + Int::MAX.to_string())
-`
-      },
-      prove: {
-        name: "prove_demo.ach",
-        code: `// Zero-Knowledge Prove Block
-//
-// Generates a real Groth16 proof server-side.
-// The prover runs natively on the server —
-// no WASM limitations.
-
-let secret = 0p42
-let public_hash = poseidon(secret, 0p0)
-
-print("Secret:      " + secret.to_string())
-print("Public hash: " + public_hash.to_string())
-print("")
-
-// This generates a real ZK proof:
-// - Compiles to R1CS constraints
-// - Runs Groth16 trusted setup
-// - Generates proof + verification key
-prove demo(public_hash: Public) {
-    assert_eq(
-        poseidon(secret, 0p0),
-        public_hash,
-        "hash mismatch"
-    )
-}
-
-print("Proof generated and verified!")
-`
-      }
-    };
-
-    // ═══════════════════════════════════════════════════════════════
-    // DOM
-    // ═══════════════════════════════════════════════════════════════
+    // ═══ DOM ═══
     const output = document.getElementById("output");
     const runBtn = document.getElementById("run-btn");
     const clearBtn = document.getElementById("clear-btn");
-    const exampleSelect = document.getElementById("examples");
-    const tabName = document.getElementById("tab-name");
+    const tabbar = document.getElementById("tabbar");
+    const fileTree = document.getElementById("file-tree");
+    const templateSelect = document.getElementById("template-select");
+    const newFileBtn = document.getElementById("new-file-btn");
     const statusLine = document.getElementById("status-line");
     const serverDot = document.getElementById("server-dot");
     const serverLabel = document.getElementById("server-label");
 
-    // API base: dev server on :3100, production on same origin
-    const IS_DEV = window.location.port === "4321";
-    const API_BASE = IS_DEV ? "http://localhost:3100" : "";
+    // ═══ EDITOR EXTENSIONS ═══
+    function editorExtensions() {
+      return [
+        lineNumbers(),
+        highlightActiveLine(),
+        highlightActiveLineGutter(),
+        history(),
+        bracketMatching(),
+        closeBrackets(),
+        indentOnInput(),
+        highlightSelectionMatches(),
+        oneDark,
+        editorTheme,
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        achronymeLanguage,
+        achLinter,
+        achAutocompletion,
+        achHover,
+        keymap.of([
+          indentWithTab,
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...historyKeymap,
+        ]),
+        runKeymap,
+        cursorTracker,
+        autoSaveListener,
+        EditorView.lineWrapping,
+      ];
+    }
 
-    // ═══════════════════════════════════════════════════════════════
-    // CODEMIRROR EDITOR
-    // ═══════════════════════════════════════════════════════════════
     const runKeymap = keymap.of([{
-      key: "Ctrl-Enter",
-      mac: "Cmd-Enter",
+      key: "Ctrl-Enter", mac: "Cmd-Enter",
       run: () => { runCode(); return true; },
+    }, {
+      key: "Ctrl-s", mac: "Cmd-s",
+      run: () => { saveActiveFile(); return true; },
     }]);
 
     const cursorTracker = EditorView.updateListener.of((update) => {
       if (update.selectionSet || update.docChanged) {
         const pos = update.state.selection.main.head;
         const line = update.state.doc.lineAt(pos);
-        const ln = line.number;
-        const col = pos - line.from + 1;
-        statusLine.textContent = `Ln ${ln}, Col ${col}`;
+        statusLine.textContent = `Ln ${line.number}, Col ${pos - line.from + 1}`;
+      }
+    });
+
+    let saveTimeout = null;
+    const autoSaveListener = EditorView.updateListener.of((update) => {
+      if (update.docChanged && session.isProjectMode()) {
+        const tab = tabs.getActiveTab();
+        if (tab) {
+          const content = update.state.doc.toString();
+          const idx = tabs.getActiveIndex();
+          tabs.setModified(idx, tabs.isModified(idx, content));
+          renderTabs();
+        }
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => saveActiveFile(), 1000);
       }
     });
 
@@ -512,46 +332,17 @@ print("Proof generated and verified!")
       "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": { backgroundColor: "rgba(168, 85, 247, 0.25) !important" },
     }, { dark: true });
 
-    const view = new EditorView({
+    // ═══ EDITOR INSTANCE ═══
+    let view = new EditorView({
       state: EditorState.create({
-        doc: EXAMPLES.hello.code,
-        extensions: [
-          lineNumbers(),
-          highlightActiveLine(),
-          highlightActiveLineGutter(),
-          history(),
-          bracketMatching(),
-          closeBrackets(),
-          indentOnInput(),
-          highlightSelectionMatches(),
-          oneDark,
-          editorTheme,
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-          achronymeLanguage,
-          achLinter,
-          achAutocompletion,
-          achHover,
-          keymap.of([
-            indentWithTab,
-            ...closeBracketsKeymap,
-            ...defaultKeymap,
-            ...historyKeymap,
-          ]),
-          runKeymap,
-          cursorTracker,
-          EditorView.lineWrapping,
-        ],
+        doc: "// Select a template from the sidebar to get started\n",
+        extensions: editorExtensions(),
       }),
       parent: document.getElementById("editor-container"),
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // OUTPUT
-    // ═══════════════════════════════════════════════════════════════
-    function clearOutput() {
-      output.innerHTML = '<span class="output-cursor"></span>';
-    }
-
+    // ═══ OUTPUT ═══
+    function clearOutput() { output.innerHTML = '<span class="output-cursor"></span>'; }
     function appendOutput(text, cls = "stdout") {
       const cursor = output.querySelector(".output-cursor");
       const line = document.createElement("div");
@@ -561,56 +352,166 @@ print("Proof generated and verified!")
       output.scrollTop = output.scrollHeight;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // RUN
-    // ═══════════════════════════════════════════════════════════════
-    let running = false;
+    // ═══ TAB RENDERING ═══
+    function renderTabs() {
+      const actions = tabbar.querySelector(".tab-actions");
+      tabbar.innerHTML = "";
 
-    async function runCode() {
-      if (running) return;
+      for (let i = 0; i < tabs.getTabs().length; i++) {
+        const t = tabs.getTabs()[i];
+        const tab = document.createElement("div");
+        tab.className = "tab" + (i === tabs.getActiveIndex() ? " active" : "") + (t.modified ? " modified" : "");
 
-      clearOutput();
-      const source = view.state.doc.toString();
-      if (!source.trim()) {
-        appendOutput("// Nothing to run", "info");
+        const dot = document.createElement("span");
+        dot.className = "tab-dot";
+
+        const name = document.createElement("span");
+        name.textContent = t.path.split("/").pop();
+        name.title = t.path;
+
+        const close = document.createElement("button");
+        close.className = "tab-close";
+        close.textContent = "\u00D7";
+        close.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeTabAt(i);
+        });
+
+        tab.appendChild(dot);
+        tab.appendChild(name);
+        tab.appendChild(close);
+        tab.addEventListener("click", () => switchToTab(i));
+        tabbar.appendChild(tab);
+      }
+
+      tabbar.appendChild(actions);
+    }
+
+    // ═══ FILE OPERATIONS ═══
+    async function openFile(path) {
+      const existing = tabs.findTab(path);
+      if (existing >= 0) {
+        switchToTab(existing);
         return;
       }
 
+      try {
+        const content = await session.readFile(path);
+        tabs.saveEditorState(view.state);
+        tabs.openTab(path, content, editorExtensions());
+
+        const tab = tabs.getActiveTab();
+        view.setState(tab.editorState);
+        renderTabs();
+        refreshFileTree();
+      } catch (e) {
+        appendOutput(`Error: ${e.message}`, "error");
+      }
+    }
+
+    function switchToTab(index) {
+      if (index === tabs.getActiveIndex()) return;
+      tabs.saveEditorState(view.state);
+      tabs.switchTab(index);
+      const tab = tabs.getActiveTab();
+      if (tab) view.setState(tab.editorState);
+      renderTabs();
+      refreshFileTree();
+    }
+
+    function closeTabAt(index) {
+      tabs.saveEditorState(view.state);
+      const newIdx = tabs.closeTab(index);
+      const tab = tabs.getActiveTab();
+      if (tab) {
+        view.setState(tab.editorState);
+      } else {
+        view.setState(EditorState.create({ doc: "", extensions: editorExtensions() }));
+      }
+      renderTabs();
+    }
+
+    async function saveActiveFile() {
+      const tab = tabs.getActiveTab();
+      if (!tab || !session.isProjectMode()) return;
+      tabs.saveEditorState(view.state);
+      const content = view.state.doc.toString();
+      try {
+        await session.writeFile(tab.path, content);
+        tabs.markSaved(tabs.getActiveIndex(), content);
+        renderTabs();
+      } catch (e) {
+        appendOutput(`Save error: ${e.message}`, "error");
+      }
+    }
+
+    async function refreshFileTree() {
+      if (!session.isProjectMode()) return;
+      try {
+        const files = await session.listFiles();
+        const activeTab = tabs.getActiveTab();
+        renderFileTree(fileTree, files, activeTab?.path || "", {
+          onFileClick: openFile,
+          onFileDelete: async (path) => {
+            if (!confirm(`Delete ${path}?`)) return;
+            await session.deleteFile(path);
+            tabs.removeTabByPath(path);
+            const tab = tabs.getActiveTab();
+            if (tab) view.setState(tab.editorState);
+            renderTabs();
+            refreshFileTree();
+          },
+          onFileRename: async (path) => {
+            const newName = prompt("New name:", path);
+            if (!newName || newName === path) return;
+            await session.renameFile(path, newName);
+            tabs.updateTabPath(path, newName);
+            renderTabs();
+            refreshFileTree();
+          },
+        });
+      } catch (e) {
+        console.warn("file tree refresh failed:", e);
+      }
+    }
+
+    // ═══ RUN ═══
+    let running = false;
+    async function runCode() {
+      if (running) return;
+
+      // Auto-save all modified files first
+      if (session.isProjectMode()) {
+        await saveActiveFile();
+      }
+
+      clearOutput();
       running = true;
       runBtn.disabled = true;
       serverDot.classList.add("loading");
       serverLabel.textContent = "Running...";
 
       try {
-        const res = await fetch(`${API_BASE}/api/run`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ source }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-          appendOutput(err.error || `Server error (${res.status})`, "error");
+        const source = session.isProjectMode() ? null : view.state.doc.toString();
+        if (!session.isProjectMode() && (!source || !source.trim())) {
+          appendOutput("// Nothing to run", "info");
           return;
         }
-
-        const data = await res.json();
+        const data = await session.runProject(source);
 
         if (data.output) {
           for (const line of data.output.split("\n")) {
             if (line) appendOutput(line, "stdout");
           }
         }
-
         if (!data.success) {
           if (data.output) appendOutput("", "stdout");
           appendOutput(data.error, "error");
         }
-
         appendOutput("", "stdout");
         appendOutput(`[${data.time_ms}ms server]`, "timing");
       } catch (e) {
-        appendOutput("Server unavailable — is ach-server running?", "error");
+        appendOutput(e.message, "error");
         serverDot.classList.add("error");
         serverLabel.textContent = "Offline";
         return;
@@ -622,41 +523,69 @@ print("Proof generated and verified!")
       }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EXAMPLES
-    // ═══════════════════════════════════════════════════════════════
-    function loadExample(key) {
-      const ex = EXAMPLES[key];
-      if (!ex) return;
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: ex.code },
-      });
-      tabName.textContent = ex.name;
+    // ═══ TEMPLATE LOADING ═══
+    async function loadTemplate(name) {
+      if (!name) return;
+      try {
+        clearOutput();
+        appendOutput("// Creating project...", "info");
+
+        // Delete old session if any
+        if (session.isProjectMode()) {
+          await session.deleteSession();
+        }
+        tabs.resetTabs();
+
+        const data = await session.createSession(name);
+        appendOutput(`// Project created (${data.files.length} files)`, "info");
+
+        await refreshFileTree();
+
+        // Open the entry file
+        const entry = data.files.find(f => f.path.endsWith("main.ach")) || data.files[0];
+        if (entry) await openFile(entry.path);
+
+        templateSelect.value = "";
+      } catch (e) {
+        appendOutput(`Template error: ${e.message}`, "error");
+      }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EVENTS
-    // ═══════════════════════════════════════════════════════════════
+    // ═══ NEW FILE ═══
+    async function createNewFile() {
+      if (!session.isProjectMode()) {
+        appendOutput("// Create a project first (select a template)", "info");
+        return;
+      }
+      const name = promptNewFile();
+      if (!name) return;
+      try {
+        await session.writeFile(name, `// ${name.split("/").pop()}\n`);
+        await refreshFileTree();
+        await openFile(name);
+      } catch (e) {
+        appendOutput(`Error: ${e.message}`, "error");
+      }
+    }
+
+    // ═══ EVENTS ═══
     runBtn.addEventListener("click", runCode);
     clearBtn.addEventListener("click", clearOutput);
-    exampleSelect.addEventListener("change", (e) => loadExample(e.target.value));
+    templateSelect.addEventListener("change", (e) => loadTemplate(e.target.value));
+    newFileBtn.addEventListener("click", createNewFile);
 
-    // Health check — verify server is reachable
-    fetch(`${API_BASE}/health`).then(r => {
-      if (r.ok) {
-        serverDot.classList.remove("loading", "error");
-        serverLabel.textContent = "Server";
-      }
-    }).catch(() => {
-      serverDot.classList.add("error");
-      serverLabel.textContent = "Offline";
-    });
+    // ═══ INIT ═══
+    session.healthCheck().then(ok => {
+      if (ok) { serverDot.classList.remove("loading", "error"); serverLabel.textContent = "Server"; }
+    }).catch(() => { serverDot.classList.add("error"); serverLabel.textContent = "Offline"; });
 
-    // Load LSP WASM (non-blocking — extensions degrade gracefully before load)
     initLspWasm().then(() => {
-      const lspStatus = document.getElementById("lsp-status");
-      if (lspStatus) lspStatus.textContent = "LSP";
+      const el = document.getElementById("lsp-status");
+      if (el) { el.textContent = "LSP"; el.style.opacity = "0.85"; }
     });
+
+    // Auto-load hello-world template on first visit
+    loadTemplate("hello-world");
   </script>
 </body>
 </html>
