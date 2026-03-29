@@ -52,6 +52,8 @@ async fn main() {
     let app = Router::new()
         .route("/api/run", post(routes::run::handler))
         .route("/api/compile", post(routes::compile::handler))
+        .route("/api/inspect", post(routes::inspect::handler))
+        .route("/api/prove", post(routes::prove::handler))
         .route("/api/format", post(routes::format::handler))
         .route("/health", get(|| async { "ok" }))
         .layer(cors)
