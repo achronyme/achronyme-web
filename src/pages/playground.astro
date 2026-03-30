@@ -492,12 +492,14 @@ import '@fontsource-variable/jetbrains-mono';
     .docs-nav-btn svg { width: 10px; height: 10px; color: var(--text-muted); flex-shrink: 0; }
     .docs-group-actions { display: flex; gap: 2px; flex-shrink: 0; }
     .docs-nav-dropdown {
+      position: fixed; z-index: 100;
       background: #252526; border: 1px solid var(--border);
-      border-radius: 4px; max-height: 60vh; overflow-y: auto;
+      border-radius: 4px; overflow-y: auto;
       box-shadow: 0 4px 16px rgba(0,0,0,0.4);
       min-width: 240px; padding: 4px 0;
-      --anchor-gap: 4px;
+      display: none;
     }
+    .docs-nav-dropdown.open { display: block; }
     .docs-nav-group-label {
       padding: 8px 12px 4px; font-family: var(--font-sans);
       font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -1428,10 +1430,8 @@ import '@fontsource-variable/jetbrains-mono';
       const header = document.createElement("div");
       header.className = "docs-group-header";
 
-      const popoverId = "docs-nav-popover";
       const navBtn = document.createElement("button");
       navBtn.className = "docs-nav-btn";
-      navBtn.setAttribute("popovertarget", popoverId);
       navBtn.type = "button";
       navBtn.innerHTML = `<svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> <span>Docs</span>`;
 
@@ -1453,14 +1453,35 @@ import '@fontsource-variable/jetbrains-mono';
       actions.append(extBtn, closeBtn);
       header.append(navBtn, actions);
 
-      // Navigation popover (auto-positioned by el-popover)
-      const dropdown = document.createElement("el-popover");
-      dropdown.id = popoverId;
-      dropdown.setAttribute("popover", "");
-      dropdown.setAttribute("anchor", "bottom start");
-      dropdown.setAttribute("anchor-strategy", "fixed");
+      // Navigation dropdown (auto-positioned)
+      const dropdown = document.createElement("div");
       dropdown.className = "docs-nav-dropdown";
       buildDocsNav(dropdown);
+
+      navBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const opening = !dropdown.classList.contains("open");
+        if (opening) {
+          const rect = navBtn.getBoundingClientRect();
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          dropdown.style.left = rect.left + "px";
+          if (spaceBelow < 300 && spaceAbove > spaceBelow) {
+            dropdown.style.top = "auto";
+            dropdown.style.bottom = (window.innerHeight - rect.top + 2) + "px";
+            dropdown.style.maxHeight = (spaceAbove - 20) + "px";
+          } else {
+            dropdown.style.top = (rect.bottom + 2) + "px";
+            dropdown.style.bottom = "auto";
+            dropdown.style.maxHeight = (spaceBelow - 20) + "px";
+          }
+        }
+        dropdown.classList.toggle("open", opening);
+      });
+      const closeDropdown = (e) => {
+        if (!dropdown.contains(e.target) && !navBtn.contains(e.target)) dropdown.classList.remove("open");
+      };
+      document.addEventListener("click", closeDropdown);
 
       // Content area (shadow DOM host)
       const content = document.createElement("div");
@@ -1470,9 +1491,10 @@ import '@fontsource-variable/jetbrains-mono';
       header.draggable = true;
       setupPanelDrag(header, "docs");
 
-      el.append(header, dropdown, content);
+      el.append(header, content);
+      document.body.appendChild(dropdown);
 
-      docsGroup = { el, navBtn, dropdown, content };
+      docsGroup = { el, navBtn, dropdown, content, closeDropdown };
       docsIcon.classList.add("active");
       localStorage.setItem("ach-docs-open", "true");
 
@@ -1482,6 +1504,7 @@ import '@fontsource-variable/jetbrains-mono';
 
     function closeDocs() {
       if (!docsGroup) return;
+      document.removeEventListener("click", docsGroup.closeDropdown);
       docsGroup.dropdown.remove();
       docsGroup = null;
       docsIcon.classList.remove("active");
@@ -1500,7 +1523,7 @@ import '@fontsource-variable/jetbrains-mono';
           const el = document.createElement("div");
           el.className = "docs-nav-item" + (item.slug === currentDocSlug ? " active" : "");
           el.textContent = getLabel(item, "en");
-          el.addEventListener("click", () => { dropdown.hidePopover(); loadDocsPage(item.slug); });
+          el.addEventListener("click", () => { dropdown.classList.remove("open"); loadDocsPage(item.slug); });
           dropdown.appendChild(el);
         }
       }
