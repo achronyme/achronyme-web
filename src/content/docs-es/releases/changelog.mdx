@@ -1,0 +1,518 @@
+---
+title: Changelog
+description: Historial de versiones de Achronyme.
+---
+
+Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza los 10 crates del workspace a la misma versión.
+
+## Sin publicar
+
+**Comando inspector, crate proving, métodos Bool/List, WASM LSP, fix en plantillas init.**
+
+### Nuevo: comando `ach inspect`
+
+Visualización interactiva DAG para circuitos y bloques prove. Compila el fuente, construye un grafo de restricciones con mapeo de spans de código, y sirve un frontend HTML embebido en un servidor HTTP local.
+
+```bash
+ach inspect examples/inspect_membership.ach --input-file examples/inspect_membership.toml
+```
+
+Características:
+- **DAG de restricciones** — grafo acíclico dirigido de instrucciones IR con aristas de flujo de variables.
+- **Spans de código** — cada nodo enlaza a la línea original del `.ach`.
+- **Evaluación de testigos** — evaluador tolerante que computa valores concretos para tooltips del inspector, incluso con inputs incompletos.
+- **Rastreo de origen de restricciones** — el backend R1CS anota cada restricción con la instrucción IR que la generó.
+
+Construido sobre un nuevo módulo `ir::inspector` (~730 líneas) que genera el JSON del grafo a partir de metadatos de `IrProgram` (`var_spans`, orígenes de restricciones).
+
+### Refactor: crate `proving`
+
+Los módulos de Groth16, Halo2/PlonK y generador de verificadores Solidity se han extraído de `cli` a un crate independiente `proving`. Esto permite que `ach-server` (y futuros consumidores) dependan de la lógica de pruebas sin incluir todo el CLI. El workspace ahora tiene 10 crates.
+
+### Nuevo: métodos Bool
+
+```ach
+let flag = true
+print(flag.to_string())   // "true"
+print(flag.to_int())      // 1
+```
+
+### Nuevo: `List.to_string()` y mejora en formateo de valores
+
+```ach
+let xs = [1, 2, 3]
+print(xs.to_string())   // "[1, 2, 3]"
+```
+
+Colecciones anidadas y listas de tipos mixtos se formatean recursivamente con delimitadores apropiados.
+
+### Nuevo: funciones LSP en WASM
+
+El crate `achronyme-wasm` ahora expone funciones LSP (diagnósticos, hover, completions) vía `ach-lsp-core`, habilitando inteligencia de lenguaje en el playground del navegador sin round-trip al servidor.
+
+### Fix: plantillas de `ach init`
+
+Las plantillas `main.ach`, `circuit.ach` y `prove.ach` generadas por `ach init` se han actualizado a la sintaxis actual con ejemplos funcionales que compilan y ejecutan directamente.
+
+### Propagación de spans en ProveIR
+
+`CircuitNode::Expr` ahora lleva spans de código a través de la instanciación, permitiendo al inspector (y futuros mensajes de error) apuntar a la ubicación original en el código fuente para cada restricción.
+
+### Migración de docs
+
+El directorio `docs/` y su workflow de deploy se han eliminado del repositorio principal. La documentación ahora vive en `achronyme-web`.
+
+---
+
+## 0.1.0-beta.17 — 2026-03-28
+
+**8.6x de speedup en VM, optimizador de bytecode, observabilidad ProveIR, crate WASM, unificación OuterScope, 42% reducción de restricciones.**
+
+### Rendimiento: 1315ms → 303ms (8.6x con PGO)
+
+Seis optimizaciones en el hot-path de la VM y un optimizador de bytecode de tres pasadas llevan el benchmark de 10M iteraciones de 1315ms a 303ms:
+
+| Optimización | Speedup | Técnica |
+|---|---|---|
+| Acceso a registros sin verificación | -25% | `get(idx)` → `get_unchecked(idx)` en hot loop |
+| Payloads de error en Box | fix | `Result<Value>` de 48 → 16 bytes |
+| Caché de dispatch | -40% | Cache closure→function lookup, saltar chequeo de Arena free |
+| GC por lotes | -7% | Verificar cada 1024 instrucciones, no en cada una |
+| Sentinel de budget | -7% | `Option<u64>` → `u64` con sentinel `u64::MAX` |
+| Chequeo de int fusionado | -6% | `as_int_unchecked()` elimina doble verificación de tag |
+| **Optimizador de bytecode** | -8% | Tres pasadas del compilador (ver abajo) |
+| **PGO** | -34% | Profile-guided optimization vía `scripts/build-pgo.sh` |
+
+Tres optimizaciones intentadas fueron revertidas tras medir que no daban mejora con PGO (reorden de branches, eliminación de Result, opcodes enteros especializados), confirmando que con PGO el predictor de branches ya maneja los branches del hot-path de forma óptima — las ganancias futuras deben reducir trabajo, no branches.
+
+### Optimizador de bytecode (`compiler/src/optimizer.rs`)
+
+Tres pasadas peephole ejecutadas sobre el bytecode de cada función tras la compilación:
+
+1. **Eliminación de cargas redundantes** — `SetGlobal Ra, idx; GetGlobal Rb, idx` → `Move Rb, Ra`. Los targets de salto actúan como barreras.
+2. **Elevación de constantes (LICM)** — `LoadConst` invariantes al loop movidos antes del loop. Se re-ejecuta tras la promoción de registros para capturar nuevas constantes elevables.
+3. **Promoción de registros** — Globals en loops internos sin llamadas promovidos a registros locales. `GET_GLOBAL`/`SET_GLOBAL` se convierten en `Move`, con carga única antes del loop y escritura al salir.
+
+26 tests unitarios. El optimizador maneja correctamente `continue` (back-edges colapsados), loops anidados (solo el más interno) y globals de solo lectura (sin write-back para `let`).
+
+### ProveIR Display
+
+```
+ach disassemble examples/proof_of_membership.ach
+```
+
+```
+  -- ProveIR block 1 (instruction 0134) --
+  Captures:
+    key_5                (witness)
+    proof_path_0..2      (witness)
+    proof_indices_0..2   (witness)
+  Public inputs:
+    merkle_root: Field
+  Body:
+    let my_commitment = poseidon($key_5, 0)
+    merkle_verify(merkle_root, my_commitment, proof_path, proof_indices)
+```
+
+Representación legible de plantillas de circuito pre-compiladas. Variables capturadas con prefijo `$` para distinguirlas de nombres locales al circuito. Muestra capturas con roles de uso (witness/structure/ambos), inputs tipados y cuerpo completo del circuito con indentación.
+
+### Reescritura del desensamblador
+
+El comando `ach disassemble` ahora trabaja desde artefactos compilados en vez de re-parsear el fuente:
+
+- **Bloques prove** — Deserializados del constant pool del bytecode vía `ProveIR::from_bytes()`. Antes fallaba con "expected expression, found `..`".
+- **Declaraciones circuit** — `circuit name(params) { body }` extraídas del AST con slicing basado en spans. Antes fallaba con "circuit declarations not supported inside circuits".
+
+### Nuevo: crate `achronyme-wasm`
+
+7 de 9 crates core compilan a `wasm32-unknown-unknown` (parser, compiler, vm, ir, memory, constraints, std). El crate `wasm/` provee una API lista para el navegador para el playground planificado (0.3.0).
+
+### Nuevas anotaciones de tipo: `Int` y `String`
+
+```ach
+let count: Int = 42
+let name: String = "hello"
+```
+
+Anotaciones de tipo en modo VM para documentación y futuro type checking. Se suman a las existentes `Field`, `Bool`, `Public`, `Witness`.
+
+### Unificación de OuterScope
+
+Las funciones definidas antes de bloques `prove {}` y `circuit {}` inline ahora son accesibles dentro de ellos — el mismo comportamiento que los archivos `ach circuit` ya tenían, ahora unificado en todos los caminos de compilación.
+
+```ach
+fn double(x) { x * 2 }
+
+prove(expected: Public) {
+    assert_eq(double(val), expected)   // ✓ funciona ahora
+}
+```
+
+El nuevo struct `OuterScope` reemplaza el hack ad-hoc de prepend de preámbulo en `compile_circuit()`. Los ASTs de FnDecl se registran en la `fn_table` del compilador ProveIR antes de compilar el bloque, por lo que las funciones externas se inlinean de forma idéntica a las definidas localmente.
+
+### Optimización ZK: 2,539 → 1,461 restricciones (-42.4%)
+
+Tres optimizaciones reducen el conteo de restricciones del proof of membership (Merkle depth-3):
+
+| Optimización | Antes | Después | Δ |
+|---|---|---|---|
+| Swap condicional en `merkle_verify` | 2,539 | 1,464 | -42.3% |
+| Dedup de enforcement booleano | 1,464 | 1,461 | -0.2% |
+| **Total** | **2,539** | **1,461** | **-42.4%** |
+
+**Swap condicional** — El builtin `merkle_verify` ahora usa 2 Mux + 1 Poseidon por nivel Merkle (365 restricciones) en vez de 2 Poseidon + 1 Mux (724 restricciones). Esto coincide con el patrón estándar de Tornado Cash y Semaphore.
+
+**Dedup de enforcement booleano** — El backend R1CS ahora rastrea qué variables ya tienen `v * (1-v) = 0` enforzado. Cuando la misma condición se usa en múltiples instrucciones Mux/And/Or, el chequeo se emite solo una primera vez.
+
+### Nueva pasada: CSE (Common Sub-expression Elimination)
+
+Nueva pasada de optimización IR que identifica computaciones puras duplicadas y remapea sus resultados a la primera ocurrencia. Cubre todas las instrucciones puras: aritmética, Poseidon, Mux, operaciones booleanas, comparaciones. Las instrucciones con efectos secundarios (AssertEq, Assert, RangeCheck) nunca se deduplican. Maneja sustituciones encadenadas.
+
+El pipeline de optimización ahora es: constant folding → bound inference → **CSE** → dead code elimination.
+
+### Nuevo ejemplo: proof of membership
+
+`examples/proof_of_membership.ach` — Árbol Merkle depth-3 con 8 miembros. Dos miembros prueban membresía vía commitments Poseidon y `merkle_verify` sin revelar identidad. 1,461 restricciones por prueba (Groth16, ~855 bytes).
+
+### Fix: `BigInt.to_string()` y `BigInt.to_hex()`
+
+Los valores BigInt ahora soportan conversión a string:
+
+```ach
+let b = bigint256(42)
+print(b.to_string())   // "42"
+print(b.to_hex())      // "0x2a"
+```
+
+### Suite de tests: 2,705 tests
+
+2,543 tests unitarios/integración (cargo test --workspace) + 162 tests E2E (run_tests.sh). Subió desde 2,125 en beta.16.
+
+### Script PGO
+
+```bash
+./scripts/build-pgo.sh
+```
+
+Construye un binario optimizado usando profile-guided optimization. Recolecta perfiles del benchmark de hot-loop y la suite de tests de la VM, luego reconstruye con LLVM PGO. Integrado en CI (`release.yml`) para targets nativos.
+
+---
+
+## 0.1.0-beta.16 — 2026-03-25
+
+**Hardening, imports en circuitos, mensajes en assert, inputs TOML.**
+
+### Hardening
+
+- **Panics → Result:** `Arena::alloc()` retorna `Result`, `unreachable!()` reemplazado con `Err(InvalidOpcode)`, ~35 conversiones defensivas de unwrap.
+- **Errores genéricos eliminados:** `RuntimeError::Unknown` y `SystemError` reemplazados con variantes específicas (`StaleHeapHandle`, `StaleUpvalue`, `IoError`, etc.).
+- **Robustez del lexer:** `from_utf8().unwrap()` reemplazado con propagación de errores.
+- **Formato flat de circuito eliminado:** Declaraciones `public`/`witness` a nivel top son error de compilación. Usar `circuit name(param: Type, ...) { body }`.
+- **Validación de keyword arguments:** Errores tipográficos en llamadas a circuitos producen sugerencias "did you mean?".
+
+### `assert_eq` / `assert` con mensajes personalizados
+
+```ach
+assert_eq(computed, expected, "commitment mismatch")
+assert(is_valid, "eligibility check failed")
+```
+
+Tercer argumento opcional (literal string) mostrado cuando la evaluación del testigo falla. Usa nombres de variables + valores cuando no se proporciona mensaje.
+
+### Imports de circuitos en ProveIR
+
+```ach
+import "./hash_lib.ach" as h
+
+circuit main(out: Public, a: Witness, b: Witness) {
+    assert_eq(h.my_hash(a, b), out)
+}
+```
+
+Los circuitos ahora pueden importar funciones de otros módulos. Las funciones importadas se inlinean durante la compilación ProveIR. Soporta `import ... as alias` e imports selectivos. Detección de imports circulares incluida.
+
+### `--input-file` para inputs TOML de circuitos
+
+```bash
+ach circuit merkle.ach --input-file inputs.toml
+```
+
+```toml
+root = "7853200120375982..."
+leaf = "1"
+path = ["2", "3"]
+indices = ["0", "1"]
+```
+
+Reemplaza la convención `--inputs "path_0=2,path_1=3"` con arrays TOML nativos. Soporta valores string, enteros, hex (`"0xFF"`) y valores negativos. Mutuamente exclusivo con `--inputs`.
+
+### Interno
+
+- `ModuleLoader` movido de `compiler` a crate `ir` (compartido entre compilador de bytecode y ProveIR).
+- Versión del formato ProveIR bumpeada a v3 (campo de mensaje de assert en `CircuitNode::AssertEq`/`Assert`).
+- Factibilidad WASM verificada: 7/9 crates core compilan a `wasm32-unknown-unknown`.
+
+## 0.1.0-beta.15 — 2026-03-23
+
+**Unificación de sintaxis, metadatos de tipo global, ejemplo Tornado Cash.**
+
+### Breaking: Sintaxis unificada
+
+Seis patrones de sintaxis inconsistentes consolidados en un diseño coherente:
+
+```ach
+// Definiciones de circuito — parámetros con tipos de visibilidad
+circuit eligibility(root: Public, secret: Witness, path: Witness Field[3]) {
+    merkle_verify(root, poseidon(secret, 0), path, indices)
+}
+
+// Bloques prove — solo parámetros públicos, witnesses auto-capturados
+prove withdrawal(root: Public, nullifier_hash: Public) {
+    merkle_verify(root, commitment, path, indices)
+}
+
+// Keyword arguments para todos los callables
+eligibility(root: root_val, secret: my_secret, path: my_path)
+```
+
+- **`TypeAnnotation`** refactorizado de enum a struct con campos `visibility`, `base`, `array_size`.
+- **`Public`/`Witness`** son keywords de tipo contextuales: `root: Public`, `path: Witness Field[3]`.
+- **`Call`/`CircuitCall` unificados** — nodo único `Call` con `Vec<CallArg>` soporta keyword args para todos los callables.
+- **`CircuitParam`, `CircuitVisibility` eliminados** del AST.
+- **Sintaxis anterior eliminada** — `prove(public: [...])`, `circuit(public x, witness y)` ya no parsean.
+
+### Keyword `circuit` — definiciones de circuito reutilizables
+
+```ach
+circuit eligibility(root: Public, secret: Witness, path: Witness Field[3], indices: Witness Field[3]) {
+    let commitment = poseidon(secret, 0)
+    merkle_verify(root, commitment, path, indices)
+}
+```
+
+- `ach circuit file.ach` requiere el formato de declaración `circuit name(...)`.
+- `import circuit "./path.ach" as name` importa archivos de circuito independientes.
+- Llamadas a circuitos con keyword arguments: `eligibility(root: val, secret: s)`.
+
+### Bloques prove con nombre
+
+```ach
+prove vote(hash: Public) {
+    assert_eq(poseidon(secret, 0), hash)
+}
+```
+
+- `prove name(...)` a nivel statement se desugarea a `let name = prove name(...)`
+- Las pruebas son valores de primera clase (`TAG_PROOF`)
+
+### `--circuit-stats` — profiler de restricciones
+
+```bash
+ach circuit merkle.ach --circuit-stats
+ach run program.ach --circuit-stats
+```
+
+- 7 categorías: Aritmética, Aserciones, Range checks, Hashes, Comparaciones, Ops booleanas, Selecciones
+- `ach run --circuit-stats` recolecta stats de todos los bloques prove en runtime
+- El modelo de costo estático coincide exactamente con los conteos reales de restricciones R1CS
+
+### Metadatos de tipo global (`GlobalEntry`)
+
+Las variables globales ahora llevan anotaciones de tipo a través del pipeline del compilador:
+
+```ach
+let path: Field[2] = [voter1, n1]   // type_ann preservado en GlobalEntry
+prove(root: Public) {
+    merkle_verify(root, leaf, path, idx)  // path capturado correctamente como array
+}
+```
+
+- `global_symbols` actualizado de `HashMap<String, u16>` a `HashMap<String, GlobalEntry>` con campos `index`, `type_ann`, `is_mutable`.
+- `compile_prove` lee `GlobalEntry.type_ann` para construir `OuterScopeEntry` enriquecido para globals.
+- `find_array_size` busca en locals, upvalues Y globals.
+- Los imports selectivos propagan `type_ann` del módulo fuente.
+
+### Captura de arrays en bloques prove
+
+Variables array del scope VM se capturan automáticamente por bloques prove:
+
+```ach
+let path = [voter1, n1]           // inferido como Field[2]
+prove(merkle_root: Public) {
+    merkle_verify(merkle_root, commitment, path, indices)
+}
+```
+
+- **Inferencia de tipo array** — `let x = [a, b, c]` infiere `Field[3]` en bindings inmutables.
+- **Rastreo de capturas `extract_array_ident`** — merkle_verify y constructos que consumen arrays ahora marcan correctamente las capturas de elementos array para instanciación.
+- El handler prove de la VM auto-expande capturas `TAG_LIST` en entradas escalares.
+
+### Warnings de anotación de tipo
+
+```ach
+let x: Bool = 0p42          // W006: type mismatch
+let a: Field[3] = [1, 2]    // W007: array size mismatch
+```
+
+### Ejemplos
+
+- **`tornado_mixer.ach`** — Mixer privado estilo Tornado Cash completo: árbol de 4 depósitos, pruebas de membresía Merkle, prevención de doble gasto con nullifiers, binding de receptor. 3 pruebas Groth16 generadas end-to-end.
+- **`credential_proof.ach`** — Actualizado para usar arrays reales en vez de convención `_N`.
+- **`prove_secret_vote.ach`** — Modernizado a nueva sintaxis `prove(x: Public)`.
+
+### Editor
+
+- Gramática TextMate actualizada: `Public`/`Witness` como modificadores de visibilidad, `Field`/`Bool` como tipos, definiciones con nombre `circuit`/`prove`, `import circuit`, builtins ZK separados.
+- Gramática sincronizada al sitio de docs para highlighting Shiki.
+
+### Documentación
+
+- 21 páginas actualizadas (EN + ES) a nueva sintaxis en tutoriales, getting-started, circuitos y conceptos ZK.
+
+---
+
+## 0.1.0-beta.14 — 2026-03-21
+
+**Pipeline ProveIR completo (Fases A-H).** Los bloques prove ahora se compilan en tiempo de compilación y se serializan en bytecode, eliminando el re-parseo en runtime.
+
+### Nueva sintaxis
+
+- **`prove(public: [...])`** — Sintaxis de bloque prove con auto-inferencia de witnesses (reemplazada por `prove(name: Public)` en beta.15).
+
+```ach
+let secret = 0p42
+let hash = poseidon(secret, 0)
+
+let p = prove(public: [hash]) {
+    assert_eq(poseidon(secret, 0), hash)
+}
+```
+
+### Pipeline ProveIR
+
+- **Fase A:** Compilador ProveIR — AST a plantillas de circuito pre-compiladas con desugaring SSA, inlining de funciones y lowering de métodos.
+- **Fase B:** Instanciación — desenrolla loops, resuelve capturas, emite IR SSA plano. Incluye `MAX_INSTANTIATE_ITERATIONS` (1M) y enforcement de consistencia `AssertEq` para capturas usadas en estructura y restricciones.
+- **Fase C:** Serialización — bincode con header mágico `ACHP`, byte de versión, límite de 64 MB y validación post-deserialización.
+- **Fase D:** `ach circuit` usa ProveIR en vez de IrLowering (fallback IrLowering retenido para circuitos con imports).
+- **Fase E:** `compile_prove()` compila bloques prove a ProveIR en tiempo de compilación y almacena bytes serializados en el constant pool del bytecode vía `TAG_BYTES`.
+- **Fase F:** `handle_prove()` de la VM lee bytes ProveIR del constant pool, el handler deserializa e instancia con valores capturados del scope.
+- **Fase G:** El parser soporta sintaxis `prove(name: Public)`. El compilador sintetiza statements `PublicDecl` y valida que no haya sintaxis mixta.
+- **Fase H:** Documentación actualizada (18 páginas, EN + ES).
+
+### Hardening
+
+- Variante de error explícita `ImportsNotSupported` (reemplaza matching frágil de strings para detección de fallback IrLowering).
+- Validación de referencias de captura en `ProveIR::validate()` — rechaza `ArraySize::Capture` y `ForRange::WithCapture` que referencien nombres de captura desconocidos.
+- Contrato de rango con signo documentado en `Instruction::IsLt` / `IsLe`.
+- Validación de inputs en `execute_prove_ir()` — errores en vez de saltar silenciosamente valores faltantes del scope.
+- Fix de scope de upvalues — `compile_prove()` incluye locals del scope padre para que bloques prove dentro de funciones anidadas puedan referenciar variables accesibles por upvalue.
+
+### Infraestructura
+
+- `TAG_BYTES = 14` — nuevo tag de valor para constantes blob binarias (mark, sweep, recount del GC integrados).
+- `BytesInterner` — interner append-only del compilador para ProveIR serializado.
+- `SER_TAG_BYTES` — soporte del serializador/loader de bytecode para constantes bytes en archivos `.achb`.
+- Eliminado `source: String` del AST `Expr::Prove` y parámetro `source` no usado de `Parser::new()`.
+
+### Ejemplos
+
+Tres nuevos ejemplos en `examples/`:
+- `private_auction.ach` — Subasta con oferta sellada con commitments Poseidon, range checks y gadgets de comparación.
+- `credential_proof.ach` — Verificación anónima de credenciales con membresía Merkle y pruebas de umbral de edad.
+- `hash_chain_proof.ach` — Hashing Poseidon iterado con funciones dentro de bloques prove.
+
+### Editor
+
+- Gramática TextMate: regla `prove-block` para highlighting de sintaxis `prove(name: Public)`.
+- LSP: snippet de completion `provep`, hover docs actualizados.
+
+---
+
+## 0.1.0-beta.13 — 2026-03-19
+
+**Dispatch de métodos, namespaces estáticos, reorganización de namespaces.**
+
+### Features
+
+- **Dispatch de métodos** (`.method()`) — 50 métodos prototype en 8 tipos (Int, Field, String, List, Map, BigInt, Bool, Proof). Resueltos en tiempo de compilación vía opcode `MethodCall` (161).
+- **Namespaces estáticos** (`Type::MEMBER`) — `Int::MAX`, `Int::MIN`, `Field::ZERO`, `Field::ONE`, `Field::ORDER`, `BigInt::from_bits`. Compilados a `LoadConst` o `GetGlobal`.
+- **Reorganización de namespaces** — Funciones globales reducidas de 43 a 14 builtins + 2 std. Funciones como `abs`, `len`, `min`, `max`, `pow`, `to_string` migradas a métodos.
+
+### Documentación
+
+- 83 páginas de documentación (EN + ES) en docs.achrony.me.
+- Referencia de métodos Map, guía de migración de métodos, referencia de namespaces estáticos.
+
+---
+
+## 0.1.0-beta.12 — 2026-03-18
+
+**NativeModule trait, librería estándar, proc-macros.**
+
+### Features
+
+- **NativeModule trait** — Registro modular de funciones nativas. Cada grupo de stdlib implementa `NativeModule`.
+- **Crate `achronyme-std`** — 16 nuevas funciones nativas: conversión de tipos, utilidades matemáticas, strings extendidos, I/O (feature-gated).
+- **Proc-macros `#[ach_native]` / `#[ach_module]`** — Generación automática de wrappers `NativeFn` con verificación de aridad y extracción de argumentos type-safe.
+- **Traits `FromValue` / `IntoValue`** — Conversión type-safe entre `Value` de la VM y tipos Rust.
+
+---
+
+## 0.1.0-beta.11 — 2026-03-16
+
+**Manifiesto de proyecto, comando `ach init`.**
+
+### Features
+
+- **`achronyme.toml`** — Configuración de proyecto con búsqueda walk-up de directorio. Soporta secciones `[project]`, `[circuit]` y `[output]`.
+- **`ach init`** — Scaffolding interactivo de proyectos.
+- **Resolución de config** — Flags CLI > TOML > defaults.
+
+---
+
+## 0.1.0-beta.10 — 2026-03-16
+
+**Fix de lookup Plonkish, warning W003.**
+
+### Bug Fix
+
+- Los `range_check` e `IsLtBounded` de Plonkish ahora generan pruebas KZG reales. Migrado de `meta.selector()` a `meta.fixed_column()` + `meta.lookup_any()`.
+
+### Features
+
+- **Warning W003** — Advierte cuando comparaciones quedan sin acotar (~761 restricciones) con sugerencia de `range_check`.
+
+---
+
+## 0.1.0-beta.9 — 2026-03-15
+
+**Fix de export R1CS, optimización IsLtBounded.**
+
+### Fix de Seguridad
+
+- Export R1CS: `write_lc()` simplifica LinearCombinations antes de serialización (arregla fallos de `wtns check` en snarkjs).
+
+### Features
+
+- **Optimización IsLtBounded** — La pasada `bound_inference` reescribe comparaciones cuando los operandos tienen bitwidth probado. 761 restricciones bajan a 66 para comparaciones de 64 bits.
+
+### Benchmark
+
+| Primitiva | Achronyme | Circom | Notas |
+|-----------|-----------|--------|-------|
+| Poseidon(t=3) | **362** | 517 | 30% más eficiente |
+| IsLt (64-bit) | **66** | 67 | Paridad |
+
+---
+
+## 0.1.0-beta.3 — 2026-03-04
+
+**Hardening zero-panic, refactorización de arquitectura.**
+
+### Seguridad (16 fixes)
+
+Todos los paths `.unwrap()` y `panic!` reemplazados con propagación de `Result` en compilador, VM, memoria y backends de restricciones.
+
+### Arquitectura (13 refactors)
+
+Archivos monolíticos divididos en submódulos enfocados: `vm.rs`, `field.rs`, `parser.rs`, `poseidon.rs`, `plonkish_backend.rs`, `lower.rs`, `eval.rs`, `Arena<T>`.
