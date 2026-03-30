@@ -183,8 +183,8 @@ import '@fontsource-variable/jetbrains-mono';
     .template-select option { background: var(--bg-input); }
 
     /* ═══ EDITOR GROUPS ═══ */
-    .editor-groups-wrapper { flex: 1; display: flex; overflow: hidden; min-height: 100px; }
-    .editor-group { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
+    .editor-groups-wrapper { flex: 1; display: flex; overflow: hidden; min-height: 100px; min-width: 0; }
+    .editor-group { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
     .editor-group.active .group-tabbar { border-top: 1px solid var(--accent); }
     .group-split-handle { width: 4px; cursor: col-resize; flex-shrink: 0; position: relative; }
     .group-split-handle::after { content: ""; position: absolute; top: 0; bottom: 0; left: 1px; width: 2px; background: var(--border); }
@@ -710,11 +710,13 @@ import '@fontsource-variable/jetbrains-mono';
       if (!groupResizing) return;
       const dx = e.clientX - grStartX;
       const total = grStartW[0] + grStartW[1];
-      let lw = Math.max(200, grStartW[0] + dx);
+      let lw = Math.max(100, grStartW[0] + dx);
       let rw = total - lw;
-      if (rw < 200) { rw = 200; lw = total - rw; }
-      grLeft.style.flex = "none"; grLeft.style.width = lw + "px";
-      grRight.style.flex = "none"; grRight.style.width = rw + "px";
+      if (rw < 100) { rw = 100; lw = total - rw; }
+      const lp = (lw / total) * 100;
+      grLeft.style.flex = `${lp} 1 0%`;
+      grRight.style.flex = `${100 - lp} 1 0%`;
+      grLeft.style.width = ""; grRight.style.width = "";
     });
     document.addEventListener("mouseup", () => {
       if (!groupResizing) return;
@@ -847,7 +849,7 @@ import '@fontsource-variable/jetbrains-mono';
       group.view.destroy();
       group.el.remove();
       groups.splice(idx, 1);
-      groups.forEach(g => { g.el.style.flex = ""; g.el.style.width = ""; });
+      groups.forEach(g => { g.el.style.flex = ""; });
 
       if (activeGroupIdx >= groups.length) activeGroupIdx = groups.length - 1;
       setActiveGroup(activeGroupIdx);
