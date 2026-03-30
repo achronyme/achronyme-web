@@ -2,6 +2,7 @@
 //!
 //! Simplified version of cli/src/prove_handler.rs without CLI dependencies.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -16,9 +17,22 @@ pub enum ProveBackend {
     Plonkish,
 }
 
+/// Captured proof artifact from a prove {} block execution.
+#[derive(Clone, serde::Serialize)]
+pub struct CapturedProof {
+    pub name: String,
+    pub constraints: usize,
+    pub backend: String,
+    pub proof_json: String,
+    pub public_json: String,
+    pub vkey_json: String,
+}
+
 pub struct ServerProveHandler {
     cache_dir: PathBuf,
     pub backend: ProveBackend,
+    /// Proof artifacts captured during VM execution.
+    pub captured: RefCell<Vec<CapturedProof>>,
 }
 
 impl ServerProveHandler {
@@ -26,7 +40,16 @@ impl ServerProveHandler {
         let cache_dir = std::env::var("HOME")
             .map(|h| PathBuf::from(h).join(".achronyme").join("cache"))
             .unwrap_or_else(|_| std::env::temp_dir().join("achronyme-cache"));
-        Self { cache_dir, backend }
+        Self {
+            cache_dir,
+            backend,
+            captured: RefCell::new(Vec::new()),
+        }
+    }
+
+    /// Drain captured proof artifacts.
+    pub fn drain_captured(&self) -> Vec<CapturedProof> {
+        self.captured.borrow_mut().drain(..).collect()
     }
 }
 
@@ -110,8 +133,29 @@ impl ServerProveHandler {
             .verify(&witness)
             .map_err(|e| ProveError::Verification(format!("{e}")))?;
 
-        proving::groth16::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
-            .map_err(ProveError::ProofGeneration)
+        let n_constraints = r1cs.cs.num_constraints();
+
+        let result = proving::groth16::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
+            .map_err(ProveError::ProofGeneration)?;
+
+        // Capture proof artifacts
+        if let ProveResult::Proof {
+            ref proof_json,
+            ref public_json,
+            ref vkey_json,
+        } = result
+        {
+            self.captured.borrow_mut().push(CapturedProof {
+                name: "circuit".into(),
+                constraints: n_constraints,
+                backend: "r1cs".into(),
+                proof_json: proof_json.clone(),
+                public_json: public_json.clone(),
+                vkey_json: vkey_json.clone(),
+            });
+        }
+
+        Ok(result)
     }
 
     fn prove_plonkish(
@@ -126,13 +170,34 @@ impl ServerProveHandler {
             .compile_ir_with_witness(program, inputs)
             .map_err(|e| ProveError::Compilation(format!("{e}")))?;
 
+        let n_rows = compiler.num_circuit_rows();
+
         compiler
             .system
             .verify()
             .map_err(|e| ProveError::Verification(format!("plonkish: {e}")))?;
 
-        proving::halo2_proof::generate_plonkish_proof(compiler, &self.cache_dir)
-            .map_err(ProveError::ProofGeneration)
+        let result = proving::halo2_proof::generate_plonkish_proof(compiler, &self.cache_dir)
+            .map_err(ProveError::ProofGeneration)?;
+
+        // Capture proof artifacts
+        if let ProveResult::Proof {
+            ref proof_json,
+            ref public_json,
+            ref vkey_json,
+        } = result
+        {
+            self.captured.borrow_mut().push(CapturedProof {
+                name: "circuit".into(),
+                constraints: n_rows,
+                backend: "plonkish".into(),
+                proof_json: proof_json.clone(),
+                public_json: public_json.clone(),
+                vkey_json: vkey_json.clone(),
+            });
+        }
+
+        Ok(result)
     }
 }
 

@@ -1,3 +1,4 @@
+pub mod circuit;
 pub mod compile;
 pub mod format;
 pub mod fs;

@@ -177,6 +177,26 @@ export async function runProject(source) {
   return res.json();
 }
 
+/** Compile a standalone circuit and generate artifacts (R1CS, WTNS, proof, Solidity). */
+export async function compileCircuit(source, inputs, options = {}) {
+  const res = await fetch(`${API_BASE}/api/circuit`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({
+      source,
+      inputs: inputs || {},
+      backend: options.backend || "r1cs",
+      prove: !!options.prove,
+      solidity: !!options.solidity,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `circuit failed: ${res.status}`);
+  }
+  return res.json();
+}
+
 /** Health check. */
 export async function healthCheck() {
   const res = await fetch(`${API_BASE}/health`);

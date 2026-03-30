@@ -376,6 +376,69 @@ import '@fontsource-variable/jetbrains-mono';
     }
     @keyframes blink { 50% { opacity: 0; } }
 
+    /* ═══ PROOF PANEL ═══ */
+    .proof-empty {
+      display: flex; align-items: center; gap: 8px;
+      padding: 16px; color: var(--text-muted);
+      font-family: var(--font-sans); font-size: 13px;
+    }
+    .proof-empty code {
+      background: rgba(168,85,247,0.12); color: var(--accent);
+      padding: 1px 5px; border-radius: 3px; font-size: 12px;
+    }
+    .proof-artifact {
+      border: 1px solid var(--border); border-radius: 6px;
+      margin: 8px 12px; overflow: hidden;
+    }
+    .proof-artifact-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border); cursor: pointer; user-select: none;
+    }
+    .proof-artifact-header:hover { background: rgba(255,255,255,0.05); }
+    .proof-artifact-title {
+      font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+      color: var(--text-primary); display: flex; align-items: center; gap: 8px;
+    }
+    .proof-artifact-title .proof-badge {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 1px 6px; border-radius: 3px;
+      background: rgba(168,85,247,0.15); color: var(--accent);
+    }
+    .proof-stats {
+      display: flex; gap: 16px; font-family: var(--font-sans); font-size: 12px; color: var(--text-muted);
+    }
+    .proof-stat-val { color: var(--text-primary); font-weight: 600; }
+    .proof-downloads {
+      display: flex; gap: 4px; padding: 8px 12px;
+      flex-wrap: wrap; border-bottom: 1px solid var(--border);
+    }
+    .proof-dl-btn {
+      font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+      background: rgba(255,255,255,0.05); color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+      transition: all 0.15s;
+    }
+    .proof-dl-btn:hover { background: rgba(168,85,247,0.1); border-color: var(--accent); color: var(--text-primary); }
+    .proof-dl-btn svg { width: 12px; height: 12px; }
+    .proof-json-preview {
+      max-height: 200px; overflow: auto; padding: 8px 12px;
+      font-family: var(--font-mono); font-size: 12px; line-height: 1.5;
+      color: var(--text-secondary); background: rgba(0,0,0,0.2);
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .proof-section-label {
+      padding: 6px 12px; font-family: var(--font-sans); font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--text-muted); background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border); cursor: pointer; user-select: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .proof-section-label:hover { background: rgba(255,255,255,0.04); }
+    .proof-section-label svg { width: 8px; height: 8px; color: var(--text-muted); transition: transform 0.1s; }
+    .proof-section-label.collapsed svg { transform: rotate(-90deg); }
+
     /* ═══ STATUS BAR ═══ */
     .statusbar {
       grid-column: 1 / -1;
@@ -632,8 +695,8 @@ import '@fontsource-variable/jetbrains-mono';
         <div class="output-panel" id="output-panel">
           <div class="output-header" draggable="true" id="output-header">
             <div class="output-tabs">
-              <span class="output-tab active">Terminal</span>
-              <span class="output-tab">Problems</span>
+              <span class="output-tab active" data-tab="terminal">Terminal</span>
+              <span class="output-tab" data-tab="proof">Proof</span>
             </div>
             <div class="panel-actions">
               <button class="panel-action-btn" id="panel-position-btn" title="Toggle Panel Position">
@@ -649,6 +712,13 @@ import '@fontsource-variable/jetbrains-mono';
           </div>
           <div class="output-scroll" id="output">
             <span class="output-cursor"></span>
+          </div>
+          <div class="output-scroll" id="proof-panel" style="display:none">
+            <div class="proof-empty" id="proof-empty">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Run code with <code>prove {}</code> blocks to see proof artifacts</span>
+            </div>
+            <div id="proof-artifacts" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -1149,6 +1219,22 @@ import '@fontsource-variable/jetbrains-mono';
     }
 
     // ═══ OUTPUT ═══
+    const proofPanel = document.getElementById("proof-panel");
+    const proofEmpty = document.getElementById("proof-empty");
+    const proofArtifacts = document.getElementById("proof-artifacts");
+    let activeOutputTab = "terminal";
+
+    // Output tab switching
+    document.querySelectorAll(".output-tab[data-tab]").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".output-tab[data-tab]").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        activeOutputTab = tab.dataset.tab;
+        output.style.display = activeOutputTab === "terminal" ? "" : "none";
+        proofPanel.style.display = activeOutputTab === "proof" ? "" : "none";
+      });
+    });
+
     function clearOutput() { output.innerHTML = '<span class="output-cursor"></span>'; }
     function appendOutput(text, cls = "stdout") {
       const cursor = output.querySelector(".output-cursor");
@@ -1157,6 +1243,119 @@ import '@fontsource-variable/jetbrains-mono';
       line.textContent = text;
       output.insertBefore(line, cursor);
       output.scrollTop = output.scrollHeight;
+    }
+
+    // ═══ PROOF ARTIFACTS ═══
+    function downloadBlob(data, filename, mime) {
+      const blob = new Blob([data], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadBase64(b64, filename, mime) {
+      const bytes = atob(b64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      downloadBlob(arr, filename, mime);
+    }
+
+    function dlBtn(label, onClick) {
+      const btn = document.createElement("button");
+      btn.className = "proof-dl-btn";
+      btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10v3h10v-3"/><path d="M8 2v8M5 7l3 3 3-3"/></svg> ${label}`;
+      btn.addEventListener("click", onClick);
+      return btn;
+    }
+
+    function collapsibleSection(label, content) {
+      const lbl = document.createElement("div");
+      lbl.className = "proof-section-label";
+      lbl.innerHTML = `<svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> ${label}`;
+      const body = document.createElement("div");
+      body.className = "proof-json-preview";
+      body.textContent = typeof content === "string" ? content : JSON.stringify(content, null, 2);
+      lbl.addEventListener("click", () => {
+        lbl.classList.toggle("collapsed");
+        body.style.display = lbl.classList.contains("collapsed") ? "none" : "";
+      });
+      return { lbl, body };
+    }
+
+    function renderProofArtifacts(proofs) {
+      proofArtifacts.innerHTML = "";
+      if (!proofs || proofs.length === 0) {
+        proofEmpty.style.display = "";
+        proofArtifacts.style.display = "none";
+        return;
+      }
+      proofEmpty.style.display = "none";
+      proofArtifacts.style.display = "";
+
+      for (const p of proofs) {
+        const card = document.createElement("div");
+        card.className = "proof-artifact";
+
+        // Header with stats
+        const header = document.createElement("div");
+        header.className = "proof-artifact-header";
+        header.innerHTML = `
+          <div class="proof-artifact-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><circle cx="12" cy="12" r="3"/></svg>
+            ${p.name || "Proof"}
+            <span class="proof-badge">${p.backend || "r1cs"}</span>
+          </div>
+          <div class="proof-stats">
+            <span><span class="proof-stat-val">${p.constraints}</span> constraints</span>
+          </div>`;
+        card.appendChild(header);
+
+        // Downloads
+        const downloads = document.createElement("div");
+        downloads.className = "proof-downloads";
+        if (p.proof_json) downloads.appendChild(dlBtn("proof.json", () => downloadBlob(p.proof_json, "proof.json", "application/json")));
+        if (p.public_json) downloads.appendChild(dlBtn("public.json", () => downloadBlob(p.public_json, "public.json", "application/json")));
+        if (p.vkey_json) downloads.appendChild(dlBtn("vkey.json", () => downloadBlob(p.vkey_json, "vkey.json", "application/json")));
+        if (p.r1cs) downloads.appendChild(dlBtn("circuit.r1cs", () => downloadBase64(p.r1cs, "circuit.r1cs", "application/octet-stream")));
+        if (p.wtns) downloads.appendChild(dlBtn("witness.wtns", () => downloadBase64(p.wtns, "witness.wtns", "application/octet-stream")));
+        if (p.solidity) downloads.appendChild(dlBtn("Verifier.sol", () => downloadBlob(p.solidity, "Verifier.sol", "text/plain")));
+        card.appendChild(downloads);
+
+        // Collapsible JSON previews
+        if (p.proof_json) {
+          try {
+            const { lbl, body } = collapsibleSection("Proof", JSON.parse(p.proof_json));
+            lbl.classList.add("collapsed"); body.style.display = "none";
+            card.append(lbl, body);
+          } catch { const { lbl, body } = collapsibleSection("Proof", p.proof_json); card.append(lbl, body); }
+        }
+        if (p.public_json) {
+          const { lbl, body } = collapsibleSection("Public Inputs", p.public_json);
+          card.append(lbl, body);
+        }
+        if (p.vkey_json) {
+          try {
+            const { lbl, body } = collapsibleSection("Verifying Key", JSON.parse(p.vkey_json));
+            lbl.classList.add("collapsed"); body.style.display = "none";
+            card.append(lbl, body);
+          } catch { const { lbl, body } = collapsibleSection("Verifying Key", p.vkey_json); card.append(lbl, body); }
+        }
+        if (p.solidity) {
+          const { lbl, body } = collapsibleSection("Solidity Verifier", p.solidity);
+          lbl.classList.add("collapsed"); body.style.display = "none";
+          card.append(lbl, body);
+        }
+
+        proofArtifacts.appendChild(card);
+      }
+
+      // Auto-switch to proof tab
+      document.querySelectorAll(".output-tab[data-tab]").forEach(t => t.classList.remove("active"));
+      document.querySelector('.output-tab[data-tab="proof"]').classList.add("active");
+      activeOutputTab = "proof";
+      output.style.display = "none";
+      proofPanel.style.display = "";
     }
 
     // ═══ TAB ICONS ═══
@@ -1430,6 +1629,10 @@ import '@fontsource-variable/jetbrains-mono';
         if (!data.success) { if (data.output) appendOutput("", "stdout"); appendOutput(data.error, "error"); }
         appendOutput("", "stdout");
         appendOutput(`[${data.time_ms}ms]`, "timing");
+        // Render proof artifacts if present
+        if (data.proofs && data.proofs.length > 0) {
+          renderProofArtifacts(data.proofs);
+        }
       } catch (e) {
         appendOutput(e.message, "error");
         serverDot.classList.add("error"); serverLabel.textContent = "Offline"; return;

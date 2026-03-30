@@ -68,6 +68,7 @@ pub struct RunOutput {
     pub success: bool,
     pub output: String,
     pub error: Option<String>,
+    pub proofs: Vec<crate::prove_handler::CapturedProof>,
 }
 
 /// Result of a compile-only check.
@@ -111,7 +112,7 @@ pub fn run_source_with_base_path(
     OUTPUT_BYTES.with(|b| *b.borrow_mut() = 0);
 
     match run_inner(source, budget, max_heap, base_path, backend) {
-        Ok(()) => {
+        Ok(proofs) => {
             let truncated = OUTPUT_BYTES.with(|b| *b.borrow() >= MAX_OUTPUT_BYTES);
             let mut output = OUTPUT.with(|buf| buf.borrow().join("\n"));
             if truncated {
@@ -121,6 +122,7 @@ pub fn run_source_with_base_path(
                 success: true,
                 output,
                 error: None,
+                proofs,
             }
         }
         Err(msg) => {
@@ -133,6 +135,7 @@ pub fn run_source_with_base_path(
                 success: false,
                 output,
                 error: Some(msg),
+                proofs: vec![],
             }
         }
     }
@@ -144,7 +147,7 @@ fn run_inner(
     max_heap: usize,
     base_path: Option<std::path::PathBuf>,
     backend: crate::prove_handler::ProveBackend,
-) -> Result<(), String> {
+) -> Result<Vec<crate::prove_handler::CapturedProof>, String> {
     // 1. Compile
     let mut compiler = Compiler::new();
     if let Some(bp) = base_path {
@@ -171,7 +174,7 @@ fn run_inner(
     // Register prove/verify handlers for prove {} blocks
     let handler = Rc::new(ServerProveHandler::new(backend));
     vm.prove_handler = Some(Box::new(SharedHandler(Rc::clone(&handler))));
-    vm.verify_handler = Some(Box::new(SharedHandler(handler)));
+    vm.verify_handler = Some(Box::new(SharedHandler(handler.clone())));
 
     // 3. Transfer artifacts from compiler to VM
     vm.import_strings(compiler.interner.strings);
@@ -247,7 +250,11 @@ fn run_inner(
         } else {
             format!("Runtime error: {e}")
         }
-    })
+    })?;
+
+    // 7. Drain captured proof artifacts
+    let proofs = handler.drain_captured();
+    Ok(proofs)
 }
 
 /// Check source code for errors without executing.

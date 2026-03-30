@@ -31,6 +31,9 @@ dashmap = "6"
 uuid = { version = "1", features = ["v4"] }
 toml = "0.8"
 
+# Encoding
+base64 = "0.22"
+
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

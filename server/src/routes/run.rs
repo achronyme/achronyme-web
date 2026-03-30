@@ -30,6 +30,8 @@ pub struct RunResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
     time_ms: u64,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    proofs: Vec<crate::prove_handler::CapturedProof>,
 }
 
 pub async fn handler(
@@ -62,6 +64,7 @@ pub async fn handler(
             output: result.output,
             error: result.error,
             time_ms: start.elapsed().as_millis() as u64,
+            proofs: result.proofs,
         }));
     }
 
@@ -84,5 +87,6 @@ pub async fn handler(
         output: result.output,
         error: result.error,
         time_ms: start.elapsed().as_millis() as u64,
+        proofs: result.proofs,
     }))
 }

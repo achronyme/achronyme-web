@@ -37,6 +37,7 @@ pub fn run_workspace(workspace: &Path, budget: u64, max_heap: usize) -> RunOutpu
                     success: false,
                     output: String::new(),
                     error: Some(format!("cannot read achronyme.toml: {e}")),
+                    proofs: vec![],
                 }
             }
         };
@@ -47,6 +48,7 @@ pub fn run_workspace(workspace: &Path, budget: u64, max_heap: usize) -> RunOutpu
                     success: false,
                     output: String::new(),
                     error: Some(format!("invalid achronyme.toml: {e}")),
+                    proofs: vec![],
                 }
             }
         }
@@ -73,6 +75,7 @@ pub fn run_workspace(workspace: &Path, budget: u64, max_heap: usize) -> RunOutpu
                 success: false,
                 output: String::new(),
                 error: Some(format!("cannot read {entry}: {e}")),
+                proofs: vec![],
             }
         }
     };

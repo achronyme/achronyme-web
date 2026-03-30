@@ -64,6 +64,7 @@ async fn main() {
         .route("/api/compile", post(routes::compile::handler))
         .route("/api/inspect", post(routes::inspect::handler))
         .route("/api/prove", post(routes::prove::handler))
+        .route("/api/circuit", post(routes::circuit::handler))
         .route("/api/format", post(routes::format::handler))
         // Session endpoints
         .route("/api/session/create", post(routes::session::create))
