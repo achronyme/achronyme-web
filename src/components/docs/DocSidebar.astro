@@ -20,14 +20,14 @@ const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
       return (
         <div class:list={['pb-4', gi > 0 && 'pt-4 border-t border-subtle/20']}>
           <button
-            command={hasActive ? undefined : '--toggle'}
-            commandfor={hasActive ? undefined : disclosureId}
+            command="--toggle"
+            commandfor={disclosureId}
             type="button"
             class="flex items-center gap-1.5 w-full text-left text-[13px] font-bold text-text-primary pb-2 cursor-pointer select-none hover:text-proof-light transition-colors"
           >
             {getLabel(group, locale)}
           </button>
-          <el-disclosure id={disclosureId} hidden={!hasActive ? true : undefined}>
+          <el-disclosure id={disclosureId} hidden={!hasActive ? true : undefined} data-group={gi}>
             <ul class="space-y-0.5">
               {group.items.map(item => {
                 const isActive = item.slug === currentSlug;
@@ -54,3 +54,41 @@ const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
     })}
   </div>
 </nav>
+
+<script>
+  const STORAGE_KEY = 'docs-sidebar-state';
+
+  function readState(): Record<string, boolean> {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function init() {
+    const disclosures = document.querySelectorAll<HTMLElement>('el-disclosure[data-group]');
+    const saved = readState();
+
+    // Restore saved state (active group stays open regardless)
+    disclosures.forEach(el => {
+      const key = el.dataset.group!;
+      if (key in saved) {
+        if (saved[key] && el.hidden) el.removeAttribute('hidden');
+        else if (!saved[key] && !el.hidden) el.setAttribute('hidden', '');
+      }
+    });
+
+    // Listen for toggle events to persist state
+    disclosures.forEach(el => {
+      el.addEventListener('toggle', () => {
+        const state = readState();
+        state[el.dataset.group!] = !el.hidden;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      });
+    });
+  }
+
+  if (customElements.get('el-disclosure')) {
+    init();
+  } else {
+    window.addEventListener('elements:ready', init);
+  }
+</script>
