@@ -63,17 +63,6 @@ const altLocalePath = locale === 'en' ? `/es/docs/${currentSlug}` : `/docs/${cur
 </Layout>
 
 <script>
-  // Embed mode: hide chrome when loaded in playground iframe
-  if (new URLSearchParams(window.location.search).has('embed')) {
-    document.documentElement.classList.add('embed-mode');
-    // Rewrite internal links to keep embed param
-    document.querySelectorAll<HTMLAnchorElement>('a[href^="/docs"], a[href^="/es/docs"]').forEach(a => {
-      const url = new URL(a.href);
-      url.searchParams.set('embed', '');
-      a.href = url.toString();
-    });
-  }
-
   document.querySelectorAll<HTMLPreElement>('.doc-prose pre').forEach((pre, i) => {
     const id = `code-block-${i}`;
 

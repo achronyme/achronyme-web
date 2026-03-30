@@ -467,35 +467,45 @@ import '@fontsource-variable/jetbrains-mono';
     }
     .panel-action-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
 
-    /* Block iframe from stealing mouse during resize */
-    body.resizing iframe { pointer-events: none; }
-
-    /* ═══ DOCS PANEL ═══ */
-    .docs-panel {
-      position: fixed; top: 30px; bottom: 22px; right: 0;
-      width: 480px; background: #13131a;
-      border-left: 1px solid var(--border);
-      transform: translateX(100%); transition: transform 0.2s ease;
-      z-index: 20; display: flex; flex-direction: column;
+    /* ═══ DOCS GROUP (in editor-groups-wrapper) ═══ */
+    .docs-group {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; min-width: 0; background: #13131a;
+      position: relative;
     }
-    .docs-panel.open { transform: translateX(0); }
-    .docs-panel-header {
+    .docs-group-header {
       height: 35px; display: flex; align-items: center; justify-content: space-between;
-      padding: 0 12px; font-family: var(--font-sans); font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary);
-      border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg-titlebar);
+      padding: 0 4px 0 12px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; background: var(--bg-tab-row);
     }
-    .docs-panel-actions { display: flex; gap: 2px; }
-    .docs-panel iframe { flex: 1; border: none; width: 100%; background: #13131a; }
-    .docs-panel-resize {
-      position: absolute; left: -3px; top: 0; bottom: 0; width: 6px;
-      cursor: col-resize; z-index: 5;
+    .docs-nav-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-sans); font-size: 13px; color: var(--text-primary);
+      background: none; border: none; cursor: pointer; padding: 2px 8px;
+      border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .docs-panel-resize::after {
-      content: ""; position: absolute; top: 0; bottom: 0; left: 3px;
-      width: 1px; background: transparent; transition: background 0.15s;
+    .docs-nav-btn:hover { background: rgba(255,255,255,0.08); }
+    .docs-nav-btn svg { width: 10px; height: 10px; color: var(--text-muted); flex-shrink: 0; }
+    .docs-group-actions { display: flex; gap: 2px; flex-shrink: 0; }
+    .docs-nav-dropdown {
+      position: absolute; top: 35px; left: 0; right: 0;
+      background: #252526; border-bottom: 1px solid var(--border);
+      max-height: 60vh; overflow-y: auto; z-index: 10;
+      display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .docs-panel-resize:hover::after, .docs-panel-resize.dragging::after { background: var(--accent); }
+    .docs-nav-dropdown.open { display: block; }
+    .docs-nav-group-label {
+      padding: 8px 12px 4px; font-family: var(--font-sans);
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--text-muted);
+    }
+    .docs-nav-item {
+      padding: 3px 12px 3px 20px; font-family: var(--font-sans);
+      font-size: 13px; color: var(--text-secondary); cursor: pointer;
+    }
+    .docs-nav-item:hover { background: #2a2d2e; color: var(--text-primary); }
+    .docs-nav-item.active { color: var(--accent); }
+    .docs-group-content { flex: 1; overflow: hidden; }
 
     @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
@@ -503,7 +513,7 @@ import '@fontsource-variable/jetbrains-mono';
       .editor-output-split { flex-direction: column; }
       .output-panel { width: 100%; min-width: 0; }
       .resize-handle, .group-split-handle { display: none; }
-      .editor-group:not(.active) { display: none; }
+      .editor-group:not(.active), .docs-group { display: none; }
     }
   </style>
 </head>
@@ -609,23 +619,6 @@ import '@fontsource-variable/jetbrains-mono';
       </div>
     </div>
 
-    <!-- DOCS PANEL -->
-    <div class="docs-panel" id="docs-panel">
-      <div class="docs-panel-header">
-        <span>Documentation</span>
-        <div class="docs-panel-actions">
-          <button class="panel-action-btn" id="docs-external-btn" title="Open in new tab">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M7 3H3v10h10V9"/><path d="M9 3h4v4M13 3L7 9"/></svg>
-          </button>
-          <button class="panel-action-btn" id="docs-close-btn" title="Close">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="docs-panel-resize" id="docs-panel-resize"></div>
-      <iframe id="docs-iframe" loading="lazy"></iframe>
-    </div>
-
     <!-- STATUS BAR -->
     <div class="statusbar">
       <div class="statusbar-left">
@@ -656,6 +649,7 @@ import '@fontsource-variable/jetbrains-mono';
     import { renderFileTree, startInlineCreate } from "../lib/playground-filetree.js";
     import { TabManager } from "../lib/playground-tabs.js";
     import * as session from "../lib/playground-session.js";
+    import { sidebarConfig, getLabel } from "../data/docs-sidebar";
 
     // ═══ DOM ═══
     const output = document.getElementById("output");
@@ -1289,73 +1283,174 @@ import '@fontsource-variable/jetbrains-mono';
       importInput.value = "";
     });
 
-    // ═══ DOCS PANEL ═══
-    const docsPanel = document.getElementById("docs-panel");
-    const docsIframe = document.getElementById("docs-iframe");
+    // ═══ DOCS GROUP ═══
     const docsIcon = document.getElementById("activity-docs");
-    let docsOpen = localStorage.getItem("ach-docs-open") === "true";
-    let docsWidth = parseInt(localStorage.getItem("ach-docs-width")) || 480;
-    let docsUrl = localStorage.getItem("ach-docs-url") || "/docs/getting-started/introduction?embed";
+    let docsGroup = null;
+    let currentDocSlug = localStorage.getItem("ach-docs-slug") || "getting-started/introduction";
 
     function toggleDocs() {
-      docsOpen = !docsOpen;
-      docsPanel.classList.toggle("open", docsOpen);
-      docsIcon.classList.toggle("active", docsOpen);
-      if (docsOpen && !docsIframe.src) docsIframe.src = docsUrl;
-      localStorage.setItem("ach-docs-open", docsOpen);
+      if (docsGroup) closeDocs(); else openDocs();
+    }
+
+    function openDocs() {
+      if (docsGroup) return;
+
+      const el = document.createElement("div");
+      el.className = "docs-group";
+
+      // Header
+      const header = document.createElement("div");
+      header.className = "docs-group-header";
+
+      const navBtn = document.createElement("button");
+      navBtn.className = "docs-nav-btn";
+      navBtn.innerHTML = `<svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> <span>Docs</span>`;
+
+      const actions = document.createElement("div");
+      actions.className = "docs-group-actions";
+
+      const extBtn = document.createElement("button");
+      extBtn.className = "panel-action-btn";
+      extBtn.title = "Open in new tab";
+      extBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M7 3H3v10h10V9"/><path d="M9 3h4v4M13 3L7 9"/></svg>`;
+      extBtn.addEventListener("click", () => window.open(`/docs/${currentDocSlug}`, "_blank"));
+
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "panel-action-btn";
+      closeBtn.title = "Close Documentation";
+      closeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+      closeBtn.addEventListener("click", closeDocs);
+
+      actions.append(extBtn, closeBtn);
+      header.append(navBtn, actions);
+
+      // Navigation dropdown
+      const dropdown = document.createElement("div");
+      dropdown.className = "docs-nav-dropdown";
+      buildDocsNav(dropdown);
+
+      navBtn.addEventListener("click", (e) => { e.stopPropagation(); dropdown.classList.toggle("open"); });
+      const closeDropdown = (e) => {
+        if (!dropdown.contains(e.target) && !navBtn.contains(e.target)) dropdown.classList.remove("open");
+      };
+      document.addEventListener("click", closeDropdown);
+
+      // Content area (shadow DOM host)
+      const content = document.createElement("div");
+      content.className = "docs-group-content";
+
+      el.append(header, dropdown, content);
+
+      // Add split handle + element to wrapper
+      const handle = document.createElement("div");
+      handle.className = "group-split-handle";
+      setupGroupSplitHandle(handle);
+      groupsWrapper.append(handle, el);
+
+      docsGroup = { el, navBtn, dropdown, content, handle, closeDropdown };
+      docsIcon.classList.add("active");
+      localStorage.setItem("ach-docs-open", "true");
+
+      loadDocsPage(currentDocSlug);
+    }
+
+    function closeDocs() {
+      if (!docsGroup) return;
+      document.removeEventListener("click", docsGroup.closeDropdown);
+      docsGroup.handle.remove();
+      docsGroup.el.remove();
+      docsGroup = null;
+      docsIcon.classList.remove("active");
+      groups.forEach(g => { g.el.style.flex = ""; });
+      localStorage.setItem("ach-docs-open", "false");
+    }
+
+    function buildDocsNav(dropdown) {
+      dropdown.innerHTML = "";
+      for (const group of sidebarConfig) {
+        const lbl = document.createElement("div");
+        lbl.className = "docs-nav-group-label";
+        lbl.textContent = getLabel(group, "en");
+        dropdown.appendChild(lbl);
+        for (const item of group.items) {
+          const el = document.createElement("div");
+          el.className = "docs-nav-item" + (item.slug === currentDocSlug ? " active" : "");
+          el.textContent = getLabel(item, "en");
+          el.addEventListener("click", () => { dropdown.classList.remove("open"); loadDocsPage(item.slug); });
+          dropdown.appendChild(el);
+        }
+      }
+    }
+
+    async function loadDocsPage(slug) {
+      currentDocSlug = slug;
+      localStorage.setItem("ach-docs-slug", slug);
+      if (!docsGroup) return;
+
+      // Update header title
+      const flat = sidebarConfig.flatMap(g => g.items);
+      const item = flat.find(i => i.slug === slug);
+      docsGroup.navBtn.querySelector("span").textContent = item ? getLabel(item, "en") : slug;
+
+      // Update active state in dropdown
+      docsGroup.dropdown.querySelectorAll(".docs-nav-item").forEach((el, i) => {
+        el.classList.toggle("active", flat[i]?.slug === slug);
+      });
+
+      try {
+        const res = await fetch(`/docs/${slug}`);
+        const html = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        const styleLinks = doc.querySelectorAll('link[rel="stylesheet"]');
+        const article = doc.querySelector("article");
+        const pagination = doc.querySelector("nav.flex.justify-between");
+
+        const container = docsGroup.content;
+        let shadow = container.shadowRoot;
+        if (!shadow) {
+          shadow = container.attachShadow({ mode: "open" });
+          // Intercept doc links once
+          shadow.addEventListener("click", (e) => {
+            const a = e.target.closest('a[href^="/docs/"]');
+            if (a) { e.preventDefault(); loadDocsPage(a.getAttribute("href").replace(/^\/docs\//, "").replace(/\/$/, "")); }
+          });
+        }
+        shadow.innerHTML = "";
+
+        for (const link of styleLinks) {
+          const l = document.createElement("link");
+          l.rel = "stylesheet"; l.href = link.href;
+          shadow.appendChild(l);
+        }
+
+        const overrides = document.createElement("style");
+        overrides.textContent = `
+          :host { display: block; height: 100%; overflow-y: auto; background: #13131a; }
+          article { padding: 1.5rem !important; max-width: none !important; }
+          nav.flex.justify-between { padding: 1rem 1.5rem !important; }
+          header, footer, #mobile-nav-toggle, #mobile-nav-dialog { display: none !important; }
+          .sticky.top-0 { display: none !important; }
+          nav.hidden { display: none !important; }
+          aside { display: none !important; }
+          .mx-auto { border: none !important; }
+        `;
+        shadow.appendChild(overrides);
+
+        if (article) shadow.appendChild(article.cloneNode(true));
+        if (pagination) shadow.appendChild(pagination.cloneNode(true));
+      } catch {
+        const container = docsGroup.content;
+        const shadow = container.shadowRoot || container.attachShadow({ mode: "open" });
+        shadow.innerHTML = `<div style="padding:2rem;color:#969696;font-family:sans-serif;">Failed to load documentation.</div>`;
+      }
     }
 
     docsIcon.addEventListener("click", toggleDocs);
-    document.getElementById("docs-close-btn").addEventListener("click", () => {
-      docsOpen = false;
-      docsPanel.classList.remove("open");
-      docsIcon.classList.remove("active");
-      localStorage.setItem("ach-docs-open", "false");
-    });
-    document.getElementById("docs-external-btn").addEventListener("click", () => {
-      try {
-        const url = new URL(docsIframe.contentWindow.location.href);
-        url.searchParams.delete("embed");
-        window.open(url.toString(), "_blank");
-      } catch { window.open(docsUrl.replace("?embed", ""), "_blank"); }
-    });
 
-    docsIframe.addEventListener("load", () => {
-      try {
-        const loc = docsIframe.contentWindow.location;
-        docsUrl = loc.pathname + (loc.search.includes("embed") ? loc.search : "?embed");
-        localStorage.setItem("ach-docs-url", docsUrl);
-      } catch { /* cross-origin */ }
-    });
-
-    // Docs panel resize
-    let docsResizing = false;
-    const docsResize = document.getElementById("docs-panel-resize");
-    docsResize.addEventListener("mousedown", (e) => {
-      e.preventDefault(); docsResizing = true;
-      docsResize.classList.add("dragging");
-      document.body.classList.add("resizing");
-      document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!docsResizing) return;
-      docsWidth = Math.max(300, Math.min(900, window.innerWidth - e.clientX));
-      docsPanel.style.width = docsWidth + "px";
-    });
-    document.addEventListener("mouseup", () => {
-      if (!docsResizing) return;
-      docsResizing = false; docsResize.classList.remove("dragging");
-      document.body.classList.remove("resizing");
-      document.body.style.cursor = ""; document.body.style.userSelect = "";
-      localStorage.setItem("ach-docs-width", docsWidth);
-    });
-
-    docsPanel.style.width = docsWidth + "px";
-    if (docsOpen) {
-      docsPanel.classList.add("open");
-      docsIcon.classList.add("active");
-      docsIframe.src = docsUrl;
-    }
+    // Restore docs panel if was open
+    if (localStorage.getItem("ach-docs-open") === "true") openDocs();
 
     // ═══ GLOBAL KEYBOARD SHORTCUTS ═══
     document.addEventListener("keydown", (e) => {
