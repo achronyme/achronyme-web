@@ -106,13 +106,49 @@ pub async fn delete(
         ));
     }
 
-    let file_path =
-        session::validate_path(&workspace, &req.path).map_err(|e| ApiError::BadRequest(e))?;
-
-    if file_path.exists() {
-        std::fs::remove_file(&file_path)
-            .map_err(|e| ApiError::Internal(format!("delete: {e}")))?;
+    // Try as file first, then as directory
+    if let Ok(file_path) = session::validate_path(&workspace, &req.path) {
+        if file_path.exists() {
+            std::fs::remove_file(&file_path)
+                .map_err(|e| ApiError::Internal(format!("delete: {e}")))?;
+            return Ok(Json(OkResponse { ok: true }));
+        }
     }
+
+    // Try as directory
+    if let Ok(dir_path) = session::validate_dir_path(&workspace, &req.path) {
+        if dir_path.is_dir() {
+            std::fs::remove_dir_all(&dir_path)
+                .map_err(|e| ApiError::Internal(format!("delete dir: {e}")))?;
+            return Ok(Json(OkResponse { ok: true }));
+        }
+    }
+
+    Ok(Json(OkResponse { ok: true }))
+}
+
+// ── Mkdir ────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct MkdirRequest {
+    path: String,
+}
+
+pub async fn mkdir(
+    axum::extract::State(store): axum::extract::State<SessionStore>,
+    headers: axum::http::HeaderMap,
+    Json(req): Json<MkdirRequest>,
+) -> Result<Json<OkResponse>, ApiError> {
+    let id = extract_session_id(&headers)?;
+    let workspace = store
+        .get_workspace(id)
+        .map_err(|e| ApiError::BadRequest(e))?;
+
+    let dir_path =
+        session::validate_dir_path(&workspace, &req.path).map_err(|e| ApiError::BadRequest(e))?;
+
+    std::fs::create_dir_all(&dir_path)
+        .map_err(|e| ApiError::Internal(format!("mkdir: {e}")))?;
 
     Ok(Json(OkResponse { ok: true }))
 }

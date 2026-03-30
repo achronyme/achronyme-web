@@ -22,7 +22,7 @@ fn is_allowed_path(path: &str) -> bool {
     path == "achronyme.toml" || path.ends_with(".ach")
 }
 
-/// Validate a user-supplied path is safe.
+/// Validate a user-supplied path is safe (for files).
 pub fn validate_path(workspace: &Path, user_path: &str) -> Result<PathBuf, String> {
     if user_path.is_empty() {
         return Err("path is empty".into());
@@ -65,6 +65,56 @@ pub fn validate_path(workspace: &Path, user_path: &str) -> Result<PathBuf, Strin
             if !canonical_parent.starts_with(&canonical_ws) {
                 return Err("path escapes workspace".into());
             }
+        }
+    }
+
+    Ok(full)
+}
+
+/// Validate a user-supplied directory path is safe.
+pub fn validate_dir_path(workspace: &Path, user_path: &str) -> Result<PathBuf, String> {
+    if user_path.is_empty() {
+        return Err("path is empty".into());
+    }
+    if user_path.starts_with('/') || user_path.starts_with('\\') {
+        return Err("path must be relative".into());
+    }
+    if user_path.contains("..") {
+        return Err("path traversal not allowed".into());
+    }
+
+    // Directory names: alphanumeric, hyphens, underscores, dots, slashes
+    if !user_path
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/')
+    {
+        return Err("invalid directory name".into());
+    }
+
+    let full = workspace.join(user_path);
+    let canonical_ws = workspace
+        .canonicalize()
+        .map_err(|e| format!("workspace error: {e}"))?;
+
+    // Check parent is inside workspace
+    if let Some(parent) = full.parent() {
+        if parent.exists() {
+            let canonical_parent = parent
+                .canonicalize()
+                .map_err(|e| format!("parent error: {e}"))?;
+            if !canonical_parent.starts_with(&canonical_ws) {
+                return Err("path escapes workspace".into());
+            }
+        }
+    }
+
+    // If already exists, verify it's inside workspace
+    if full.exists() {
+        let canonical = full
+            .canonicalize()
+            .map_err(|e| format!("path error: {e}"))?;
+        if !canonical.starts_with(&canonical_ws) {
+            return Err("path escapes workspace".into());
         }
     }
 
@@ -226,6 +276,9 @@ impl SessionStore {
 pub struct FileEntry {
     pub path: String,
     pub size: usize,
+    /// "file" or "dir" (empty directories only).
+    #[serde(rename = "type")]
+    pub entry_type: String,
 }
 
 fn collect_files(
@@ -238,7 +291,24 @@ fn collect_files(
         let item = item.map_err(|e| format!("dir entry: {e}"))?;
         let path = item.path();
         if path.is_dir() {
-            collect_files(base, &path, entries)?;
+            let child_count = std::fs::read_dir(&path)
+                .map(|rd| rd.count())
+                .unwrap_or(0);
+            if child_count == 0 {
+                // Report empty directories so the client can show them
+                let rel = path
+                    .strip_prefix(base)
+                    .map_err(|e| format!("strip_prefix: {e}"))?
+                    .to_string_lossy()
+                    .to_string();
+                entries.push(FileEntry {
+                    path: rel,
+                    size: 0,
+                    entry_type: "dir".into(),
+                });
+            } else {
+                collect_files(base, &path, entries)?;
+            }
         } else if path.is_file() {
             let rel = path
                 .strip_prefix(base)
@@ -248,7 +318,11 @@ fn collect_files(
             let size = std::fs::metadata(&path)
                 .map(|m| m.len() as usize)
                 .unwrap_or(0);
-            entries.push(FileEntry { path: rel, size });
+            entries.push(FileEntry {
+                path: rel,
+                size,
+                entry_type: "file".into(),
+            });
         }
     }
     Ok(())

@@ -134,6 +134,20 @@ export async function deleteFile(path) {
   scheduleBackup();
 }
 
+/** Create a directory. */
+export async function mkdir(path) {
+  const res = await fetch(`${API_BASE}/api/fs/mkdir`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ path }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `mkdir failed: ${res.status}`);
+  }
+  scheduleBackup();
+}
+
 /** Rename a file. */
 export async function renameFile(from, to) {
   const res = await fetch(`${API_BASE}/api/fs/rename`, {

@@ -149,6 +149,12 @@ import '@fontsource-variable/jetbrains-mono';
     }
     .tree-chevron.expanded { transform: rotate(90deg); }
     .tree-children { }
+    /* Drag-and-drop: drop target highlight on dirs */
+    .file-row.drop-target { background: rgba(168, 85, 247, 0.15); outline: 1px solid var(--accent); outline-offset: -1px; }
+    .file-row.dragging { opacity: 0.4; }
+    .file-tree.drop-target-root { background: rgba(168, 85, 247, 0.06); }
+    .file-row[draggable="true"] { cursor: grab; }
+    .file-row[draggable="true"]:active { cursor: grabbing; }
     /* Inline rename input */
     .file-row .rename-input {
       flex: 1; min-width: 0; height: 18px;
@@ -571,6 +577,9 @@ import '@fontsource-variable/jetbrains-mono';
           <button class="sidebar-btn" id="new-file-btn" title="New File">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 3v10M3 8h10"/></svg>
           </button>
+          <button class="sidebar-btn" id="new-folder-btn" title="New Folder">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4h5l1.5 1.5H15V13H1V4z"/><path d="M8 7.5v3M6.5 9h3"/></svg>
+          </button>
         </div>
       </div>
       <div class="sidebar-section" id="section-files">
@@ -658,7 +667,7 @@ import '@fontsource-variable/jetbrains-mono';
     import { highlightSelectionMatches } from "@codemirror/search";
     import { achronymeLanguage } from "../lib/achronyme-lang.js";
     import { initLspWasm, achLinter, achAutocompletion, achHover } from "../lib/achronyme-lsp.js";
-    import { renderFileTree, startInlineCreate } from "../lib/playground-filetree.js";
+    import { renderFileTree, startInlineCreate, startInlineCreateDir, setupRootDrop } from "../lib/playground-filetree.js";
     import { TabManager } from "../lib/playground-tabs.js";
     import * as session from "../lib/playground-session.js";
     import { sidebarConfig, getLabel } from "../data/docs-sidebar";
@@ -1314,6 +1323,77 @@ import '@fontsource-variable/jetbrains-mono';
               renderAllGroups(); refreshFileTree();
             } catch (e) { appendOutput(`Rename error: ${e.message}`, "error"); }
           },
+          onFileMove: async (oldPath, newPath) => {
+            if (!newPath || newPath === oldPath) return;
+            try {
+              await session.renameFile(oldPath, newPath);
+              for (const g of groups) g.tabs.updateTabPath(oldPath, newPath);
+              renderAllGroups(); refreshFileTree();
+            } catch (e) { appendOutput(`Move error: ${e.message}`, "error"); }
+          },
+          onDirRename: async (oldDir, newDir) => {
+            if (!newDir || newDir === oldDir) return;
+            try {
+              // Rename all files with the old dir prefix
+              const files = await session.listFiles();
+              const prefix = oldDir + "/";
+              for (const f of files) {
+                if (f.path.startsWith(prefix) && f.type !== "dir") {
+                  const newPath = newDir + "/" + f.path.substring(prefix.length);
+                  await session.renameFile(f.path, newPath);
+                  for (const g of groups) g.tabs.updateTabPath(f.path, newPath);
+                }
+              }
+              // Also rename empty dir itself if applicable
+              try { await session.mkdir(newDir); } catch {}
+              try { await session.deleteFile(oldDir); } catch {}
+              renderAllGroups(); refreshFileTree();
+            } catch (e) { appendOutput(`Rename dir error: ${e.message}`, "error"); }
+          },
+          onDirDelete: async (dirPath) => {
+            if (!confirm(`Delete folder "${dirPath}" and all its contents?`)) return;
+            try {
+              // Delete all files in this directory
+              const files = await session.listFiles();
+              const prefix = dirPath + "/";
+              for (const f of files) {
+                if (f.path.startsWith(prefix) && f.type !== "dir") {
+                  await session.deleteFile(f.path);
+                  for (const g of [...groups]) {
+                    g.tabs.removeTabByPath(f.path);
+                    const tab = g.tabs.getActiveTab();
+                    if (tab) g.view.setState(tab.editorState);
+                    else if (groups.length > 1) { removeGroup(g); continue; }
+                    else g.view.setState(EditorState.create({ doc: "", extensions: editorExtensions(g) }));
+                  }
+                }
+              }
+              // Delete the directory itself
+              await session.deleteFile(dirPath);
+              renderAllGroups(); refreshFileTree();
+            } catch (e) { appendOutput(`Delete dir error: ${e.message}`, "error"); }
+          },
+          onNewFileInDir: (dirPath) => {
+            startInlineCreate(fileTree, {
+              async onCreate(fullPath) {
+                try {
+                  await session.writeFile(fullPath, `// ${fullPath.split("/").pop()}\n`);
+                  await refreshFileTree();
+                  await openFile(fullPath);
+                } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
+              },
+            }, dirPath);
+          },
+          onNewDirInDir: (dirPath) => {
+            startInlineCreateDir(fileTree, {
+              async onCreateDir(fullPath) {
+                try {
+                  await session.mkdir(fullPath);
+                  await refreshFileTree();
+                } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
+              },
+            }, dirPath);
+          },
         });
       } catch (e) { console.warn("file tree refresh:", e); }
     }
@@ -1366,7 +1446,7 @@ import '@fontsource-variable/jetbrains-mono';
       } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
     }
 
-    // ═══ NEW FILE ═══
+    // ═══ NEW FILE / FOLDER ═══
     function createNewFile() {
       if (!session.isProjectMode()) { appendOutput("Select a template first", "info"); return; }
       startInlineCreate(fileTree, {
@@ -1380,10 +1460,23 @@ import '@fontsource-variable/jetbrains-mono';
       });
     }
 
+    function createNewFolder() {
+      if (!session.isProjectMode()) { appendOutput("Select a template first", "info"); return; }
+      startInlineCreateDir(fileTree, {
+        async onCreateDir(name) {
+          try {
+            await session.mkdir(name);
+            await refreshFileTree();
+          } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
+        },
+      });
+    }
+
     // ═══ EVENTS ═══
     clearBtn.addEventListener("click", clearOutput);
     templateSelect.addEventListener("change", (e) => loadTemplate(e.target.value));
     newFileBtn.addEventListener("click", createNewFile);
+    document.getElementById("new-folder-btn").addEventListener("click", createNewFolder);
     document.getElementById("activity-run").addEventListener("click", runCode);
 
     document.getElementById("export-btn").addEventListener("click", async () => {
@@ -1744,6 +1837,16 @@ import '@fontsource-variable/jetbrains-mono';
     createGroup();
     applySidebarLayout();
     buildMainLayout();
+    setupRootDrop(fileTree, {
+      onFileMove: async (oldPath, newPath) => {
+        if (!newPath || newPath === oldPath) return;
+        try {
+          await session.renameFile(oldPath, newPath);
+          for (const g of groups) g.tabs.updateTabPath(oldPath, newPath);
+          renderAllGroups(); refreshFileTree();
+        } catch (e) { appendOutput(`Move error: ${e.message}`, "error"); }
+      },
+    });
 
     session.healthCheck().then(ok => {
       if (ok) { serverDot.classList.remove("loading", "error"); serverLabel.textContent = "Server"; }

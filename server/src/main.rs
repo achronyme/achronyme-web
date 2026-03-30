@@ -74,6 +74,7 @@ async fn main() {
         .route("/api/fs/delete", post(routes::fs::delete))
         .route("/api/fs/list", get(routes::fs::list))
         .route("/api/fs/rename", post(routes::fs::rename))
+        .route("/api/fs/mkdir", post(routes::fs::mkdir))
         // Health
         .route("/health", get(|| async { "ok" }))
         .with_state(store)
