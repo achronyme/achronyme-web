@@ -492,13 +492,12 @@ import '@fontsource-variable/jetbrains-mono';
     .docs-nav-btn svg { width: 10px; height: 10px; color: var(--text-muted); flex-shrink: 0; }
     .docs-group-actions { display: flex; gap: 2px; flex-shrink: 0; }
     .docs-nav-dropdown {
-      position: fixed;
       background: #252526; border: 1px solid var(--border);
-      border-radius: 4px; max-height: 60vh; overflow-y: auto; z-index: 100;
-      display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      min-width: 240px;
+      border-radius: 4px; max-height: 60vh; overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      min-width: 240px; padding: 4px 0;
+      --anchor-gap: 4px;
     }
-    .docs-nav-dropdown.open { display: block; }
     .docs-nav-group-label {
       padding: 8px 12px 4px; font-family: var(--font-sans);
       font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -1429,8 +1428,11 @@ import '@fontsource-variable/jetbrains-mono';
       const header = document.createElement("div");
       header.className = "docs-group-header";
 
+      const popoverId = "docs-nav-popover";
       const navBtn = document.createElement("button");
       navBtn.className = "docs-nav-btn";
+      navBtn.setAttribute("popovertarget", popoverId);
+      navBtn.type = "button";
       navBtn.innerHTML = `<svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> <span>Docs</span>`;
 
       const actions = document.createElement("div");
@@ -1451,25 +1453,14 @@ import '@fontsource-variable/jetbrains-mono';
       actions.append(extBtn, closeBtn);
       header.append(navBtn, actions);
 
-      // Navigation dropdown
-      const dropdown = document.createElement("div");
+      // Navigation popover (auto-positioned by el-popover)
+      const dropdown = document.createElement("el-popover");
+      dropdown.id = popoverId;
+      dropdown.setAttribute("popover", "");
+      dropdown.setAttribute("anchor", "bottom start");
+      dropdown.setAttribute("anchor-strategy", "fixed");
       dropdown.className = "docs-nav-dropdown";
       buildDocsNav(dropdown);
-
-      navBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const open = !dropdown.classList.contains("open");
-        if (open) {
-          const rect = navBtn.getBoundingClientRect();
-          dropdown.style.top = rect.bottom + 2 + "px";
-          dropdown.style.left = rect.left + "px";
-        }
-        dropdown.classList.toggle("open", open);
-      });
-      const closeDropdown = (e) => {
-        if (!dropdown.contains(e.target) && !navBtn.contains(e.target)) dropdown.classList.remove("open");
-      };
-      document.addEventListener("click", closeDropdown);
 
       // Content area (shadow DOM host)
       const content = document.createElement("div");
@@ -1482,7 +1473,7 @@ import '@fontsource-variable/jetbrains-mono';
       el.append(header, content);
       document.body.appendChild(dropdown);
 
-      docsGroup = { el, navBtn, dropdown, content, closeDropdown };
+      docsGroup = { el, navBtn, dropdown, content };
       docsIcon.classList.add("active");
       localStorage.setItem("ach-docs-open", "true");
 
@@ -1492,7 +1483,6 @@ import '@fontsource-variable/jetbrains-mono';
 
     function closeDocs() {
       if (!docsGroup) return;
-      document.removeEventListener("click", docsGroup.closeDropdown);
       docsGroup.dropdown.remove();
       docsGroup = null;
       docsIcon.classList.remove("active");
@@ -1511,7 +1501,7 @@ import '@fontsource-variable/jetbrains-mono';
           const el = document.createElement("div");
           el.className = "docs-nav-item" + (item.slug === currentDocSlug ? " active" : "");
           el.textContent = getLabel(item, "en");
-          el.addEventListener("click", () => { dropdown.classList.remove("open"); loadDocsPage(item.slug); });
+          el.addEventListener("click", () => { dropdown.hidePopover(); loadDocsPage(item.slug); });
           dropdown.appendChild(el);
         }
       }
