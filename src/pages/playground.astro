@@ -149,6 +149,20 @@ import '@fontsource-variable/jetbrains-mono';
     }
     .tree-chevron.expanded { transform: rotate(90deg); }
     .tree-children { }
+
+    /* Inline folder action buttons (visible on hover) */
+    .dir-actions {
+      margin-left: auto; display: flex; gap: 0; opacity: 0; flex-shrink: 0;
+      transition: opacity 0.1s;
+    }
+    .dir-row:hover .dir-actions { opacity: 1; }
+    .dir-action-btn {
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 3px;
+      padding: 0;
+    }
+    .dir-action-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
+
     /* Drag-and-drop: drop target highlight on dirs */
     .file-row.drop-target { background: rgba(168, 85, 247, 0.15); outline: 1px solid var(--accent); outline-offset: -1px; }
     .file-row.dragging { opacity: 0.4; }
