@@ -44,8 +44,6 @@ pub struct CircuitResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     r1cs: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    wtns: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     proof: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     public_json: Option<String>,
@@ -150,7 +148,6 @@ fn compile_r1cs(
     r1cs.set_proven_boolean(proven);
 
     let mut r1cs_b64 = None;
-    let mut wtns_b64 = None;
     let mut proof_json = None;
     let mut public_json = None;
     let mut vkey_json = None;
@@ -169,10 +166,6 @@ fn compile_r1cs(
         // Serialize R1CS
         let r1cs_data = write_r1cs(&r1cs.cs);
         r1cs_b64 = Some(b64.encode(&r1cs_data));
-
-        // Serialize WTNS
-        let wtns_data = constraints::write_wtns(&witness);
-        wtns_b64 = Some(b64.encode(&wtns_data));
 
         // Generate proof if requested
         if do_prove {
@@ -213,7 +206,6 @@ fn compile_r1cs(
         private_inputs: n_witness,
         backend: "r1cs".into(),
         r1cs: r1cs_b64,
-        wtns: wtns_b64,
         proof: proof_json,
         public_json,
         vkey: vkey_json,
@@ -281,7 +273,6 @@ fn compile_plonkish(
         private_inputs: n_witness,
         backend: "plonkish".into(),
         r1cs: None,
-        wtns: None,
         proof: proof_json,
         public_json,
         vkey: vkey_json,

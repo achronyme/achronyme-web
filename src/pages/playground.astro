@@ -1492,7 +1492,6 @@ import '@fontsource-variable/jetbrains-mono';
         if (p.public_json) downloads.appendChild(dlBtn("public.json", () => downloadBlob(p.public_json, "public.json", "application/json")));
         if (p.vkey_json) downloads.appendChild(dlBtn("vkey.json", () => downloadBlob(p.vkey_json, "vkey.json", "application/json")));
         if (p.r1cs) downloads.appendChild(dlBtn("circuit.r1cs", () => downloadBase64(p.r1cs, "circuit.r1cs", "application/octet-stream")));
-        if (p.wtns) downloads.appendChild(dlBtn("witness.wtns", () => downloadBase64(p.wtns, "witness.wtns", "application/octet-stream")));
         if (p.solidity) downloads.appendChild(dlBtn("Verifier.sol", () => downloadBlob(p.solidity, "Verifier.sol", "text/plain")));
         card.appendChild(downloads);
 
