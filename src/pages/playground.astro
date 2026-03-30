@@ -1470,8 +1470,7 @@ import '@fontsource-variable/jetbrains-mono';
       header.draggable = true;
       setupPanelDrag(header, "docs");
 
-      el.append(header, content);
-      document.body.appendChild(dropdown);
+      el.append(header, dropdown, content);
 
       docsGroup = { el, navBtn, dropdown, content };
       docsIcon.classList.add("active");
