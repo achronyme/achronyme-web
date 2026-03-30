@@ -92,7 +92,7 @@
 /* ── Documentation prose ─────────────────────────────── */
 
 .doc-prose {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.75;
   color: #c4c4d4;
 }
@@ -194,7 +194,7 @@
   padding: 1rem 1.25rem;
   margin: 1.5em 0;
   overflow-x: auto;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.7;
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.06);
 }
@@ -218,7 +218,7 @@
   width: 100%;
   border-collapse: collapse;
   margin: 1.5em 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 .doc-prose th {
   text-align: left;
