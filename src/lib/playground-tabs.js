@@ -1,5 +1,5 @@
 // Tab management for the playground mini-IDE.
-// Handles multiple open files with per-file editor state preservation.
+// Class-based TabManager — supports multiple instances for split view.
 
 import { EditorState } from "@codemirror/state";
 
@@ -11,126 +11,106 @@ import { EditorState } from "@codemirror/state";
  * @property {string} savedContent - Last saved content (for modified detection)
  */
 
-/** @type {Tab[]} */
-let tabs = [];
-let activeIndex = -1;
-
-/** Get current tabs array (read-only). */
-export function getTabs() {
-  return tabs;
-}
-
-/** Get active tab index. */
-export function getActiveIndex() {
-  return activeIndex;
-}
-
-/** Get the active tab, or null. */
-export function getActiveTab() {
-  return activeIndex >= 0 ? tabs[activeIndex] : null;
-}
-
-/**
- * Open a file in a tab. If already open, switches to it.
- * @returns {number} The tab index
- */
-export function openTab(path, content, extensions) {
-  const existing = tabs.findIndex((t) => t.path === path);
-  if (existing >= 0) {
-    activeIndex = existing;
-    return existing;
+export class TabManager {
+  constructor() {
+    /** @type {Tab[]} */
+    this.tabs = [];
+    this.activeIndex = -1;
   }
 
-  const editorState = EditorState.create({ doc: content, extensions });
-  tabs.push({
-    path,
-    modified: false,
-    editorState,
-    savedContent: content,
-  });
-  activeIndex = tabs.length - 1;
-  return activeIndex;
-}
+  /** Get current tabs array (read-only). */
+  getTabs() { return this.tabs; }
 
-/**
- * Close a tab by index. Returns the new active index.
- */
-export function closeTab(index) {
-  if (index < 0 || index >= tabs.length) return activeIndex;
-  tabs.splice(index, 1);
-  if (tabs.length === 0) {
-    activeIndex = -1;
-  } else if (activeIndex >= tabs.length) {
-    activeIndex = tabs.length - 1;
-  } else if (activeIndex > index) {
-    activeIndex--;
+  /** Get active tab index. */
+  getActiveIndex() { return this.activeIndex; }
+
+  /** Get the active tab, or null. */
+  getActiveTab() { return this.activeIndex >= 0 ? this.tabs[this.activeIndex] : null; }
+
+  /**
+   * Open a file in a tab. If already open, switches to it.
+   * @returns {number} The tab index
+   */
+  openTab(path, content, extensions) {
+    const existing = this.tabs.findIndex((t) => t.path === path);
+    if (existing >= 0) {
+      this.activeIndex = existing;
+      return existing;
+    }
+    const editorState = EditorState.create({ doc: content, extensions });
+    this.tabs.push({ path, modified: false, editorState, savedContent: content });
+    this.activeIndex = this.tabs.length - 1;
+    return this.activeIndex;
   }
-  return activeIndex;
-}
 
-/** Switch to a tab by index. */
-export function switchTab(index) {
-  if (index >= 0 && index < tabs.length) {
-    activeIndex = index;
+  /** Close a tab by index. Returns the new active index. */
+  closeTab(index) {
+    if (index < 0 || index >= this.tabs.length) return this.activeIndex;
+    this.tabs.splice(index, 1);
+    if (this.tabs.length === 0) {
+      this.activeIndex = -1;
+    } else if (this.activeIndex >= this.tabs.length) {
+      this.activeIndex = this.tabs.length - 1;
+    } else if (this.activeIndex > index) {
+      this.activeIndex--;
+    }
+    return this.activeIndex;
   }
-  return activeIndex;
-}
 
-/** Save the current editor state for the active tab. */
-export function saveEditorState(editorState) {
-  if (activeIndex >= 0) {
-    tabs[activeIndex].editorState = editorState;
+  /** Switch to a tab by index. */
+  switchTab(index) {
+    if (index >= 0 && index < this.tabs.length) this.activeIndex = index;
+    return this.activeIndex;
   }
-}
 
-/** Mark a tab as modified or saved. */
-export function setModified(index, modified) {
-  if (index >= 0 && index < tabs.length) {
-    tabs[index].modified = modified;
+  /** Save the current editor state for the active tab. */
+  saveEditorState(editorState) {
+    if (this.activeIndex >= 0) this.tabs[this.activeIndex].editorState = editorState;
   }
-}
 
-/** Update saved content after a successful write. */
-export function markSaved(index, content) {
-  if (index >= 0 && index < tabs.length) {
-    tabs[index].savedContent = content;
-    tabs[index].modified = false;
+  /** Mark a tab as modified or saved. */
+  setModified(index, modified) {
+    if (index >= 0 && index < this.tabs.length) this.tabs[index].modified = modified;
   }
-}
 
-/** Check if content differs from saved. */
-export function isModified(index, currentContent) {
-  if (index < 0 || index >= tabs.length) return false;
-  return currentContent !== tabs[index].savedContent;
-}
-
-/** Find tab index by path. Returns -1 if not found. */
-export function findTab(path) {
-  return tabs.findIndex((t) => t.path === path);
-}
-
-/** Update a tab's path (for rename). */
-export function updateTabPath(oldPath, newPath) {
-  const idx = findTab(oldPath);
-  if (idx >= 0) {
-    tabs[idx].path = newPath;
+  /** Update saved content after a successful write. */
+  markSaved(index, content) {
+    if (index >= 0 && index < this.tabs.length) {
+      this.tabs[index].savedContent = content;
+      this.tabs[index].modified = false;
+    }
   }
-}
 
-/** Remove a tab by path (for file deletion). */
-export function removeTabByPath(path) {
-  const idx = findTab(path);
-  if (idx >= 0) return closeTab(idx);
-  return activeIndex;
-}
+  /** Check if content differs from saved. */
+  isModified(index, currentContent) {
+    if (index < 0 || index >= this.tabs.length) return false;
+    return currentContent !== this.tabs[index].savedContent;
+  }
 
-/** Get all modified tabs. */
-export function getModifiedTabs() {
-  return tabs.filter((t) => t.modified).map((t, i) => ({ ...t, index: i }));
-}
+  /** Find tab index by path. Returns -1 if not found. */
+  findTab(path) { return this.tabs.findIndex((t) => t.path === path); }
 
-/** Reset all tabs (for session change). */
-export function resetTabs() {
-  tabs = [];
-  activeIndex = -1;
+  /** Update a tab's path (for rename). */
+  updateTabPath(oldPath, newPath) {
+    const idx = this.findTab(oldPath);
+    if (idx >= 0) this.tabs[idx].path = newPath;
+  }
+
+  /** Remove a tab by path (for file deletion). */
+  removeTabByPath(path) {
+    const idx = this.findTab(path);
+    if (idx >= 0) return this.closeTab(idx);
+    return this.activeIndex;
+  }
+
+  /** Get all modified tabs. */
+  getModifiedTabs() {
+    return this.tabs.filter((t) => t.modified).map((t, i) => ({ ...t, index: i }));
+  }
+
+  /** Reset all tabs (for session change). */
+  resetTabs() {
+    this.tabs = [];
+    this.activeIndex = -1;
+  }
 }

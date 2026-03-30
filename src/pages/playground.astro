@@ -52,7 +52,7 @@ import '@fontsource-variable/jetbrains-mono';
     /* ═══ SHELL GRID ═══ */
     .shell {
       display: grid;
-      grid-template-rows: 30px 35px 1fr 22px;
+      grid-template-rows: 30px 1fr 22px;
       grid-template-columns: 48px 240px 1fr;
       height: 100vh; width: 100vw;
     }
@@ -78,7 +78,7 @@ import '@fontsource-variable/jetbrains-mono';
 
     /* ═══ ACTIVITY BAR ═══ */
     .activitybar {
-      grid-row: 2 / 4;
+      grid-row: 2 / 3;
       background: var(--bg-activitybar);
       border-right: 1px solid var(--border);
       display: flex; flex-direction: column; align-items: center;
@@ -97,7 +97,7 @@ import '@fontsource-variable/jetbrains-mono';
 
     /* ═══ SIDEBAR ═══ */
     .sidebar {
-      grid-row: 2 / 4;
+      grid-row: 2 / 3;
       background: var(--bg-sidebar);
       border-right: 1px solid var(--border);
       display: flex; flex-direction: column; overflow: hidden;
@@ -182,13 +182,22 @@ import '@fontsource-variable/jetbrains-mono';
     .template-select:hover, .template-select:focus { border-color: var(--accent); }
     .template-select option { background: var(--bg-input); }
 
-    /* ═══ TAB BAR ═══ */
-    .tabbar {
+    /* ═══ EDITOR GROUPS ═══ */
+    .editor-groups-wrapper { flex: 1; display: flex; overflow: hidden; min-height: 100px; }
+    .editor-group { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
+    .editor-group.active .group-tabbar { border-top: 1px solid var(--accent); }
+    .group-split-handle { width: 4px; cursor: col-resize; flex-shrink: 0; position: relative; }
+    .group-split-handle::after { content: ""; position: absolute; top: 0; bottom: 0; left: 1px; width: 2px; background: var(--border); }
+    .group-split-handle:hover::after, .group-split-handle.dragging::after { background: var(--accent); }
+
+    /* ═══ TAB BAR (per group) ═══ */
+    .group-tabbar {
       background: var(--bg-tab-row);
       border-bottom: 1px solid var(--border);
       display: flex; align-items: stretch; overflow-x: auto;
+      flex-shrink: 0; height: 35px; border-top: 1px solid transparent;
     }
-    .tabbar::-webkit-scrollbar { height: 0; }
+    .group-tabbar::-webkit-scrollbar { height: 0; }
     .tab {
       display: flex; align-items: center; gap: 4px;
       padding: 0 3px 0 10px; height: 35px;
@@ -246,12 +255,17 @@ import '@fontsource-variable/jetbrains-mono';
     .run-btn:active { background: #6d28d9; }
     .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .run-btn svg { width: 10px; height: 10px; fill: #fff; }
+    .tab-action-btn {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 3px; flex-shrink: 0;
+    }
+    .tab-action-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
 
     /* ═══ MAIN AREA ═══ */
     .main-area { display: flex; flex-direction: column; overflow: hidden; }
 
-    /* ═══ BREADCRUMB ═══ */
-    .breadcrumb {
+    /* ═══ BREADCRUMB (per group) ═══ */
+    .group-breadcrumb {
       height: 22px; padding: 0 12px;
       display: flex; align-items: center;
       font-family: var(--font-sans); font-size: 11px; color: var(--text-muted);
@@ -265,18 +279,17 @@ import '@fontsource-variable/jetbrains-mono';
     /* ═══ EDITOR + OUTPUT SPLIT ═══ */
     .editor-output-split { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
     .editor-output-split.layout-right { flex-direction: row; }
-    .editor-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; min-height: 100px; }
-    #editor-container { flex: 1; overflow: hidden; }
-    #editor-container .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
-    #editor-container .cm-editor .cm-scroller { font-family: var(--font-mono) !important; }
-    #editor-container .cm-editor.cm-focused { outline: none; }
-    #editor-container .cm-gutters { background: var(--bg-editor); border-right: none; color: var(--text-muted); min-width: 48px; padding-right: 8px; }
-    #editor-container .cm-lineNumbers .cm-gutterElement { font-size: 12px; padding: 0; text-align: right; min-width: 32px; }
-    #editor-container .cm-activeLineGutter { color: var(--text-secondary); }
-    #editor-container .cm-cursor { border-left: 2px solid var(--text-bright); }
-    #editor-container .cm-selectionBackground { background: rgba(168, 85, 247, 0.25) !important; }
-    #editor-container .cm-activeLine { background: rgba(255,255,255,0.02); }
-    #editor-container .cm-matchingBracket { color: var(--text-bright) !important; outline: 1px solid var(--text-muted); background: rgba(255,255,255,0.06); }
+    .group-editor { flex: 1; overflow: hidden; }
+    .group-editor .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
+    .group-editor .cm-editor .cm-scroller { font-family: var(--font-mono) !important; }
+    .group-editor .cm-editor.cm-focused { outline: none; }
+    .group-editor .cm-gutters { background: var(--bg-editor); border-right: none; color: var(--text-muted); min-width: 48px; padding-right: 8px; }
+    .group-editor .cm-lineNumbers .cm-gutterElement { font-size: 12px; padding: 0; text-align: right; min-width: 32px; }
+    .group-editor .cm-activeLineGutter { color: var(--text-secondary); }
+    .group-editor .cm-cursor { border-left: 2px solid var(--text-bright); }
+    .group-editor .cm-selectionBackground { background: rgba(168, 85, 247, 0.25) !important; }
+    .group-editor .cm-activeLine { background: rgba(255,255,255,0.02); }
+    .group-editor .cm-matchingBracket { color: var(--text-bright) !important; outline: 1px solid var(--text-muted); background: rgba(255,255,255,0.06); }
 
     /* ═══ RESIZE HANDLE (panel split) ═══ */
     .resize-handle {
@@ -430,7 +443,8 @@ import '@fontsource-variable/jetbrains-mono';
       .activitybar, .sidebar { display: none; }
       .editor-output-split { flex-direction: column; }
       .output-panel { width: 100%; min-width: 0; }
-      .resize-handle { display: none; }
+      .resize-handle, .group-split-handle { display: none; }
+      .editor-group:not(.active) { display: none; }
     }
   </style>
 </head>
@@ -501,26 +515,11 @@ import '@fontsource-variable/jetbrains-mono';
       </div>
     </div>
 
-    <!-- TAB BAR -->
-    <div class="tabbar" id="tabbar">
-      <div class="tab-actions">
-        <button class="run-btn" id="run-btn">
-          <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
-          Run
-        </button>
-      </div>
-    </div>
-
     <!-- MAIN AREA -->
     <div class="main-area">
-      <div class="breadcrumb" id="breadcrumb">
-        <span class="breadcrumb-item">src</span>
-        <span class="breadcrumb-sep">/</span>
-        <span class="breadcrumb-item">main.ach</span>
-      </div>
       <div class="editor-output-split">
-        <div class="editor-panel">
-          <div id="editor-container"></div>
+        <div class="editor-groups-wrapper" id="editor-groups-wrapper">
+          <!-- Editor groups created dynamically -->
         </div>
         <div class="resize-handle" id="resize-handle"></div>
         <div class="output-panel" id="output-panel">
@@ -575,24 +574,28 @@ import '@fontsource-variable/jetbrains-mono';
     import { highlightSelectionMatches } from "@codemirror/search";
     import { achronymeLanguage } from "../lib/achronyme-lang.js";
     import { initLspWasm, achLinter, achAutocompletion, achHover } from "../lib/achronyme-lsp.js";
-    import { renderFileTree, promptNewFile } from "../lib/playground-filetree.js";
-    import * as tabs from "../lib/playground-tabs.js";
+    import { renderFileTree, startInlineCreate } from "../lib/playground-filetree.js";
+    import { TabManager } from "../lib/playground-tabs.js";
     import * as session from "../lib/playground-session.js";
 
     // ═══ DOM ═══
     const output = document.getElementById("output");
-    const runBtn = document.getElementById("run-btn");
     const clearBtn = document.getElementById("clear-btn");
-    const tabbar = document.getElementById("tabbar");
     const fileTree = document.getElementById("file-tree");
     const templateSelect = document.getElementById("template-select");
     const newFileBtn = document.getElementById("new-file-btn");
     const statusLine = document.getElementById("status-line");
     const serverDot = document.getElementById("server-dot");
     const serverLabel = document.getElementById("server-label");
-    const breadcrumb = document.getElementById("breadcrumb");
     const resizeHandle = document.getElementById("resize-handle");
     const outputPanel = document.getElementById("output-panel");
+    const groupsWrapper = document.getElementById("editor-groups-wrapper");
+
+    // ═══ EDITOR GROUPS ═══
+    let groups = [];
+    let activeGroupIdx = 0;
+    let groupIdCounter = 0;
+    function ag() { return groups[activeGroupIdx]; }
 
     // ═══ LAYOUT STATE ═══
     let panelLayout = localStorage.getItem("ach-panel-layout") || "bottom";
@@ -609,17 +612,14 @@ import '@fontsource-variable/jetbrains-mono';
     const panelCloseBtn = document.getElementById("panel-close-btn");
 
     function applyLayout() {
-      // Sidebar
       shell.classList.toggle("sidebar-collapsed", sidebarCollapsed);
       explorerIcon.classList.toggle("active", !sidebarCollapsed);
       shell.style.gridTemplateColumns = sidebarCollapsed ? "" : `48px ${sidebarWidth}px 1fr`;
 
-      // Panel layout
       editorOutputSplit.classList.toggle("layout-right", panelLayout === "right");
       outputPanel.classList.toggle("panel-hidden", !panelVisible);
       resizeHandle.classList.toggle("panel-hidden", !panelVisible);
 
-      // Update position button icon
       if (panelLayout === "right") {
         panelPositionBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="1" y1="10" x2="15" y2="10"/></svg>`;
         panelPositionBtn.title = "Move Panel to Bottom";
@@ -634,23 +634,11 @@ import '@fontsource-variable/jetbrains-mono';
       localStorage.setItem("ach-sidebar-width", sidebarWidth);
     }
 
-    function toggleSidebar() {
-      sidebarCollapsed = !sidebarCollapsed;
-      applyLayout();
-    }
-
-    function togglePanel() {
-      panelVisible = !panelVisible;
-      applyLayout();
-      if (panelVisible) view.focus();
-    }
-
+    function toggleSidebar() { sidebarCollapsed = !sidebarCollapsed; applyLayout(); }
+    function togglePanel() { panelVisible = !panelVisible; applyLayout(); if (panelVisible && ag()) ag().view.focus(); }
     function togglePanelPosition() {
-      // Reset sizing when switching layout
-      outputPanel.style.height = "";
-      outputPanel.style.width = "";
-      panelLayout = panelLayout === "bottom" ? "right" : "bottom";
-      applyLayout();
+      outputPanel.style.height = ""; outputPanel.style.width = "";
+      panelLayout = panelLayout === "bottom" ? "right" : "bottom"; applyLayout();
     }
 
     explorerIcon.addEventListener("click", toggleSidebar);
@@ -660,32 +648,26 @@ import '@fontsource-variable/jetbrains-mono';
     // ═══ SIDEBAR RESIZE ═══
     let sidebarResizing = false;
     sidebarResize.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      sidebarResizing = true;
+      e.preventDefault(); sidebarResizing = true;
       sidebarResize.classList.add("dragging");
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
     });
     document.addEventListener("mousemove", (e) => {
       if (!sidebarResizing) return;
-      const newWidth = e.clientX - 48; // subtract activity bar width
-      sidebarWidth = Math.max(150, Math.min(500, newWidth));
+      sidebarWidth = Math.max(150, Math.min(500, e.clientX - 48));
       shell.style.gridTemplateColumns = `48px ${sidebarWidth}px 1fr`;
     });
     document.addEventListener("mouseup", () => {
       if (!sidebarResizing) return;
-      sidebarResizing = false;
-      sidebarResize.classList.remove("dragging");
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
+      sidebarResizing = false; sidebarResize.classList.remove("dragging");
+      document.body.style.cursor = ""; document.body.style.userSelect = "";
       localStorage.setItem("ach-sidebar-width", sidebarWidth);
     });
 
     // ═══ PANEL RESIZE HANDLE ═══
     let resizing = false;
     resizeHandle.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      resizing = true;
+      e.preventDefault(); resizing = true;
       resizeHandle.classList.add("dragging");
       document.body.style.cursor = panelLayout === "right" ? "col-resize" : "row-resize";
       document.body.style.userSelect = "none";
@@ -695,77 +677,53 @@ import '@fontsource-variable/jetbrains-mono';
       const split = resizeHandle.parentElement;
       const rect = split.getBoundingClientRect();
       if (panelLayout === "right") {
-        const pct = ((e.clientX - rect.left) / rect.width) * 100;
-        const clamped = Math.max(20, Math.min(80, pct));
+        const clamped = Math.max(20, Math.min(80, ((e.clientX - rect.left) / rect.width) * 100));
         outputPanel.style.width = (100 - clamped) + "%";
       } else {
-        const pct = ((e.clientY - rect.top) / rect.height) * 100;
-        const clamped = Math.max(20, Math.min(80, pct));
+        const clamped = Math.max(20, Math.min(80, ((e.clientY - rect.top) / rect.height) * 100));
         outputPanel.style.height = (100 - clamped) + "%";
       }
     });
     document.addEventListener("mouseup", () => {
       if (!resizing) return;
-      resizing = false;
-      resizeHandle.classList.remove("dragging");
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
+      resizing = false; resizeHandle.classList.remove("dragging");
+      document.body.style.cursor = ""; document.body.style.userSelect = "";
     });
 
-    // ═══ EDITOR EXTENSIONS ═══
-    function editorExtensions() {
-      return [
-        lineNumbers(),
-        highlightActiveLine(),
-        highlightActiveLineGutter(),
-        history(),
-        bracketMatching(),
-        closeBrackets(),
-        indentOnInput(),
-        highlightSelectionMatches(),
-        oneDark,
-        editorTheme,
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        achronymeLanguage,
-        achLinter,
-        achAutocompletion,
-        achHover,
-        keymap.of([indentWithTab, ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
-        runKeymap,
-        cursorTracker,
-        autoSaveListener,
-        EditorView.lineWrapping,
-      ];
+    // ═══ GROUP SPLIT RESIZE ═══
+    let groupResizing = false, grHandle = null, grStartX = 0, grLeft = null, grRight = null, grStartW = [0, 0];
+
+    function setupGroupSplitHandle(handle) {
+      handle.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        groupResizing = true; grHandle = handle; grStartX = e.clientX;
+        const children = Array.from(handle.parentElement.children);
+        const idx = children.indexOf(handle);
+        grLeft = children[idx - 1]; grRight = children[idx + 1];
+        grStartW = [grLeft.offsetWidth, grRight.offsetWidth];
+        handle.classList.add("dragging");
+        document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
+      });
     }
 
-    const runKeymap = keymap.of([
-      { key: "Ctrl-Enter", mac: "Cmd-Enter", run: () => { runCode(); return true; } },
-      { key: "Ctrl-s", mac: "Cmd-s", run: () => { saveActiveFile(); return true; } },
-      { key: "Ctrl-b", mac: "Cmd-b", run: () => { toggleSidebar(); return true; } },
-      { key: "Ctrl-`", mac: "Cmd-`", run: () => { togglePanel(); return true; } },
-      { key: "Ctrl-j", mac: "Cmd-j", run: () => { togglePanel(); return true; } },
-    ]);
-
-    const cursorTracker = EditorView.updateListener.of((update) => {
-      if (update.selectionSet || update.docChanged) {
-        const pos = update.state.selection.main.head;
-        const line = update.state.doc.lineAt(pos);
-        statusLine.textContent = `Ln ${line.number}, Col ${pos - line.from + 1}`;
-      }
+    document.addEventListener("mousemove", (e) => {
+      if (!groupResizing) return;
+      const dx = e.clientX - grStartX;
+      const total = grStartW[0] + grStartW[1];
+      let lw = Math.max(200, grStartW[0] + dx);
+      let rw = total - lw;
+      if (rw < 200) { rw = 200; lw = total - rw; }
+      grLeft.style.flex = "none"; grLeft.style.width = lw + "px";
+      grRight.style.flex = "none"; grRight.style.width = rw + "px";
+    });
+    document.addEventListener("mouseup", () => {
+      if (!groupResizing) return;
+      groupResizing = false;
+      if (grHandle) grHandle.classList.remove("dragging");
+      document.body.style.cursor = ""; document.body.style.userSelect = "";
     });
 
-    let saveTimeout = null;
-    const autoSaveListener = EditorView.updateListener.of((update) => {
-      if (update.docChanged && session.isProjectMode()) {
-        const idx = tabs.getActiveIndex();
-        const content = update.state.doc.toString();
-        tabs.setModified(idx, tabs.isModified(idx, content));
-        renderTabs();
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => saveActiveFile(), 1000);
-      }
-    });
-
+    // ═══ EDITOR THEME ═══
     const editorTheme = EditorView.theme({
       "&": { backgroundColor: "var(--bg-editor)" },
       ".cm-content": { caretColor: "var(--text-bright)", fontFamily: "var(--font-mono)", padding: "4px 0" },
@@ -777,11 +735,139 @@ import '@fontsource-variable/jetbrains-mono';
       ".cm-foldGutter": { width: "12px" },
     }, { dark: true });
 
-    // ═══ EDITOR INSTANCE ═══
-    let view = new EditorView({
-      state: EditorState.create({ doc: "", extensions: editorExtensions() }),
-      parent: document.getElementById("editor-container"),
-    });
+    // ═══ RUN KEYMAP ═══
+    const runKeymap = keymap.of([
+      { key: "Ctrl-Enter", mac: "Cmd-Enter", run: () => { runCode(); return true; } },
+      { key: "Ctrl-s", mac: "Cmd-s", run: () => { saveActiveFile(); return true; } },
+      { key: "Ctrl-b", mac: "Cmd-b", run: () => { toggleSidebar(); return true; } },
+      { key: "Ctrl-`", mac: "Cmd-`", run: () => { togglePanel(); return true; } },
+      { key: "Ctrl-j", mac: "Cmd-j", run: () => { togglePanel(); return true; } },
+      { key: "Ctrl-\\", mac: "Cmd-\\", run: () => { splitRight(); return true; } },
+    ]);
+
+    // ═══ EDITOR EXTENSIONS (per group) ═══
+    function editorExtensions(group) {
+      const autoSave = EditorView.updateListener.of((update) => {
+        if (update.docChanged && session.isProjectMode()) {
+          const idx = group.tabs.getActiveIndex();
+          const content = update.state.doc.toString();
+          group.tabs.setModified(idx, group.tabs.isModified(idx, content));
+          renderGroupTabs(group);
+          clearTimeout(group.saveTimeout);
+          group.saveTimeout = setTimeout(() => saveGroupFile(group), 1000);
+        }
+      });
+
+      const cursorTrack = EditorView.updateListener.of((update) => {
+        if ((update.selectionSet || update.docChanged) && groups[activeGroupIdx] === group) {
+          const pos = update.state.selection.main.head;
+          const line = update.state.doc.lineAt(pos);
+          statusLine.textContent = `Ln ${line.number}, Col ${pos - line.from + 1}`;
+        }
+      });
+
+      const focusTracker = EditorView.domEventHandlers({
+        focus() {
+          const idx = groups.indexOf(group);
+          if (idx >= 0 && idx !== activeGroupIdx) setActiveGroup(idx);
+        },
+      });
+
+      return [
+        lineNumbers(), highlightActiveLine(), highlightActiveLineGutter(),
+        history(), bracketMatching(), closeBrackets(), indentOnInput(),
+        highlightSelectionMatches(), oneDark, editorTheme,
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        achronymeLanguage, achLinter, achAutocompletion, achHover,
+        keymap.of([indentWithTab, ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
+        runKeymap, cursorTrack, autoSave, focusTracker, EditorView.lineWrapping,
+      ];
+    }
+
+    // ═══ GROUP MANAGEMENT ═══
+    function createGroup() {
+      const id = groupIdCounter++;
+      const tm = new TabManager();
+
+      const el = document.createElement("div");
+      el.className = "editor-group" + (groups.length === 0 ? " active" : "");
+
+      const tabBarEl = document.createElement("div");
+      tabBarEl.className = "group-tabbar";
+
+      const breadcrumbEl = document.createElement("div");
+      breadcrumbEl.className = "group-breadcrumb";
+
+      const editorEl = document.createElement("div");
+      editorEl.className = "group-editor";
+
+      el.append(tabBarEl, breadcrumbEl, editorEl);
+
+      if (groups.length > 0) {
+        const handle = document.createElement("div");
+        handle.className = "group-split-handle";
+        setupGroupSplitHandle(handle);
+        groupsWrapper.appendChild(handle);
+      }
+      groupsWrapper.appendChild(el);
+
+      const group = { id, tabs: tm, view: null, el, tabBarEl, breadcrumbEl, editorEl, saveTimeout: null };
+
+      group.view = new EditorView({
+        state: EditorState.create({ doc: "", extensions: editorExtensions(group) }),
+        parent: editorEl,
+      });
+
+      groups.push(group);
+      renderGroupTabs(group);
+      return group;
+    }
+
+    function setActiveGroup(idx) {
+      if (idx < 0 || idx >= groups.length) return;
+      activeGroupIdx = idx;
+      groups.forEach((g, i) => g.el.classList.toggle("active", i === idx));
+      const tab = ag().tabs.getActiveTab();
+      if (tab && ag().view) {
+        const pos = ag().view.state.selection.main.head;
+        const line = ag().view.state.doc.lineAt(pos);
+        statusLine.textContent = `Ln ${line.number}, Col ${pos - line.from + 1}`;
+      }
+    }
+
+    function removeGroup(group) {
+      const idx = groups.indexOf(group);
+      if (idx < 0 || groups.length <= 1) return;
+
+      const prev = group.el.previousElementSibling;
+      const next = group.el.nextElementSibling;
+      if (prev && prev.classList.contains("group-split-handle")) prev.remove();
+      else if (next && next.classList.contains("group-split-handle")) next.remove();
+
+      group.view.destroy();
+      group.el.remove();
+      groups.splice(idx, 1);
+      groups.forEach(g => { g.el.style.flex = ""; g.el.style.width = ""; });
+
+      if (activeGroupIdx >= groups.length) activeGroupIdx = groups.length - 1;
+      setActiveGroup(activeGroupIdx);
+    }
+
+    function splitRight() {
+      const src = ag();
+      const srcTab = src.tabs.getActiveTab();
+      if (!srcTab) return;
+
+      const newGroup = createGroup();
+      const content = src.view.state.doc.toString();
+
+      newGroup.tabs.openTab(srcTab.path, content, editorExtensions(newGroup));
+      newGroup.view.setState(newGroup.tabs.getActiveTab().editorState);
+
+      activeGroupIdx = groups.indexOf(newGroup);
+      groups.forEach((g, i) => g.el.classList.toggle("active", i === activeGroupIdx));
+      renderAllGroups();
+    }
 
     // ═══ OUTPUT ═══
     function clearOutput() { output.innerHTML = '<span class="output-cursor"></span>'; }
@@ -794,17 +880,7 @@ import '@fontsource-variable/jetbrains-mono';
       output.scrollTop = output.scrollHeight;
     }
 
-    // ═══ BREADCRUMB ═══
-    function updateBreadcrumb(path) {
-      if (!path) { breadcrumb.innerHTML = ""; return; }
-      const parts = path.split("/");
-      breadcrumb.innerHTML = parts.map((p, i) =>
-        (i > 0 ? '<span class="breadcrumb-sep">&rsaquo;</span>' : "") +
-        `<span class="breadcrumb-item">${p}</span>`
-      ).join("");
-    }
-
-    // ═══ TAB RENDERING ═══
+    // ═══ TAB ICONS ═══
     function fileTabIcon(path) {
       if (path.endsWith(".toml")) {
         return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4.5v7l6 3 6-3v-7L8 1.5z" stroke="#8b8b9a" stroke-width="1.2"/><circle cx="8" cy="8" r="1.5" fill="#8b8b9a"/></svg>`;
@@ -812,14 +888,15 @@ import '@fontsource-variable/jetbrains-mono';
       return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L13 8L8 14L3 8L8 2Z" fill="none" stroke="#a855f7" stroke-width="1.2"/></svg>`;
     }
 
-    function renderTabs() {
-      const actions = tabbar.querySelector(".tab-actions");
-      tabbar.innerHTML = "";
+    // ═══ TAB RENDERING (per group) ═══
+    function renderGroupTabs(group) {
+      const bar = group.tabBarEl;
+      bar.innerHTML = "";
 
-      for (let i = 0; i < tabs.getTabs().length; i++) {
-        const t = tabs.getTabs()[i];
+      for (let i = 0; i < group.tabs.getTabs().length; i++) {
+        const t = group.tabs.getTabs()[i];
         const tab = document.createElement("div");
-        tab.className = "tab" + (i === tabs.getActiveIndex() ? " active" : "") + (t.modified ? " modified" : "");
+        tab.className = "tab" + (i === group.tabs.getActiveIndex() ? " active" : "") + (t.modified ? " modified" : "");
 
         const icon = document.createElement("span");
         icon.className = "tab-icon";
@@ -836,90 +913,128 @@ import '@fontsource-variable/jetbrains-mono';
         const close = document.createElement("button");
         close.className = "tab-close";
         close.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
-        close.addEventListener("click", (e) => { e.stopPropagation(); closeTabAt(i); });
+        close.addEventListener("click", (e) => { e.stopPropagation(); closeTabInGroup(group, i); });
 
-        tab.appendChild(icon);
-        tab.appendChild(label);
-        tab.appendChild(dot);
-        tab.appendChild(close);
-        tab.addEventListener("click", () => switchToTab(i));
-        tab.addEventListener("mousedown", (e) => { if (e.button === 1) { e.preventDefault(); closeTabAt(i); } });
-        tabbar.appendChild(tab);
+        tab.appendChild(icon); tab.appendChild(label); tab.appendChild(dot); tab.appendChild(close);
+        tab.addEventListener("click", () => { setActiveGroup(groups.indexOf(group)); switchTabInGroup(group, i); });
+        tab.addEventListener("mousedown", (e) => { if (e.button === 1) { e.preventDefault(); closeTabInGroup(group, i); } });
+        bar.appendChild(tab);
       }
 
-      tabbar.appendChild(actions);
+      const actions = document.createElement("div");
+      actions.className = "tab-actions";
 
-      // Update breadcrumb
-      const active = tabs.getActiveTab();
-      updateBreadcrumb(active?.path || "");
+      const splitBtn = document.createElement("button");
+      splitBtn.className = "tab-action-btn";
+      splitBtn.title = "Split Editor (Ctrl+\\)";
+      splitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="8" y1="1" x2="8" y2="15"/></svg>`;
+      splitBtn.addEventListener("click", () => { setActiveGroup(groups.indexOf(group)); splitRight(); });
+
+      const runBtn = document.createElement("button");
+      runBtn.className = "run-btn";
+      runBtn.innerHTML = `<svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg> Run`;
+      runBtn.addEventListener("click", runCode);
+
+      actions.appendChild(splitBtn);
+      actions.appendChild(runBtn);
+      bar.appendChild(actions);
+
+      updateGroupBreadcrumb(group);
+    }
+
+    function renderAllGroups() { for (const g of groups) renderGroupTabs(g); }
+
+    function updateGroupBreadcrumb(group) {
+      const tab = group.tabs.getActiveTab();
+      const path = tab?.path || "";
+      if (!path) { group.breadcrumbEl.innerHTML = ""; return; }
+      const parts = path.split("/");
+      group.breadcrumbEl.innerHTML = parts.map((p, i) =>
+        (i > 0 ? '<span class="breadcrumb-sep">&rsaquo;</span>' : "") +
+        `<span class="breadcrumb-item">${p}</span>`
+      ).join("");
     }
 
     // ═══ FILE OPERATIONS ═══
-    async function openFile(path) {
-      const existing = tabs.findTab(path);
-      if (existing >= 0) { switchToTab(existing); return; }
+    async function openFile(path) { return openFileInGroup(ag(), path); }
+
+    async function openFileInGroup(group, path) {
+      const existing = group.tabs.findTab(path);
+      if (existing >= 0) { switchTabInGroup(group, existing); return; }
       try {
         const content = await session.readFile(path);
-        tabs.saveEditorState(view.state);
-        tabs.openTab(path, content, editorExtensions());
-        view.setState(tabs.getActiveTab().editorState);
-        renderTabs();
+        group.tabs.saveEditorState(group.view.state);
+        group.tabs.openTab(path, content, editorExtensions(group));
+        group.view.setState(group.tabs.getActiveTab().editorState);
+        renderGroupTabs(group);
         refreshFileTree();
       } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
     }
 
-    function switchToTab(index) {
-      if (index === tabs.getActiveIndex()) return;
-      tabs.saveEditorState(view.state);
-      tabs.switchTab(index);
-      const tab = tabs.getActiveTab();
-      if (tab) view.setState(tab.editorState);
-      renderTabs();
+    function switchTabInGroup(group, index) {
+      if (index === group.tabs.getActiveIndex()) return;
+      group.tabs.saveEditorState(group.view.state);
+      group.tabs.switchTab(index);
+      const tab = group.tabs.getActiveTab();
+      if (tab) group.view.setState(tab.editorState);
+      renderGroupTabs(group);
       refreshFileTree();
     }
 
-    function closeTabAt(index) {
-      tabs.saveEditorState(view.state);
-      tabs.closeTab(index);
-      const tab = tabs.getActiveTab();
-      if (tab) { view.setState(tab.editorState); }
-      else { view.setState(EditorState.create({ doc: "", extensions: editorExtensions() })); }
-      renderTabs();
+    function closeTabInGroup(group, index) {
+      group.tabs.saveEditorState(group.view.state);
+      group.tabs.closeTab(index);
+      const tab = group.tabs.getActiveTab();
+      if (tab) {
+        group.view.setState(tab.editorState);
+      } else if (groups.length > 1) {
+        removeGroup(group);
+        return;
+      } else {
+        group.view.setState(EditorState.create({ doc: "", extensions: editorExtensions(group) }));
+      }
+      renderGroupTabs(group);
     }
 
-    async function saveActiveFile() {
-      const tab = tabs.getActiveTab();
+    async function saveGroupFile(group) {
+      const tab = group.tabs.getActiveTab();
       if (!tab || !session.isProjectMode()) return;
-      tabs.saveEditorState(view.state);
-      const content = view.state.doc.toString();
+      group.tabs.saveEditorState(group.view.state);
+      const content = group.view.state.doc.toString();
       try {
         await session.writeFile(tab.path, content);
-        tabs.markSaved(tabs.getActiveIndex(), content);
-        renderTabs();
+        group.tabs.markSaved(group.tabs.getActiveIndex(), content);
+        renderGroupTabs(group);
       } catch (e) { appendOutput(`Save error: ${e.message}`, "error"); }
     }
+
+    async function saveActiveFile() { return saveGroupFile(ag()); }
 
     async function refreshFileTree() {
       if (!session.isProjectMode()) return;
       try {
         const files = await session.listFiles();
-        const activeTab = tabs.getActiveTab();
+        const activeTab = ag().tabs.getActiveTab();
         renderFileTree(fileTree, files, activeTab?.path || "", {
           onFileClick: openFile,
           onFileDelete: async (path) => {
             if (!confirm(`Delete ${path}?`)) return;
             await session.deleteFile(path);
-            tabs.removeTabByPath(path);
-            const tab = tabs.getActiveTab();
-            if (tab) view.setState(tab.editorState);
-            renderTabs(); refreshFileTree();
+            for (const g of [...groups]) {
+              g.tabs.removeTabByPath(path);
+              const tab = g.tabs.getActiveTab();
+              if (tab) g.view.setState(tab.editorState);
+              else if (groups.length > 1) { removeGroup(g); continue; }
+              else g.view.setState(EditorState.create({ doc: "", extensions: editorExtensions(g) }));
+            }
+            renderAllGroups(); refreshFileTree();
           },
           onFileRename: async (oldPath, newPath) => {
             if (!newPath || newPath === oldPath) return;
             try {
               await session.renameFile(oldPath, newPath);
-              tabs.updateTabPath(oldPath, newPath);
-              renderTabs(); refreshFileTree();
+              for (const g of groups) g.tabs.updateTabPath(oldPath, newPath);
+              renderAllGroups(); refreshFileTree();
             } catch (e) { appendOutput(`Rename error: ${e.message}`, "error"); }
           },
         });
@@ -933,10 +1048,11 @@ import '@fontsource-variable/jetbrains-mono';
       if (!panelVisible) { panelVisible = true; applyLayout(); }
       if (session.isProjectMode()) await saveActiveFile();
       clearOutput();
-      running = true; runBtn.disabled = true;
+      running = true;
+      document.querySelectorAll(".run-btn").forEach(b => b.disabled = true);
       serverDot.classList.add("loading"); serverLabel.textContent = "Running...";
       try {
-        const source = session.isProjectMode() ? null : view.state.doc.toString();
+        const source = session.isProjectMode() ? null : ag().view.state.doc.toString();
         if (!session.isProjectMode() && (!source || !source.trim())) { appendOutput("// Nothing to run", "info"); return; }
         const data = await session.runProject(source);
         if (data.output) { for (const line of data.output.split("\n")) { if (line) appendOutput(line, "stdout"); } }
@@ -947,7 +1063,8 @@ import '@fontsource-variable/jetbrains-mono';
         appendOutput(e.message, "error");
         serverDot.classList.add("error"); serverLabel.textContent = "Offline"; return;
       } finally {
-        running = false; runBtn.disabled = false;
+        running = false;
+        document.querySelectorAll(".run-btn").forEach(b => b.disabled = false);
         serverDot.classList.remove("loading"); serverLabel.textContent = "Server";
       }
     }
@@ -959,7 +1076,8 @@ import '@fontsource-variable/jetbrains-mono';
         clearOutput();
         appendOutput("$ ach init " + name + " --template " + name, "info");
         if (session.isProjectMode()) await session.deleteSession();
-        tabs.resetTabs();
+        while (groups.length > 1) removeGroup(groups[groups.length - 1]);
+        ag().tabs.resetTabs();
         const data = await session.createSession(name);
         document.getElementById("project-name").textContent = name.toUpperCase();
         appendOutput(`Created project \`${name}\` with template \`${name}\``, "info");
@@ -972,19 +1090,20 @@ import '@fontsource-variable/jetbrains-mono';
     }
 
     // ═══ NEW FILE ═══
-    async function createNewFile() {
+    function createNewFile() {
       if (!session.isProjectMode()) { appendOutput("Select a template first", "info"); return; }
-      const name = promptNewFile();
-      if (!name) return;
-      try {
-        await session.writeFile(name, `// ${name.split("/").pop()}\n`);
-        await refreshFileTree();
-        await openFile(name);
-      } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
+      startInlineCreate(fileTree, {
+        async onCreate(name) {
+          try {
+            await session.writeFile(name, `// ${name.split("/").pop()}\n`);
+            await refreshFileTree();
+            await openFile(name);
+          } catch (e) { appendOutput(`Error: ${e.message}`, "error"); }
+        },
+      });
     }
 
     // ═══ EVENTS ═══
-    runBtn.addEventListener("click", runCode);
     clearBtn.addEventListener("click", clearOutput);
     templateSelect.addEventListener("change", (e) => loadTemplate(e.target.value));
     newFileBtn.addEventListener("click", createNewFile);
@@ -1002,7 +1121,8 @@ import '@fontsource-variable/jetbrains-mono';
       if (!file) return;
       try {
         const text = await file.text();
-        tabs.resetTabs();
+        while (groups.length > 1) removeGroup(groups[groups.length - 1]);
+        ag().tabs.resetTabs();
         clearOutput();
         appendOutput("Importing project...", "info");
         const files = await session.importProject(text);
@@ -1019,9 +1139,11 @@ import '@fontsource-variable/jetbrains-mono';
       if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); toggleSidebar(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "`") { e.preventDefault(); togglePanel(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); togglePanel(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") { e.preventDefault(); splitRight(); }
     });
 
     // ═══ INIT ═══
+    createGroup();
     applyLayout();
 
     session.healthCheck().then(ok => {
@@ -1033,7 +1155,6 @@ import '@fontsource-variable/jetbrains-mono';
       if (el) { el.textContent = "LSP"; el.style.opacity = "0.85"; }
     });
 
-    // Try to restore previous session, otherwise load default template
     (async () => {
       const restored = await session.restoreSession();
       if (restored) {
