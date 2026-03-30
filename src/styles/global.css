@@ -18,8 +18,8 @@
   --color-warn: #FBBF24;
   --color-info: #60A5FA;
 
-  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", ui-monospace, monospace;
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "Fira Code", "Consolas", ui-monospace, monospace;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -80,3 +80,169 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-proof) 50%, var(--color-subtle));
 }
+
+/* ── Documentation prose ─────────────────────────────── */
+
+.doc-prose {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  color: var(--color-text-secondary);
+}
+
+/* Headings */
+.doc-prose h1 {
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+.doc-prose h2 {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-subtle) 50%, transparent);
+  line-height: 1.35;
+}
+.doc-prose h3 {
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+.doc-prose h4 {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Paragraphs */
+.doc-prose p { margin: 1em 0; }
+
+/* Links */
+.doc-prose a {
+  color: var(--color-proof-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--color-proof-light) 40%, transparent);
+  transition: text-decoration-color 0.15s;
+}
+.doc-prose a:hover {
+  text-decoration-color: var(--color-proof-light);
+}
+
+/* Code blocks (Shiki) */
+.doc-prose .code-block-wrapper {
+  position: relative;
+}
+.doc-prose .code-block-wrapper .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background-color 0.15s;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.doc-prose .code-block-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+.doc-prose .code-block-wrapper .copy-btn:hover {
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-subtle) 30%, transparent);
+}
+.doc-prose .code-block-wrapper .copy-btn .icon-copy { display: block; }
+.doc-prose .code-block-wrapper .copy-btn .icon-check { display: none; }
+.doc-prose .code-block-wrapper .copy-btn[data-copied] .icon-copy { display: none; }
+.doc-prose .code-block-wrapper .copy-btn[data-copied] .icon-check { display: block; }
+.doc-prose .code-block-wrapper .copy-btn[data-copied] { opacity: 1; color: var(--color-valid); }
+
+.doc-prose pre {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-subtle);
+  padding: 1rem 1.25rem;
+  margin: 1.5em 0;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+/* Inline code */
+.doc-prose :not(pre) > code {
+  background: color-mix(in srgb, var(--color-proof) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-proof) 15%, transparent);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.85em;
+  color: var(--color-proof-light);
+}
+
+/* Tables */
+.doc-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.875rem;
+}
+.doc-prose th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-subtle);
+  padding: 0.75rem;
+}
+.doc-prose td {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-subtle) 50%, transparent);
+  padding: 0.75rem;
+}
+
+/* Lists */
+.doc-prose ul { list-style: disc; padding-left: 1.5em; margin: 1em 0; }
+.doc-prose ol { list-style: decimal; padding-left: 1.5em; margin: 1em 0; }
+.doc-prose li { margin: 0.35em 0; }
+.doc-prose li::marker { color: var(--color-text-muted); }
+
+/* Blockquotes */
+.doc-prose blockquote {
+  border-left: 3px solid var(--color-subtle);
+  padding-left: 1em;
+  margin: 1.5em 0;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* Horizontal rules */
+.doc-prose hr {
+  border: none;
+  border-top: 1px solid var(--color-subtle);
+  margin: 2em 0;
+}
+
+/* Images */
+.doc-prose img {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-subtle);
+  max-width: 100%;
+}
+
+/* Strong & emphasis */
+.doc-prose strong { color: var(--color-text-primary); font-weight: 600; }
+.doc-prose em { font-style: italic; }

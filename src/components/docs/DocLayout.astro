@@ -1,0 +1,81 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../Header.astro';
+import Footer from '../Footer.astro';
+import DocSidebar from './DocSidebar.astro';
+import DocToc from './DocToc.astro';
+import DocPagination from './DocPagination.astro';
+import DocMobileNav from './DocMobileNav.astro';
+import { sidebarConfig } from '../../data/docs-sidebar';
+import type { Locale } from '../../i18n';
+import { t } from '../../i18n';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description?: string;
+  headings: { depth: number; slug: string; text: string }[];
+  currentSlug: string;
+  prevPage: { href: string; label: string } | null;
+  nextPage: { href: string; label: string } | null;
+}
+
+const { locale, title, description, headings, currentSlug, prevPage, nextPage } = Astro.props;
+const s = t(locale);
+const baseUrl = locale === 'en' ? '/docs/' : `/es/docs/`;
+const altLocalePath = locale === 'en' ? `/es/docs/${currentSlug}` : `/docs/${currentSlug}`;
+---
+
+<Layout title={`${title} — Achronyme Docs`} description={description ?? title} lang={locale}>
+  <Header locale={locale} altLocalePath={altLocalePath} />
+
+  <div class="mx-auto max-w-[1400px] border-x border-subtle/50 min-h-screen flex">
+    <DocSidebar sidebar={sidebarConfig} currentSlug={currentSlug} locale={locale} baseUrl={baseUrl} />
+
+    <main class="flex-1 min-w-0 border-l border-subtle/50 md:border-l-0">
+      <article class="doc-prose px-6 md:px-8 lg:px-12 py-8 lg:py-10 max-w-[740px]" data-pagefind-body>
+        <h1>{title}</h1>
+        <slot />
+      </article>
+      <DocPagination
+        prev={prevPage}
+        next={nextPage}
+        prevText={s.docs?.previous ?? 'Previous'}
+        nextText={s.docs?.next ?? 'Next'}
+      />
+    </main>
+
+    <DocToc headings={headings} label={s.docs?.onThisPage ?? 'On this page'} />
+  </div>
+
+  <DocMobileNav sidebar={sidebarConfig} currentSlug={currentSlug} locale={locale} baseUrl={baseUrl} />
+  <Footer locale={locale} />
+</Layout>
+
+<script>
+  document.querySelectorAll<HTMLPreElement>('.doc-prose pre').forEach((pre, i) => {
+    const id = `code-block-${i}`;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-block-wrapper';
+    pre.parentNode!.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+
+    const copyable = document.createElement('el-copyable');
+    copyable.id = id;
+    copyable.hidden = true;
+    copyable.textContent = pre.textContent ?? '';
+    wrapper.appendChild(copyable);
+
+    const btn = document.createElement('button');
+    btn.setAttribute('command', '--copy');
+    btn.setAttribute('commandfor', id);
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.ariaLabel = 'Copy code';
+    btn.innerHTML =
+      '<svg class="icon-copy" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+      '<svg class="icon-check" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+    wrapper.appendChild(btn);
+  });
+</script>

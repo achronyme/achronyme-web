@@ -1,0 +1,29 @@
+---
+import { getCollection, render } from 'astro:content';
+import DocLayout from '../../components/docs/DocLayout.astro';
+import { getPrevNext, getLabel } from '../../data/docs-sidebar';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('docs-en');
+  return entries.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const { prev, next } = getPrevNext(entry.id);
+---
+
+<DocLayout
+  locale="en"
+  title={entry.data.title}
+  description={entry.data.description}
+  headings={headings}
+  currentSlug={entry.id}
+  prevPage={prev ? { href: `/docs/${prev.slug}`, label: getLabel(prev, 'en') } : null}
+  nextPage={next ? { href: `/docs/${next.slug}`, label: getLabel(next, 'en') } : null}
+>
+  <Content />
+</DocLayout>

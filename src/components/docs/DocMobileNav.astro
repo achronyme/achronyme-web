@@ -1,0 +1,92 @@
+---
+import type { SidebarConfig } from '../../data/docs-sidebar';
+import { getLabel } from '../../data/docs-sidebar';
+
+interface Props {
+  sidebar: SidebarConfig;
+  currentSlug: string;
+  locale: string;
+  baseUrl: string;
+}
+
+const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
+---
+
+<!-- Mobile menu button -->
+<button
+  id="mobile-nav-toggle"
+  class="md:hidden fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-proof text-white rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg shadow-proof/25 hover:bg-proof-dim transition-colors"
+  aria-label="Navigation"
+>
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+  Menu
+</button>
+
+<!-- Mobile overlay -->
+<dialog id="mobile-nav-dialog" class="fixed inset-0 z-50 m-0 w-full h-full max-w-full max-h-full bg-void/95 backdrop-blur-sm p-0 border-none">
+  <div class="flex flex-col h-full">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-subtle/50">
+      <span class="text-sm font-semibold text-text-primary">Navigation</span>
+      <button id="mobile-nav-close" class="text-text-muted hover:text-text-primary p-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <nav class="flex-1 overflow-y-auto px-6 py-4">
+      {sidebar.map(group => {
+        const hasActive = group.items.some(i => i.slug === currentSlug);
+        return (
+          <details open={hasActive} class="mb-4 group">
+            <summary class="flex items-center justify-between cursor-pointer text-xs uppercase tracking-widest text-text-muted font-semibold py-1.5 select-none list-none [&::-webkit-details-marker]:hidden">
+              <span>{getLabel(group, locale)}</span>
+              <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </summary>
+            <ul class="mt-1 ml-0.5 border-l border-subtle/40 space-y-0.5">
+              {group.items.map(item => {
+                const isActive = item.slug === currentSlug;
+                return (
+                  <li>
+                    <a
+                      href={`${baseUrl}${item.slug}`}
+                      class:list={[
+                        'block py-1.5 pl-3 text-sm transition-colors',
+                        isActive
+                          ? 'text-proof-light border-l-2 border-proof -ml-px font-medium'
+                          : 'text-text-secondary hover:text-text-primary',
+                      ]}
+                    >
+                      {getLabel(item, locale)}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        );
+      })}
+    </nav>
+  </div>
+</dialog>
+
+<script>
+  const toggle = document.getElementById('mobile-nav-toggle')!;
+  const dialog = document.getElementById('mobile-nav-dialog') as HTMLDialogElement;
+  const close = document.getElementById('mobile-nav-close')!;
+
+  toggle.addEventListener('click', () => dialog.showModal());
+  close.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+</script>
+
+<style>
+  dialog::backdrop { background: transparent; }
+  dialog[open] { animation: fade-in 0.15s ease-out; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+</style>

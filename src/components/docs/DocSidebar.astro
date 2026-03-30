@@ -1,0 +1,57 @@
+---
+import type { SidebarConfig } from '../../data/docs-sidebar';
+import { getLabel } from '../../data/docs-sidebar';
+
+interface Props {
+  sidebar: SidebarConfig;
+  currentSlug: string;
+  locale: string;
+  baseUrl: string;
+}
+
+const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
+---
+
+<nav class="hidden md:block w-[260px] shrink-0">
+  <div class="sticky top-[92px] max-h-[calc(100vh-92px)] overflow-y-auto py-6 pl-6 pr-4 doc-sidebar-scroll">
+    {sidebar.map(group => {
+      const hasActive = group.items.some(i => i.slug === currentSlug);
+      return (
+        <details open={hasActive} class="mb-4 group">
+          <summary class="flex items-center justify-between cursor-pointer text-xs uppercase tracking-widest text-text-muted font-semibold py-1.5 select-none hover:text-text-secondary transition-colors list-none [&::-webkit-details-marker]:hidden">
+            <span>{getLabel(group, locale)}</span>
+            <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </summary>
+          <ul class="mt-1 ml-0.5 border-l border-subtle/40 space-y-0.5">
+            {group.items.map(item => {
+              const isActive = item.slug === currentSlug;
+              return (
+                <li>
+                  <a
+                    href={`${baseUrl}${item.slug}`}
+                    class:list={[
+                      'block py-1 pl-3 text-sm transition-colors duration-150',
+                      isActive
+                        ? 'text-proof-light border-l-2 border-proof -ml-px bg-proof/5 font-medium'
+                        : 'text-text-secondary hover:text-text-primary',
+                    ]}
+                  >
+                    {getLabel(item, locale)}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      );
+    })}
+  </div>
+</nav>
+
+<style>
+  .doc-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+  .doc-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+  .doc-sidebar-scroll::-webkit-scrollbar-thumb { background: var(--color-subtle); border-radius: 2px; }
+</style>

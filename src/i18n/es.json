@@ -56,6 +56,11 @@
     "natives": "50 metodos",
     "deps": "0 JS deps"
   },
+  "docs": {
+    "onThisPage": "En esta pagina",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
   "footer": {
     "tagline": "Un DSL de zero-knowledge. Escribe codigo, genera pruebas.",
     "resources": "Recursos",

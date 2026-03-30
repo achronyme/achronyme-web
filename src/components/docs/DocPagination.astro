@@ -1,0 +1,27 @@
+---
+interface Props {
+  prev: { href: string; label: string } | null;
+  next: { href: string; label: string } | null;
+  prevText: string;
+  nextText: string;
+}
+
+const { prev, next, prevText, nextText } = Astro.props;
+---
+
+{(prev || next) && (
+  <nav class="flex justify-between gap-4 border-t border-subtle/50 px-8 lg:px-12 py-8">
+    {prev ? (
+      <a href={prev.href} class="group flex-1 rounded-lg border border-subtle/50 p-4 hover:border-proof/50 hover:bg-proof/5 transition-all">
+        <span class="text-xs text-text-muted block mb-1">&larr; {prevText}</span>
+        <span class="text-sm text-text-primary font-medium group-hover:text-proof-light transition-colors">{prev.label}</span>
+      </a>
+    ) : <div class="flex-1" />}
+    {next ? (
+      <a href={next.href} class="group flex-1 rounded-lg border border-subtle/50 p-4 text-right hover:border-proof/50 hover:bg-proof/5 transition-all">
+        <span class="text-xs text-text-muted block mb-1">{nextText} &rarr;</span>
+        <span class="text-sm text-text-primary font-medium group-hover:text-proof-light transition-colors">{next.label}</span>
+      </a>
+    ) : <div class="flex-1" />}
+  </nav>
+)}

@@ -56,6 +56,11 @@
     "natives": "50 methods",
     "deps": "0 JS deps"
   },
+  "docs": {
+    "onThisPage": "On this page",
+    "previous": "Previous",
+    "next": "Next"
+  },
   "footer": {
     "tagline": "A zero-knowledge DSL. Write code, generate proofs.",
     "resources": "Resources",
