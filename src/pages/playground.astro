@@ -467,6 +467,9 @@ import '@fontsource-variable/jetbrains-mono';
     }
     .panel-action-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
 
+    /* Block iframe from stealing mouse during resize */
+    body.resizing iframe { pointer-events: none; }
+
     /* ═══ DOCS PANEL ═══ */
     .docs-panel {
       position: fixed; top: 30px; bottom: 22px; right: 0;
@@ -726,6 +729,7 @@ import '@fontsource-variable/jetbrains-mono';
     sidebarResize.addEventListener("mousedown", (e) => {
       e.preventDefault(); sidebarResizing = true;
       sidebarResize.classList.add("dragging");
+      document.body.classList.add("resizing");
       document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
     });
     document.addEventListener("mousemove", (e) => {
@@ -736,6 +740,7 @@ import '@fontsource-variable/jetbrains-mono';
     document.addEventListener("mouseup", () => {
       if (!sidebarResizing) return;
       sidebarResizing = false; sidebarResize.classList.remove("dragging");
+      document.body.classList.remove("resizing");
       document.body.style.cursor = ""; document.body.style.userSelect = "";
       localStorage.setItem("ach-sidebar-width", sidebarWidth);
     });
@@ -745,6 +750,7 @@ import '@fontsource-variable/jetbrains-mono';
     resizeHandle.addEventListener("mousedown", (e) => {
       e.preventDefault(); resizing = true;
       resizeHandle.classList.add("dragging");
+      document.body.classList.add("resizing");
       document.body.style.cursor = panelLayout === "right" ? "col-resize" : "row-resize";
       document.body.style.userSelect = "none";
     });
@@ -763,6 +769,7 @@ import '@fontsource-variable/jetbrains-mono';
     document.addEventListener("mouseup", () => {
       if (!resizing) return;
       resizing = false; resizeHandle.classList.remove("dragging");
+      document.body.classList.remove("resizing");
       document.body.style.cursor = ""; document.body.style.userSelect = "";
     });
 
@@ -778,6 +785,7 @@ import '@fontsource-variable/jetbrains-mono';
         grLeft = children[idx - 1]; grRight = children[idx + 1];
         grStartW = [grLeft.offsetWidth, grRight.offsetWidth];
         handle.classList.add("dragging");
+        document.body.classList.add("resizing");
         document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
       });
     }
@@ -798,6 +806,7 @@ import '@fontsource-variable/jetbrains-mono';
       if (!groupResizing) return;
       groupResizing = false;
       if (grHandle) grHandle.classList.remove("dragging");
+      document.body.classList.remove("resizing");
       document.body.style.cursor = ""; document.body.style.userSelect = "";
     });
 
@@ -1325,6 +1334,7 @@ import '@fontsource-variable/jetbrains-mono';
     docsResize.addEventListener("mousedown", (e) => {
       e.preventDefault(); docsResizing = true;
       docsResize.classList.add("dragging");
+      document.body.classList.add("resizing");
       document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
     });
     document.addEventListener("mousemove", (e) => {
@@ -1335,6 +1345,7 @@ import '@fontsource-variable/jetbrains-mono';
     document.addEventListener("mouseup", () => {
       if (!docsResizing) return;
       docsResizing = false; docsResize.classList.remove("dragging");
+      document.body.classList.remove("resizing");
       document.body.style.cursor = ""; document.body.style.userSelect = "";
       localStorage.setItem("ach-docs-width", docsWidth);
     });
