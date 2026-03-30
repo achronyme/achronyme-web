@@ -428,6 +428,35 @@ import '@fontsource-variable/jetbrains-mono';
       background: var(--accent);
     }
 
+    /* ═══ WELCOME SCREEN ═══ */
+    .group-welcome {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-editor); color: var(--text-secondary);
+      font-family: var(--font-sans); user-select: none;
+    }
+    .welcome-content { max-width: 360px; padding: 40px; }
+    .welcome-logo { font-size: 48px; color: var(--accent); margin-bottom: 8px; line-height: 1; }
+    .welcome-content h2 { font-size: 22px; font-weight: 300; color: var(--text-primary); margin-bottom: 2px; letter-spacing: -0.02em; }
+    .welcome-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 28px; }
+    .welcome-section { margin-bottom: 20px; }
+    .welcome-section h3 {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+    }
+    .welcome-item { font-size: 13px; color: var(--accent); cursor: pointer; padding: 2px 0; }
+    .welcome-item:hover { color: var(--text-primary); text-decoration: underline; }
+    .welcome-shortcut {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; padding: 2px 0; color: var(--text-secondary);
+    }
+    .welcome-shortcut kbd {
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 3px; padding: 1px 6px;
+    }
+    .welcome-link { display: block; font-size: 13px; color: var(--accent); text-decoration: none; padding: 2px 0; }
+    .welcome-link:hover { color: var(--text-primary); text-decoration: underline; }
+
     /* ═══ PANEL ACTIONS ═══ */
     .panel-actions {
       margin-left: auto; display: flex; align-items: center; gap: 2px;
@@ -800,10 +829,44 @@ import '@fontsource-variable/jetbrains-mono';
       const breadcrumbEl = document.createElement("div");
       breadcrumbEl.className = "group-breadcrumb";
 
+      const welcomeEl = document.createElement("div");
+      welcomeEl.className = "group-welcome";
+      welcomeEl.innerHTML = `
+        <div class="welcome-content">
+          <div class="welcome-logo">◇</div>
+          <h2>Achronyme</h2>
+          <p class="welcome-subtitle">Zero-Knowledge Playground</p>
+          <div class="welcome-section">
+            <h3>Start</h3>
+            <div class="welcome-item" data-action="explorer">Open a file from the Explorer</div>
+            <div class="welcome-item" data-action="template">Select a template to begin</div>
+          </div>
+          <div class="welcome-section">
+            <h3>Shortcuts</h3>
+            <div class="welcome-shortcut"><span>Run</span><kbd>Ctrl+Enter</kbd></div>
+            <div class="welcome-shortcut"><span>Save</span><kbd>Ctrl+S</kbd></div>
+            <div class="welcome-shortcut"><span>Split Editor</span><kbd>Ctrl+\\</kbd></div>
+            <div class="welcome-shortcut"><span>Toggle Sidebar</span><kbd>Ctrl+B</kbd></div>
+            <div class="welcome-shortcut"><span>Toggle Terminal</span><kbd>Ctrl+\`</kbd></div>
+          </div>
+          <div class="welcome-section">
+            <h3>Help</h3>
+            <a href="/docs/getting-started/introduction" class="welcome-link">Documentation</a>
+            <a href="https://github.com/achronyme/achronyme" target="_blank" class="welcome-link">GitHub Repository</a>
+          </div>
+        </div>`;
+      welcomeEl.querySelector('[data-action="explorer"]').addEventListener("click", () => {
+        if (sidebarCollapsed) toggleSidebar();
+      });
+      welcomeEl.querySelector('[data-action="template"]').addEventListener("click", () => {
+        if (sidebarCollapsed) toggleSidebar();
+        templateSelect.focus();
+      });
+
       const editorEl = document.createElement("div");
       editorEl.className = "group-editor";
 
-      el.append(tabBarEl, breadcrumbEl, editorEl);
+      el.append(tabBarEl, breadcrumbEl, welcomeEl, editorEl);
 
       if (groups.length > 0) {
         const handle = document.createElement("div");
@@ -813,7 +876,7 @@ import '@fontsource-variable/jetbrains-mono';
       }
       groupsWrapper.appendChild(el);
 
-      const group = { id, tabs: tm, view: null, el, tabBarEl, breadcrumbEl, editorEl, saveTimeout: null };
+      const group = { id, tabs: tm, view: null, el, tabBarEl, breadcrumbEl, welcomeEl, editorEl, saveTimeout: null };
 
       group.view = new EditorView({
         state: EditorState.create({ doc: "", extensions: editorExtensions(group) }),
@@ -858,13 +921,31 @@ import '@fontsource-variable/jetbrains-mono';
     function splitRight() {
       const src = ag();
       const srcTab = src.tabs.getActiveTab();
-      if (!srcTab) return;
 
       const newGroup = createGroup();
-      const content = src.view.state.doc.toString();
 
-      newGroup.tabs.openTab(srcTab.path, content, editorExtensions(newGroup));
-      newGroup.view.setState(newGroup.tabs.getActiveTab().editorState);
+      if (srcTab) {
+        // Move the active file to the new panel
+        src.tabs.saveEditorState(src.view.state);
+        const content = src.view.state.doc.toString();
+        const path = srcTab.path;
+        const savedContent = srcTab.savedContent;
+        const modified = srcTab.modified;
+
+        // Remove from source
+        src.tabs.closeTab(src.tabs.getActiveIndex());
+        const remaining = src.tabs.getActiveTab();
+        if (remaining) src.view.setState(remaining.editorState);
+
+        // Add to new group
+        newGroup.tabs.openTab(path, content, editorExtensions(newGroup));
+        if (modified) {
+          const ni = newGroup.tabs.getActiveIndex();
+          newGroup.tabs.setModified(ni, true);
+          newGroup.tabs.getTabs()[ni].savedContent = savedContent;
+        }
+        newGroup.view.setState(newGroup.tabs.getActiveTab().editorState);
+      }
 
       activeGroupIdx = groups.indexOf(newGroup);
       groups.forEach((g, i) => g.el.classList.toggle("active", i === activeGroupIdx));
@@ -941,6 +1022,11 @@ import '@fontsource-variable/jetbrains-mono';
       actions.appendChild(runBtn);
       bar.appendChild(actions);
 
+      // Toggle welcome / editor
+      const hasTabs = group.tabs.getTabs().length > 0;
+      group.welcomeEl.style.display = hasTabs ? "none" : "";
+      group.editorEl.style.display = hasTabs ? "" : "none";
+      group.breadcrumbEl.style.display = hasTabs ? "" : "none";
       updateGroupBreadcrumb(group);
     }
 
@@ -958,7 +1044,18 @@ import '@fontsource-variable/jetbrains-mono';
     }
 
     // ═══ FILE OPERATIONS ═══
-    async function openFile(path) { return openFileInGroup(ag(), path); }
+    async function openFile(path) {
+      // If already open in any group, switch to that group
+      for (let i = 0; i < groups.length; i++) {
+        const idx = groups[i].tabs.findTab(path);
+        if (idx >= 0) {
+          setActiveGroup(i);
+          switchTabInGroup(groups[i], idx);
+          return;
+        }
+      }
+      return openFileInGroup(ag(), path);
+    }
 
     async function openFileInGroup(group, path) {
       const existing = group.tabs.findTab(path);
