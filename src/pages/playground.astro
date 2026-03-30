@@ -1286,7 +1286,7 @@ import '@fontsource-variable/jetbrains-mono';
     const docsIcon = document.getElementById("activity-docs");
     let docsOpen = localStorage.getItem("ach-docs-open") === "true";
     let docsWidth = parseInt(localStorage.getItem("ach-docs-width")) || 480;
-    let docsUrl = localStorage.getItem("ach-docs-url") || "/docs/getting-started/introduction";
+    let docsUrl = localStorage.getItem("ach-docs-url") || "/docs/getting-started/introduction?embed";
 
     function toggleDocs() {
       docsOpen = !docsOpen;
@@ -1304,13 +1304,17 @@ import '@fontsource-variable/jetbrains-mono';
       localStorage.setItem("ach-docs-open", "false");
     });
     document.getElementById("docs-external-btn").addEventListener("click", () => {
-      try { window.open(docsIframe.contentWindow.location.href, "_blank"); }
-      catch { window.open(docsUrl, "_blank"); }
+      try {
+        const url = new URL(docsIframe.contentWindow.location.href);
+        url.searchParams.delete("embed");
+        window.open(url.toString(), "_blank");
+      } catch { window.open(docsUrl.replace("?embed", ""), "_blank"); }
     });
 
     docsIframe.addEventListener("load", () => {
       try {
-        docsUrl = docsIframe.contentWindow.location.pathname;
+        const loc = docsIframe.contentWindow.location;
+        docsUrl = loc.pathname + (loc.search.includes("embed") ? loc.search : "?embed");
         localStorage.setItem("ach-docs-url", docsUrl);
       } catch { /* cross-origin */ }
     });
