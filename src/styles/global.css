@@ -30,10 +30,14 @@
   html {
     background-color: var(--color-void);
     color: var(--color-text-primary);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
   }
 
   ::selection {
@@ -42,10 +46,6 @@
   }
 }
 
-/* Headings use Inter */
-h1, h2, h3, h4 {
-  font-family: var(--font-sans);
-}
 
 /* Scroll reveal */
 .reveal {
@@ -99,7 +99,6 @@ h1, h2, h3, h4 {
 
 /* Headings */
 .doc-prose h1 {
-  font-family: var(--font-sans);
   font-size: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -117,7 +116,6 @@ h1, h2, h3, h4 {
   line-height: 1.6;
 }
 .doc-prose h2 {
-  font-family: var(--font-sans);
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -129,7 +127,6 @@ h1, h2, h3, h4 {
   line-height: 1.35;
 }
 .doc-prose h3 {
-  font-family: var(--font-sans);
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -139,7 +136,6 @@ h1, h2, h3, h4 {
   line-height: 1.4;
 }
 .doc-prose h4 {
-  font-family: var(--font-sans);
   font-size: 1rem;
   font-weight: 600;
   color: var(--color-text-primary);
