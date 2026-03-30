@@ -276,9 +276,41 @@ import '@fontsource-variable/jetbrains-mono';
     .breadcrumb-item { color: var(--text-secondary); }
     .breadcrumb-item:last-child { color: var(--text-primary); }
 
-    /* ═══ EDITOR + OUTPUT SPLIT ═══ */
-    .editor-output-split { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    .editor-output-split.layout-right { flex-direction: row; }
+    /* ═══ LAYOUT SYSTEM ═══ */
+    .layout-root { flex: 1; display: flex; overflow: hidden; position: relative; }
+    .layout-center { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .layout-handle-h {
+      width: 4px; cursor: col-resize; flex-shrink: 0; position: relative;
+    }
+    .layout-handle-h::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 1px;
+      width: 2px; background: var(--border);
+    }
+    .layout-handle-h:hover::after, .layout-handle-h.dragging::after { background: var(--accent); }
+    .layout-handle-v {
+      height: 4px; cursor: row-resize; flex-shrink: 0; position: relative;
+    }
+    .layout-handle-v::after {
+      content: ""; position: absolute; left: 0; right: 0; top: 1px;
+      height: 2px; background: var(--border);
+    }
+    .layout-handle-v:hover::after, .layout-handle-v.dragging::after { background: var(--accent); }
+
+    /* Drop zones */
+    .drop-zones { position: absolute; inset: 0; z-index: 50; display: none; }
+    .drop-zones.active { display: block; }
+    .drop-zone {
+      position: absolute; background: rgba(168, 85, 247, 0.04);
+      border: 2px dashed rgba(168, 85, 247, 0.15); transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-sans); font-size: 11px; color: transparent;
+      text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+    }
+    .drop-zone.hover { background: rgba(168, 85, 247, 0.12); border-color: var(--accent); color: var(--accent); }
+    .drop-zone.left { top: 0; left: 0; bottom: 0; width: 20%; }
+    .drop-zone.right { top: 0; right: 0; bottom: 0; width: 20%; }
+    .drop-zone.bottom { bottom: 0; left: 20%; right: 20%; height: 25%; }
+
     .group-editor { flex: 1; overflow: hidden; }
     .group-editor .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
     .group-editor .cm-editor .cm-scroller { font-family: var(--font-mono) !important; }
@@ -291,47 +323,18 @@ import '@fontsource-variable/jetbrains-mono';
     .group-editor .cm-activeLine { background: rgba(255,255,255,0.02); }
     .group-editor .cm-matchingBracket { color: var(--text-bright) !important; outline: 1px solid var(--text-muted); background: rgba(255,255,255,0.06); }
 
-    /* ═══ RESIZE HANDLE (panel split) ═══ */
-    .resize-handle {
-      background: transparent; flex-shrink: 0; position: relative;
-      transition: background 0.15s;
-      /* Default: bottom layout → horizontal handle */
-      height: 4px; cursor: row-resize;
-    }
-    .resize-handle::after {
-      content: ""; position: absolute;
-      left: 0; right: 0; top: 1px; height: 2px;
-      background: var(--border);
-    }
-    .resize-handle:hover::after, .resize-handle.dragging::after {
-      background: var(--accent);
-    }
-    /* Right layout → vertical handle */
-    .layout-right > .resize-handle {
-      width: 4px; height: auto; cursor: col-resize;
-    }
-    .layout-right > .resize-handle::after {
-      top: 0; bottom: 0; left: 1px; right: auto;
-      width: 2px; height: auto;
-    }
-
     /* ═══ OUTPUT ═══ */
     .output-panel {
       display: flex; flex-direction: column; overflow: hidden;
-      /* Default: bottom layout */
-      height: 35%; min-height: 80px;
     }
-    .layout-right > .output-panel {
-      height: auto; width: 40%; min-width: 200px; min-height: 0;
-    }
-    .output-panel.panel-hidden { display: none; }
-    .resize-handle.panel-hidden { display: none; }
     .output-header {
       display: flex; align-items: center;
       padding: 0 12px; height: 35px;
       background: var(--bg-terminal);
       border-bottom: 1px solid var(--border); flex-shrink: 0;
+      cursor: grab;
     }
+    .output-header:active { cursor: grabbing; }
     .output-tabs { display: flex; gap: 0; }
     .output-tab {
       font-family: var(--font-sans); font-size: 12px;
@@ -476,7 +479,9 @@ import '@fontsource-variable/jetbrains-mono';
       height: 35px; display: flex; align-items: center; justify-content: space-between;
       padding: 0 4px 0 12px; border-bottom: 1px solid var(--border);
       flex-shrink: 0; background: var(--bg-tab-row);
+      cursor: grab;
     }
+    .docs-group-header:active { cursor: grabbing; }
     .docs-nav-btn {
       display: flex; align-items: center; gap: 6px;
       font-family: var(--font-sans); font-size: 13px; color: var(--text-primary);
@@ -596,19 +601,18 @@ import '@fontsource-variable/jetbrains-mono';
 
     <!-- MAIN AREA -->
     <div class="main-area">
-      <div class="editor-output-split">
+      <div class="layout-root" id="layout-root">
         <div class="editor-groups-wrapper" id="editor-groups-wrapper">
           <!-- Editor groups created dynamically -->
         </div>
-        <div class="resize-handle" id="resize-handle"></div>
         <div class="output-panel" id="output-panel">
-          <div class="output-header">
+          <div class="output-header" draggable="true" id="output-header">
             <div class="output-tabs">
               <span class="output-tab active">Terminal</span>
               <span class="output-tab">Problems</span>
             </div>
             <div class="panel-actions">
-              <button class="panel-action-btn" id="panel-position-btn" title="Toggle Panel Position (Bottom/Right)">
+              <button class="panel-action-btn" id="panel-position-btn" title="Toggle Panel Position">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="10" y1="1" x2="10" y2="15"/></svg>
               </button>
               <button class="panel-action-btn" id="clear-btn" title="Clear Terminal">
@@ -667,9 +671,10 @@ import '@fontsource-variable/jetbrains-mono';
     const statusLine = document.getElementById("status-line");
     const serverDot = document.getElementById("server-dot");
     const serverLabel = document.getElementById("server-label");
-    const resizeHandle = document.getElementById("resize-handle");
     const outputPanel = document.getElementById("output-panel");
+    const outputHeader = document.getElementById("output-header");
     const groupsWrapper = document.getElementById("editor-groups-wrapper");
+    const layoutRoot = document.getElementById("layout-root");
 
     // ═══ EDITOR GROUPS ═══
     let groups = [];
@@ -678,52 +683,188 @@ import '@fontsource-variable/jetbrains-mono';
     function ag() { return groups[activeGroupIdx]; }
 
     // ═══ LAYOUT STATE ═══
-    let panelLayout = localStorage.getItem("ach-panel-layout") || "bottom";
     let panelVisible = localStorage.getItem("ach-panel-visible") !== "false";
     let sidebarCollapsed = localStorage.getItem("ach-sidebar-collapsed") === "true";
     let sidebarWidth = parseInt(localStorage.getItem("ach-sidebar-width")) || 240;
+    let panelPositions = {
+      terminal: localStorage.getItem("ach-pos-terminal") || "bottom",
+      docs: localStorage.getItem("ach-pos-docs") || "right",
+    };
 
     const shell = document.querySelector(".shell");
     const sidebar = document.querySelector(".sidebar");
     const sidebarResize = document.getElementById("sidebar-resize");
-    const editorOutputSplit = document.querySelector(".editor-output-split");
     const explorerIcon = document.querySelector(".activity-icon[title='Explorer']");
     const panelPositionBtn = document.getElementById("panel-position-btn");
     const panelCloseBtn = document.getElementById("panel-close-btn");
 
-    function applyLayout() {
+    function applySidebarLayout() {
       shell.classList.toggle("sidebar-collapsed", sidebarCollapsed);
       explorerIcon.classList.toggle("active", !sidebarCollapsed);
       shell.style.gridTemplateColumns = sidebarCollapsed ? "" : `48px ${sidebarWidth}px 1fr`;
-
-      editorOutputSplit.classList.toggle("layout-right", panelLayout === "right");
-      outputPanel.classList.toggle("panel-hidden", !panelVisible);
-      resizeHandle.classList.toggle("panel-hidden", !panelVisible);
-
-      if (panelLayout === "right") {
-        panelPositionBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="1" y1="10" x2="15" y2="10"/></svg>`;
-        panelPositionBtn.title = "Move Panel to Bottom";
-      } else {
-        panelPositionBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="10" y1="1" x2="10" y2="15"/></svg>`;
-        panelPositionBtn.title = "Move Panel to Right";
-      }
-
-      localStorage.setItem("ach-panel-layout", panelLayout);
-      localStorage.setItem("ach-panel-visible", panelVisible);
       localStorage.setItem("ach-sidebar-collapsed", sidebarCollapsed);
       localStorage.setItem("ach-sidebar-width", sidebarWidth);
     }
 
-    function toggleSidebar() { sidebarCollapsed = !sidebarCollapsed; applyLayout(); }
-    function togglePanel() { panelVisible = !panelVisible; applyLayout(); if (panelVisible && ag()) ag().view.focus(); }
+    function createLayoutHandle(dir) {
+      const h = document.createElement("div");
+      h.className = `layout-handle-${dir}`;
+      h.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        const prev = h.previousElementSibling, next = h.nextElementSibling;
+        if (!prev || !next) return;
+        const isH = dir === "h";
+        const startPos = isH ? e.clientX : e.clientY;
+        const prevSize = isH ? prev.offsetWidth : prev.offsetHeight;
+        const nextSize = isH ? next.offsetWidth : next.offsetHeight;
+        h.classList.add("dragging");
+        document.body.classList.add("resizing");
+        document.body.style.cursor = isH ? "col-resize" : "row-resize";
+        document.body.style.userSelect = "none";
+        const onMove = (e) => {
+          const delta = (isH ? e.clientX : e.clientY) - startPos;
+          const total = prevSize + nextSize;
+          let np = Math.max(isH ? 150 : 60, prevSize + delta);
+          let nn = total - np;
+          if (nn < (isH ? 150 : 60)) { nn = isH ? 150 : 60; np = total - nn; }
+          if (isH) { prev.style.width = np+"px"; prev.style.flex = "none"; next.style.width = nn+"px"; next.style.flex = "none"; }
+          else { prev.style.flex = "1"; next.style.height = nn+"px"; next.style.flex = "none"; }
+        };
+        const onUp = () => {
+          h.classList.remove("dragging"); document.body.classList.remove("resizing");
+          document.body.style.cursor = ""; document.body.style.userSelect = "";
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        };
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+      return h;
+    }
+
+    function buildMainLayout() {
+      // Detach panels (preserves event listeners)
+      if (groupsWrapper.parentElement) groupsWrapper.remove();
+      if (outputPanel.parentElement) outputPanel.remove();
+      if (docsGroup?.el.parentElement) docsGroup.el.remove();
+      // Clear layout root
+      layoutRoot.innerHTML = "";
+
+      const leftPanels = [];
+      const rightPanels = [];
+      const bottomPanels = [];
+
+      if (panelVisible) {
+        if (panelPositions.terminal === "left") leftPanels.push(outputPanel);
+        else if (panelPositions.terminal === "right") rightPanels.push(outputPanel);
+        else bottomPanels.push(outputPanel);
+      }
+      if (docsGroup) {
+        if (panelPositions.docs === "left") leftPanels.push(docsGroup.el);
+        else if (panelPositions.docs === "right") rightPanels.push(docsGroup.el);
+        else bottomPanels.push(docsGroup.el);
+      }
+
+      // Set sizing on panels
+      const setH = (el) => { el.style.width = ""; el.style.height = "35%"; el.style.minHeight = "60px"; el.style.minWidth = ""; el.style.flex = ""; };
+      const setV = (el) => { el.style.height = ""; el.style.width = "35%"; el.style.minWidth = "150px"; el.style.minHeight = ""; el.style.flex = ""; };
+      leftPanels.forEach(setV);
+      rightPanels.forEach(setV);
+      bottomPanels.forEach(setH);
+
+      // Build: [left panels] [center column] [right panels]
+      for (const p of leftPanels) {
+        layoutRoot.appendChild(p);
+        layoutRoot.appendChild(createLayoutHandle("h"));
+      }
+
+      const center = document.createElement("div");
+      center.className = "layout-center";
+      center.appendChild(groupsWrapper);
+      for (const p of bottomPanels) {
+        center.appendChild(createLayoutHandle("v"));
+        center.appendChild(p);
+      }
+      layoutRoot.appendChild(center);
+
+      for (const p of rightPanels) {
+        layoutRoot.appendChild(createLayoutHandle("h"));
+        layoutRoot.appendChild(p);
+      }
+
+      // Drop zones overlay
+      let dz = layoutRoot.querySelector(".drop-zones");
+      if (!dz) {
+        dz = document.createElement("div");
+        dz.className = "drop-zones";
+        dz.innerHTML = '<div class="drop-zone left" data-pos="left">Left</div><div class="drop-zone right" data-pos="right">Right</div><div class="drop-zone bottom" data-pos="bottom">Bottom</div>';
+        layoutRoot.appendChild(dz);
+      }
+
+      localStorage.setItem("ach-panel-visible", panelVisible);
+      localStorage.setItem("ach-pos-terminal", panelPositions.terminal);
+      localStorage.setItem("ach-pos-docs", panelPositions.docs);
+    }
+
+    function setPanelPosition(panel, newPos) {
+      const other = panel === "terminal" ? "docs" : "terminal";
+      if (panelPositions[other] === newPos) panelPositions[other] = panelPositions[panel];
+      panelPositions[panel] = newPos;
+      buildMainLayout();
+    }
+
+    function toggleSidebar() { sidebarCollapsed = !sidebarCollapsed; applySidebarLayout(); }
+    function togglePanel() { panelVisible = !panelVisible; buildMainLayout(); if (panelVisible && ag()) ag().view.focus(); }
     function togglePanelPosition() {
       outputPanel.style.height = ""; outputPanel.style.width = "";
-      panelLayout = panelLayout === "bottom" ? "right" : "bottom"; applyLayout();
+      const cycle = { bottom: "right", right: "left", left: "bottom" };
+      setPanelPosition("terminal", cycle[panelPositions.terminal] || "bottom");
     }
 
     explorerIcon.addEventListener("click", toggleSidebar);
     panelPositionBtn.addEventListener("click", togglePanelPosition);
     panelCloseBtn.addEventListener("click", togglePanel);
+
+    // ═══ PANEL DRAG & DROP ═══
+    let dragPanel = null;
+
+    function setupPanelDrag(header, panelKey) {
+      header.addEventListener("dragstart", (e) => {
+        dragPanel = panelKey;
+        e.dataTransfer.setData("text/x-ach-panel", panelKey);
+        e.dataTransfer.effectAllowed = "move";
+        setTimeout(() => layoutRoot.querySelector(".drop-zones")?.classList.add("active"), 0);
+      });
+      header.addEventListener("dragend", () => {
+        dragPanel = null;
+        const dz = layoutRoot.querySelector(".drop-zones");
+        if (dz) { dz.classList.remove("active"); dz.querySelectorAll(".drop-zone").forEach(z => z.classList.remove("hover")); }
+      });
+    }
+
+    setupPanelDrag(outputHeader, "terminal");
+
+    layoutRoot.addEventListener("dragover", (e) => {
+      if (!dragPanel) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const zone = e.target.closest(".drop-zone");
+      layoutRoot.querySelectorAll(".drop-zone").forEach(z => z.classList.remove("hover"));
+      if (zone) zone.classList.add("hover");
+    });
+
+    layoutRoot.addEventListener("drop", (e) => {
+      if (!dragPanel) return;
+      e.preventDefault();
+      const zone = e.target.closest(".drop-zone");
+      const dz = layoutRoot.querySelector(".drop-zones");
+      if (dz) { dz.classList.remove("active"); dz.querySelectorAll(".drop-zone").forEach(z => z.classList.remove("hover")); }
+      if (zone) {
+        const newPos = zone.dataset.pos;
+        setPanelPosition(dragPanel, newPos);
+      }
+      dragPanel = null;
+    });
 
     // ═══ SIDEBAR RESIZE ═══
     let sidebarResizing = false;
@@ -746,33 +887,7 @@ import '@fontsource-variable/jetbrains-mono';
       localStorage.setItem("ach-sidebar-width", sidebarWidth);
     });
 
-    // ═══ PANEL RESIZE HANDLE ═══
-    let resizing = false;
-    resizeHandle.addEventListener("mousedown", (e) => {
-      e.preventDefault(); resizing = true;
-      resizeHandle.classList.add("dragging");
-      document.body.classList.add("resizing");
-      document.body.style.cursor = panelLayout === "right" ? "col-resize" : "row-resize";
-      document.body.style.userSelect = "none";
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!resizing) return;
-      const split = resizeHandle.parentElement;
-      const rect = split.getBoundingClientRect();
-      if (panelLayout === "right") {
-        const clamped = Math.max(20, Math.min(80, ((e.clientX - rect.left) / rect.width) * 100));
-        outputPanel.style.width = (100 - clamped) + "%";
-      } else {
-        const clamped = Math.max(20, Math.min(80, ((e.clientY - rect.top) / rect.height) * 100));
-        outputPanel.style.height = (100 - clamped) + "%";
-      }
-    });
-    document.addEventListener("mouseup", () => {
-      if (!resizing) return;
-      resizing = false; resizeHandle.classList.remove("dragging");
-      document.body.classList.remove("resizing");
-      document.body.style.cursor = ""; document.body.style.userSelect = "";
-    });
+    // Panel resize is now handled by createLayoutHandle() in buildMainLayout
 
     // ═══ GROUP SPLIT RESIZE ═══
     let groupResizing = false, grHandle = null, grStartX = 0, grLeft = null, grRight = null, grStartW = [0, 0];
@@ -1206,7 +1321,7 @@ import '@fontsource-variable/jetbrains-mono';
     let running = false;
     async function runCode() {
       if (running) return;
-      if (!panelVisible) { panelVisible = true; applyLayout(); }
+      if (!panelVisible) { panelVisible = true; buildMainLayout(); }
       if (session.isProjectMode()) await saveActiveFile();
       clearOutput();
       running = true;
@@ -1360,19 +1475,18 @@ import '@fontsource-variable/jetbrains-mono';
       const content = document.createElement("div");
       content.className = "docs-group-content";
 
+      // Make header draggable
+      header.draggable = true;
+      setupPanelDrag(header, "docs");
+
       el.append(header, content);
       document.body.appendChild(dropdown);
 
-      // Add split handle + element to wrapper
-      const handle = document.createElement("div");
-      handle.className = "group-split-handle";
-      setupGroupSplitHandle(handle);
-      groupsWrapper.append(handle, el);
-
-      docsGroup = { el, navBtn, dropdown, content, handle, closeDropdown };
+      docsGroup = { el, navBtn, dropdown, content, closeDropdown };
       docsIcon.classList.add("active");
       localStorage.setItem("ach-docs-open", "true");
 
+      buildMainLayout();
       loadDocsPage(currentDocSlug);
     }
 
@@ -1380,12 +1494,10 @@ import '@fontsource-variable/jetbrains-mono';
       if (!docsGroup) return;
       document.removeEventListener("click", docsGroup.closeDropdown);
       docsGroup.dropdown.remove();
-      docsGroup.handle.remove();
-      docsGroup.el.remove();
       docsGroup = null;
       docsIcon.classList.remove("active");
-      groups.forEach(g => { g.el.style.flex = ""; });
       localStorage.setItem("ach-docs-open", "false");
+      buildMainLayout();
     }
 
     function buildDocsNav(dropdown) {
@@ -1618,7 +1730,8 @@ import '@fontsource-variable/jetbrains-mono';
 
     // ═══ INIT ═══
     createGroup();
-    applyLayout();
+    applySidebarLayout();
+    buildMainLayout();
 
     session.healthCheck().then(ok => {
       if (ok) { serverDot.classList.remove("loading", "error"); serverLabel.textContent = "Server"; }
