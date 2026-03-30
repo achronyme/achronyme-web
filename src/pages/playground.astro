@@ -102,6 +102,7 @@
       background: var(--bg-sidebar);
       border-right: 1px solid var(--border);
       display: flex; flex-direction: column; overflow: hidden;
+      position: relative; transition: width 0.15s, border 0.15s, opacity 0.15s;
     }
     .sidebar-title {
       display: flex; align-items: center; justify-content: space-between;
@@ -263,8 +264,9 @@
     .breadcrumb-item:last-child { color: var(--text-primary); }
 
     /* ═══ EDITOR + OUTPUT SPLIT ═══ */
-    .editor-output-split { display: flex; flex: 1; overflow: hidden; }
-    .editor-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; }
+    .editor-output-split { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .editor-output-split.layout-right { flex-direction: row; }
+    .editor-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 200px; min-height: 100px; }
     #editor-container { flex: 1; overflow: hidden; }
     #editor-container .cm-editor { height: 100%; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; }
     #editor-container .cm-editor .cm-scroller { font-family: var(--font-mono) !important; }
@@ -277,21 +279,41 @@
     #editor-container .cm-activeLine { background: rgba(255,255,255,0.02); }
     #editor-container .cm-matchingBracket { color: var(--text-bright) !important; outline: 1px solid var(--text-muted); background: rgba(255,255,255,0.06); }
 
-    /* ═══ RESIZE HANDLE ═══ */
+    /* ═══ RESIZE HANDLE (panel split) ═══ */
     .resize-handle {
-      width: 4px; cursor: col-resize; background: transparent;
-      transition: background 0.15s; flex-shrink: 0; position: relative;
+      background: transparent; flex-shrink: 0; position: relative;
+      transition: background 0.15s;
+      /* Default: bottom layout → horizontal handle */
+      height: 4px; cursor: row-resize;
     }
     .resize-handle::after {
-      content: ""; position: absolute; top: 0; bottom: 0; left: 1px;
-      width: 2px; background: var(--border);
+      content: ""; position: absolute;
+      left: 0; right: 0; top: 1px; height: 2px;
+      background: var(--border);
     }
     .resize-handle:hover::after, .resize-handle.dragging::after {
-      background: var(--accent); width: 2px;
+      background: var(--accent);
+    }
+    /* Right layout → vertical handle */
+    .layout-right > .resize-handle {
+      width: 4px; height: auto; cursor: col-resize;
+    }
+    .layout-right > .resize-handle::after {
+      top: 0; bottom: 0; left: 1px; right: auto;
+      width: 2px; height: auto;
     }
 
     /* ═══ OUTPUT ═══ */
-    .output-panel { width: 40%; min-width: 200px; display: flex; flex-direction: column; overflow: hidden; }
+    .output-panel {
+      display: flex; flex-direction: column; overflow: hidden;
+      /* Default: bottom layout */
+      height: 35%; min-height: 80px;
+    }
+    .layout-right > .output-panel {
+      height: auto; width: 40%; min-width: 200px; min-height: 0;
+    }
+    .output-panel.panel-hidden { display: none; }
+    .resize-handle.panel-hidden { display: none; }
     .output-header {
       display: flex; align-items: center;
       padding: 0 12px; height: 35px;
@@ -306,12 +328,6 @@
       padding: 8px 12px; border-bottom: 1px solid transparent;
     }
     .output-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
-    .output-clear {
-      margin-left: auto; font-family: var(--font-sans); font-size: 11px;
-      color: var(--text-muted); background: none; border: none;
-      cursor: pointer; padding: 4px 8px; border-radius: 3px;
-    }
-    .output-clear:hover { color: var(--text-secondary); background: rgba(255,255,255,0.06); }
     .output-scroll { flex: 1; overflow: auto; background: var(--bg-terminal); padding: 8px 16px; }
     .output-line { font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
     .output-line.stdout { color: var(--text-primary); }
@@ -382,6 +398,34 @@
     ::-webkit-scrollbar-thumb:hover { background: rgba(121, 121, 121, 0.5); border: 2px solid transparent; background-clip: padding-box; }
     ::-webkit-scrollbar-corner { background: transparent; }
 
+    /* ═══ SIDEBAR COLLAPSE ═══ */
+    .shell.sidebar-collapsed { grid-template-columns: 48px 0px 1fr; }
+    .shell.sidebar-collapsed .sidebar { border-right: none; overflow: hidden; opacity: 0; pointer-events: none; }
+    .shell.sidebar-collapsed .sidebar-resize { display: none; }
+
+    /* ═══ SIDEBAR RESIZE HANDLE ═══ */
+    .sidebar-resize {
+      position: absolute; right: -2px; top: 0; bottom: 0; width: 5px;
+      cursor: col-resize; z-index: 5;
+    }
+    .sidebar-resize::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 2px;
+      width: 1px; background: transparent; transition: background 0.15s;
+    }
+    .sidebar-resize:hover::after, .sidebar-resize.dragging::after {
+      background: var(--accent);
+    }
+
+    /* ═══ PANEL ACTIONS ═══ */
+    .panel-actions {
+      margin-left: auto; display: flex; align-items: center; gap: 2px;
+    }
+    .panel-action-btn {
+      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 3px;
+    }
+    .panel-action-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
+
     @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
       .activitybar, .sidebar { display: none; }
@@ -436,6 +480,7 @@
         <span id="project-name">Project</span>
       </div>
       <div class="file-tree" id="file-tree"></div>
+      <div class="sidebar-resize" id="sidebar-resize"></div>
       <div class="sidebar-footer">
         <select class="template-select" id="template-select">
           <option value="">ach init --template</option>
@@ -485,9 +530,17 @@
               <span class="output-tab active">Terminal</span>
               <span class="output-tab">Problems</span>
             </div>
-            <button class="output-clear" id="clear-btn">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 2l12 12M14 2L2 14"/></svg>
-            </button>
+            <div class="panel-actions">
+              <button class="panel-action-btn" id="panel-position-btn" title="Toggle Panel Position (Bottom/Right)">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="10" y1="1" x2="10" y2="15"/></svg>
+              </button>
+              <button class="panel-action-btn" id="clear-btn" title="Clear Terminal">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 2l12 12M14 2L2 14"/></svg>
+              </button>
+              <button class="panel-action-btn" id="panel-close-btn" title="Close Panel (Ctrl+`)">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+              </button>
+            </div>
           </div>
           <div class="output-scroll" id="output">
             <span class="output-cursor"></span>
@@ -542,22 +595,117 @@
     const resizeHandle = document.getElementById("resize-handle");
     const outputPanel = document.getElementById("output-panel");
 
-    // ═══ RESIZE HANDLE ═══
+    // ═══ LAYOUT STATE ═══
+    let panelLayout = localStorage.getItem("ach-panel-layout") || "bottom";
+    let panelVisible = localStorage.getItem("ach-panel-visible") !== "false";
+    let sidebarCollapsed = localStorage.getItem("ach-sidebar-collapsed") === "true";
+    let sidebarWidth = parseInt(localStorage.getItem("ach-sidebar-width")) || 240;
+
+    const shell = document.querySelector(".shell");
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarResize = document.getElementById("sidebar-resize");
+    const editorOutputSplit = document.querySelector(".editor-output-split");
+    const explorerIcon = document.querySelector(".activity-icon[title='Explorer']");
+    const panelPositionBtn = document.getElementById("panel-position-btn");
+    const panelCloseBtn = document.getElementById("panel-close-btn");
+
+    function applyLayout() {
+      // Sidebar
+      shell.classList.toggle("sidebar-collapsed", sidebarCollapsed);
+      explorerIcon.classList.toggle("active", !sidebarCollapsed);
+      if (!sidebarCollapsed) {
+        shell.style.gridTemplateColumns = `48px ${sidebarWidth}px 1fr`;
+      }
+
+      // Panel layout
+      editorOutputSplit.classList.toggle("layout-right", panelLayout === "right");
+      outputPanel.classList.toggle("panel-hidden", !panelVisible);
+      resizeHandle.classList.toggle("panel-hidden", !panelVisible);
+
+      // Update position button icon
+      if (panelLayout === "right") {
+        panelPositionBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="1" y1="10" x2="15" y2="10"/></svg>`;
+        panelPositionBtn.title = "Move Panel to Bottom";
+      } else {
+        panelPositionBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="10" y1="1" x2="10" y2="15"/></svg>`;
+        panelPositionBtn.title = "Move Panel to Right";
+      }
+
+      localStorage.setItem("ach-panel-layout", panelLayout);
+      localStorage.setItem("ach-panel-visible", panelVisible);
+      localStorage.setItem("ach-sidebar-collapsed", sidebarCollapsed);
+      localStorage.setItem("ach-sidebar-width", sidebarWidth);
+    }
+
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      applyLayout();
+    }
+
+    function togglePanel() {
+      panelVisible = !panelVisible;
+      applyLayout();
+      if (panelVisible) view.focus();
+    }
+
+    function togglePanelPosition() {
+      // Reset sizing when switching layout
+      outputPanel.style.height = "";
+      outputPanel.style.width = "";
+      panelLayout = panelLayout === "bottom" ? "right" : "bottom";
+      applyLayout();
+    }
+
+    explorerIcon.addEventListener("click", toggleSidebar);
+    panelPositionBtn.addEventListener("click", togglePanelPosition);
+    panelCloseBtn.addEventListener("click", togglePanel);
+
+    // ═══ SIDEBAR RESIZE ═══
+    let sidebarResizing = false;
+    sidebarResize.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      sidebarResizing = true;
+      sidebarResize.classList.add("dragging");
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!sidebarResizing) return;
+      const newWidth = e.clientX - 48; // subtract activity bar width
+      sidebarWidth = Math.max(150, Math.min(500, newWidth));
+      shell.style.gridTemplateColumns = `48px ${sidebarWidth}px 1fr`;
+    });
+    document.addEventListener("mouseup", () => {
+      if (!sidebarResizing) return;
+      sidebarResizing = false;
+      sidebarResize.classList.remove("dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      localStorage.setItem("ach-sidebar-width", sidebarWidth);
+    });
+
+    // ═══ PANEL RESIZE HANDLE ═══
     let resizing = false;
     resizeHandle.addEventListener("mousedown", (e) => {
       e.preventDefault();
       resizing = true;
       resizeHandle.classList.add("dragging");
-      document.body.style.cursor = "col-resize";
+      document.body.style.cursor = panelLayout === "right" ? "col-resize" : "row-resize";
       document.body.style.userSelect = "none";
     });
     document.addEventListener("mousemove", (e) => {
       if (!resizing) return;
       const split = resizeHandle.parentElement;
       const rect = split.getBoundingClientRect();
-      const pct = ((e.clientX - rect.left) / rect.width) * 100;
-      const clamped = Math.max(25, Math.min(80, pct));
-      outputPanel.style.width = (100 - clamped) + "%";
+      if (panelLayout === "right") {
+        const pct = ((e.clientX - rect.left) / rect.width) * 100;
+        const clamped = Math.max(20, Math.min(80, pct));
+        outputPanel.style.width = (100 - clamped) + "%";
+      } else {
+        const pct = ((e.clientY - rect.top) / rect.height) * 100;
+        const clamped = Math.max(20, Math.min(80, pct));
+        outputPanel.style.height = (100 - clamped) + "%";
+      }
     });
     document.addEventListener("mouseup", () => {
       if (!resizing) return;
@@ -596,6 +744,9 @@
     const runKeymap = keymap.of([
       { key: "Ctrl-Enter", mac: "Cmd-Enter", run: () => { runCode(); return true; } },
       { key: "Ctrl-s", mac: "Cmd-s", run: () => { saveActiveFile(); return true; } },
+      { key: "Ctrl-b", mac: "Cmd-b", run: () => { toggleSidebar(); return true; } },
+      { key: "Ctrl-`", mac: "Cmd-`", run: () => { togglePanel(); return true; } },
+      { key: "Ctrl-j", mac: "Cmd-j", run: () => { togglePanel(); return true; } },
     ]);
 
     const cursorTracker = EditorView.updateListener.of((update) => {
@@ -695,6 +846,7 @@
         tab.appendChild(dot);
         tab.appendChild(close);
         tab.addEventListener("click", () => switchToTab(i));
+        tab.addEventListener("mousedown", (e) => { if (e.button === 1) { e.preventDefault(); closeTabAt(i); } });
         tabbar.appendChild(tab);
       }
 
@@ -781,6 +933,7 @@
     let running = false;
     async function runCode() {
       if (running) return;
+      if (!panelVisible) { panelVisible = true; applyLayout(); }
       if (session.isProjectMode()) await saveActiveFile();
       clearOutput();
       running = true; runBtn.disabled = true;
@@ -864,7 +1017,16 @@
       importInput.value = "";
     });
 
+    // ═══ GLOBAL KEYBOARD SHORTCUTS ═══
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); toggleSidebar(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "`") { e.preventDefault(); togglePanel(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); togglePanel(); }
+    });
+
     // ═══ INIT ═══
+    applyLayout();
+
     session.healthCheck().then(ok => {
       if (ok) { serverDot.classList.remove("loading", "error"); serverLabel.textContent = "Server"; }
     }).catch(() => { serverDot.classList.add("error"); serverLabel.textContent = "Offline"; });
