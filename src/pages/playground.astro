@@ -467,6 +467,33 @@ import '@fontsource-variable/jetbrains-mono';
     }
     .panel-action-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
 
+    /* ═══ DOCS PANEL ═══ */
+    .docs-panel {
+      position: fixed; top: 30px; bottom: 22px; right: 0;
+      width: 480px; background: #13131a;
+      border-left: 1px solid var(--border);
+      transform: translateX(100%); transition: transform 0.2s ease;
+      z-index: 20; display: flex; flex-direction: column;
+    }
+    .docs-panel.open { transform: translateX(0); }
+    .docs-panel-header {
+      height: 35px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px; font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg-titlebar);
+    }
+    .docs-panel-actions { display: flex; gap: 2px; }
+    .docs-panel iframe { flex: 1; border: none; width: 100%; background: #13131a; }
+    .docs-panel-resize {
+      position: absolute; left: -3px; top: 0; bottom: 0; width: 6px;
+      cursor: col-resize; z-index: 5;
+    }
+    .docs-panel-resize::after {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 3px;
+      width: 1px; background: transparent; transition: background 0.15s;
+    }
+    .docs-panel-resize:hover::after, .docs-panel-resize.dragging::after { background: var(--accent); }
+
     @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
       .activitybar, .sidebar { display: none; }
@@ -500,6 +527,9 @@ import '@fontsource-variable/jetbrains-mono';
       </div>
       <div class="activity-icon" title="Run" id="activity-run">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l14 9-14 9V3z"/></svg>
+      </div>
+      <div class="activity-icon" title="Documentation" id="activity-docs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
       </div>
       <div class="activity-spacer"></div>
       <div class="activity-icon" title="Settings" style="margin-bottom: 4px;">
@@ -574,6 +604,23 @@ import '@fontsource-variable/jetbrains-mono';
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- DOCS PANEL -->
+    <div class="docs-panel" id="docs-panel">
+      <div class="docs-panel-header">
+        <span>Documentation</span>
+        <div class="docs-panel-actions">
+          <button class="panel-action-btn" id="docs-external-btn" title="Open in new tab">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M7 3H3v10h10V9"/><path d="M9 3h4v4M13 3L7 9"/></svg>
+          </button>
+          <button class="panel-action-btn" id="docs-close-btn" title="Close">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="docs-panel-resize" id="docs-panel-resize"></div>
+      <iframe id="docs-iframe" loading="lazy"></iframe>
     </div>
 
     <!-- STATUS BAR -->
@@ -1233,12 +1280,75 @@ import '@fontsource-variable/jetbrains-mono';
       importInput.value = "";
     });
 
+    // ═══ DOCS PANEL ═══
+    const docsPanel = document.getElementById("docs-panel");
+    const docsIframe = document.getElementById("docs-iframe");
+    const docsIcon = document.getElementById("activity-docs");
+    let docsOpen = localStorage.getItem("ach-docs-open") === "true";
+    let docsWidth = parseInt(localStorage.getItem("ach-docs-width")) || 480;
+    let docsUrl = localStorage.getItem("ach-docs-url") || "/docs/getting-started/introduction";
+
+    function toggleDocs() {
+      docsOpen = !docsOpen;
+      docsPanel.classList.toggle("open", docsOpen);
+      docsIcon.classList.toggle("active", docsOpen);
+      if (docsOpen && !docsIframe.src) docsIframe.src = docsUrl;
+      localStorage.setItem("ach-docs-open", docsOpen);
+    }
+
+    docsIcon.addEventListener("click", toggleDocs);
+    document.getElementById("docs-close-btn").addEventListener("click", () => {
+      docsOpen = false;
+      docsPanel.classList.remove("open");
+      docsIcon.classList.remove("active");
+      localStorage.setItem("ach-docs-open", "false");
+    });
+    document.getElementById("docs-external-btn").addEventListener("click", () => {
+      try { window.open(docsIframe.contentWindow.location.href, "_blank"); }
+      catch { window.open(docsUrl, "_blank"); }
+    });
+
+    docsIframe.addEventListener("load", () => {
+      try {
+        docsUrl = docsIframe.contentWindow.location.pathname;
+        localStorage.setItem("ach-docs-url", docsUrl);
+      } catch { /* cross-origin */ }
+    });
+
+    // Docs panel resize
+    let docsResizing = false;
+    const docsResize = document.getElementById("docs-panel-resize");
+    docsResize.addEventListener("mousedown", (e) => {
+      e.preventDefault(); docsResizing = true;
+      docsResize.classList.add("dragging");
+      document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!docsResizing) return;
+      docsWidth = Math.max(300, Math.min(900, window.innerWidth - e.clientX));
+      docsPanel.style.width = docsWidth + "px";
+    });
+    document.addEventListener("mouseup", () => {
+      if (!docsResizing) return;
+      docsResizing = false; docsResize.classList.remove("dragging");
+      document.body.style.cursor = ""; document.body.style.userSelect = "";
+      localStorage.setItem("ach-docs-width", docsWidth);
+    });
+
+    docsPanel.style.width = docsWidth + "px";
+    if (docsOpen) {
+      docsPanel.classList.add("open");
+      docsIcon.classList.add("active");
+      docsIframe.src = docsUrl;
+    }
+
     // ═══ GLOBAL KEYBOARD SHORTCUTS ═══
     document.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); toggleSidebar(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "`") { e.preventDefault(); togglePanel(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); togglePanel(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "\\") { e.preventDefault(); splitRight(); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") { e.preventDefault(); toggleDocs(); }
     });
 
     // ═══ INIT ═══
