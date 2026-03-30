@@ -489,6 +489,73 @@ import '@fontsource-variable/jetbrains-mono';
     .context-item.danger:hover { background: rgba(241, 76, 76, 0.15); color: var(--red); }
     .context-shortcut { font-size: 11px; color: var(--text-muted); font-family: var(--font-sans); }
 
+    /* ═══ COMMAND PALETTE ═══ */
+    .cmd-dialog { background: transparent; border: none; padding: 0; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh; overflow: visible; }
+    .cmd-dialog::backdrop { background: transparent; }
+    .cmd-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+    .cmd-backdrop[data-closed] { opacity: 0; }
+    .cmd-panel-wrapper {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; justify-content: center;
+      padding-top: min(20vh, 140px);
+      pointer-events: none;
+    }
+    .cmd-palette {
+      pointer-events: auto;
+      width: 560px; max-width: calc(100vw - 32px); max-height: min(70vh, 480px);
+      background: #252526; border: 1px solid #454545; border-radius: 8px;
+      box-shadow: 0 16px 70px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.1);
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+    .cmd-panel-wrapper[data-closed] .cmd-palette,
+    .cmd-palette[data-closed] { opacity: 0; transform: scale(0.97) translateY(-8px); }
+    .cmd-input-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .cmd-search-icon { flex-shrink: 0; color: var(--text-muted); }
+    .cmd-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      font-family: var(--font-sans); font-size: 14px;
+      color: var(--text-bright); caret-color: var(--accent);
+    }
+    .cmd-input::placeholder { color: var(--text-muted); }
+    .cmd-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .cmd-group-label {
+      padding: 8px 14px 4px;
+      font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--text-muted); user-select: none;
+    }
+    .cmd-item {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; padding: 6px 14px;
+      font-family: var(--font-sans); font-size: 13px;
+      color: var(--text-primary); background: none; border: none;
+      cursor: pointer; text-align: left; gap: 12px; outline: none;
+    }
+    .cmd-item:hover, .cmd-item:focus { background: #062f4a; color: var(--text-bright); }
+    .cmd-item[aria-selected="true"] {
+      background: #062f4a; color: var(--text-bright);
+      outline: 1px solid rgba(0, 127, 212, 0.4); outline-offset: -1px;
+    }
+    .cmd-item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cmd-file-path { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+    .cmd-kbd {
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border);
+      border-radius: 3px; padding: 1px 6px; flex-shrink: 0; line-height: 1.4;
+    }
+    .cmd-no-results {
+      padding: 24px 14px; text-align: center;
+      font-family: var(--font-sans); font-size: 13px; color: var(--text-muted);
+    }
+
     /* ═══ SCROLLBARS ═══ */
     ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -741,7 +808,111 @@ import '@fontsource-variable/jetbrains-mono';
     </div>
   </div>
 
+  <!-- ═══ COMMAND PALETTE ═══ -->
+  <el-dialog id="cmd-palette-dialog">
+    <dialog id="cmd-palette-native" class="cmd-dialog">
+      <el-dialog-backdrop class="cmd-backdrop" />
+      <el-dialog-panel class="cmd-panel-wrapper">
+        <div class="cmd-palette" id="cmd-palette-shell">
+          <el-command-palette id="cmd-palette">
+            <div class="cmd-input-row">
+              <svg class="cmd-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input type="text" class="cmd-input" autofocus placeholder="Type a command or search..." autocomplete="off" spellcheck="false" />
+            </div>
+            <el-command-list class="cmd-list">
+              <!-- Actions -->
+              <el-command-group class="cmd-group">
+                <div class="cmd-group-label">Actions</div>
+                <button type="button" class="cmd-item" data-action="runCode" aria-label="Run Code">
+                  <span class="cmd-item-label">Run Code</span>
+                  <kbd class="cmd-kbd" data-shortcut="ctrl+enter">Ctrl+Enter</kbd>
+                </button>
+                <button type="button" class="cmd-item" data-action="saveActiveFile" aria-label="Save File">
+                  <span class="cmd-item-label">Save File</span>
+                  <kbd class="cmd-kbd" data-shortcut="ctrl+s">Ctrl+S</kbd>
+                </button>
+                <button type="button" class="cmd-item" data-action="clearOutput" aria-label="Clear Terminal">
+                  <span class="cmd-item-label">Clear Terminal</span>
+                </button>
+              </el-command-group>
+
+              <!-- Layout -->
+              <el-command-group class="cmd-group">
+                <div class="cmd-group-label">Layout</div>
+                <button type="button" class="cmd-item" data-action="toggleSidebar" aria-label="Toggle Sidebar">
+                  <span class="cmd-item-label">Toggle Sidebar</span>
+                  <kbd class="cmd-kbd" data-shortcut="ctrl+b">Ctrl+B</kbd>
+                </button>
+                <button type="button" class="cmd-item" data-action="togglePanel" aria-label="Toggle Output Panel">
+                  <span class="cmd-item-label">Toggle Output Panel</span>
+                  <kbd class="cmd-kbd" data-shortcut="ctrl+`">Ctrl+`</kbd>
+                </button>
+                <button type="button" class="cmd-item" data-action="togglePanelPosition" aria-label="Cycle Panel Position">
+                  <span class="cmd-item-label">Cycle Panel Position</span>
+                </button>
+                <button type="button" class="cmd-item" data-action="splitRight" aria-label="Split Editor Right">
+                  <span class="cmd-item-label">Split Editor Right</span>
+                  <kbd class="cmd-kbd" data-shortcut="ctrl+\">Ctrl+\</kbd>
+                </button>
+                <button type="button" class="cmd-item" data-action="toggleDocs" aria-label="Toggle Documentation">
+                  <span class="cmd-item-label">Toggle Documentation</span>
+                  <kbd class="cmd-kbd" data-shortcut="ctrl+shift+d">Ctrl+Shift+D</kbd>
+                </button>
+              </el-command-group>
+
+              <!-- File -->
+              <el-command-group class="cmd-group">
+                <div class="cmd-group-label">File</div>
+                <button type="button" class="cmd-item" data-action="createNewFile" aria-label="New File">
+                  <span class="cmd-item-label">New File</span>
+                </button>
+                <button type="button" class="cmd-item" data-action="createNewFolder" aria-label="New Folder">
+                  <span class="cmd-item-label">New Folder</span>
+                </button>
+                <button type="button" class="cmd-item" data-action="exportProject" aria-label="Export Project">
+                  <span class="cmd-item-label">Export Project</span>
+                </button>
+                <button type="button" class="cmd-item" data-action="importProject" aria-label="Import Project">
+                  <span class="cmd-item-label">Import Project</span>
+                </button>
+              </el-command-group>
+
+              <!-- Templates -->
+              <el-command-group class="cmd-group">
+                <div class="cmd-group-label">Templates</div>
+                <button type="button" class="cmd-item" data-action="template:vm" aria-label="Template: VM">
+                  <span class="cmd-item-label">Template: VM</span>
+                </button>
+                <button type="button" class="cmd-item" data-action="template:circuit" aria-label="Template: Circuit">
+                  <span class="cmd-item-label">Template: Circuit</span>
+                </button>
+                <button type="button" class="cmd-item" data-action="template:prove" aria-label="Template: Prove">
+                  <span class="cmd-item-label">Template: Prove</span>
+                </button>
+              </el-command-group>
+
+              <!-- Go to File (dynamic) -->
+              <el-command-group class="cmd-group" id="cmd-files-group" hidden>
+                <div class="cmd-group-label">Go to File</div>
+              </el-command-group>
+
+              <!-- Documentation (populated at init) -->
+              <el-command-group class="cmd-group" id="cmd-docs-group">
+                <div class="cmd-group-label">Documentation</div>
+              </el-command-group>
+            </el-command-list>
+
+            <el-no-results class="cmd-no-results" hidden>No results found.</el-no-results>
+          </el-command-palette>
+        </div>
+      </el-dialog-panel>
+    </dialog>
+  </el-dialog>
+
   <script>
+    import '@tailwindplus/elements';
     import { EditorState } from "@codemirror/state";
     import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
     import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -1040,6 +1211,8 @@ import '@fontsource-variable/jetbrains-mono';
       { key: "Ctrl-`", mac: "Cmd-`", run: () => { togglePanel(); return true; } },
       { key: "Ctrl-j", mac: "Cmd-j", run: () => { togglePanel(); return true; } },
       { key: "Ctrl-\\", mac: "Cmd-\\", run: () => { splitRight(); return true; } },
+      { key: "Ctrl-k", mac: "Cmd-k", run: () => { openCommandPalette(); return true; } },
+      { key: "Ctrl-Shift-p", mac: "Cmd-Shift-p", run: () => { openCommandPalette(); return true; } },
     ]);
 
     // ═══ EDITOR EXTENSIONS (per group) ═══
@@ -1114,6 +1287,7 @@ import '@fontsource-variable/jetbrains-mono';
             <div class="welcome-shortcut"><span>Split Editor</span><kbd>Ctrl+\\</kbd></div>
             <div class="welcome-shortcut"><span>Toggle Sidebar</span><kbd>Ctrl+B</kbd></div>
             <div class="welcome-shortcut"><span>Toggle Terminal</span><kbd>Ctrl+\`</kbd></div>
+            <div class="welcome-shortcut"><span>Command Palette</span><kbd>Ctrl+K</kbd></div>
           </div>
           <div class="welcome-section">
             <h3>Help</h3>
@@ -2048,7 +2222,132 @@ import '@fontsource-variable/jetbrains-mono';
       if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); togglePanel(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "\\") { e.preventDefault(); splitRight(); }
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") { e.preventDefault(); toggleDocs(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") { e.preventDefault(); openCommandPalette(); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "P") { e.preventDefault(); openCommandPalette(); }
     });
+
+    // ═══ COMMAND PALETTE ═══
+    const cmdDialog = document.getElementById("cmd-palette-dialog");
+    const cmdPalette = document.getElementById("cmd-palette");
+    const cmdFilesGroup = document.getElementById("cmd-files-group");
+    const cmdDocsGroup = document.getElementById("cmd-docs-group");
+
+    const cmdActions = {
+      runCode:             () => runCode(),
+      saveActiveFile:      () => saveActiveFile(),
+      clearOutput:         () => clearOutput(),
+      toggleSidebar:       () => toggleSidebar(),
+      togglePanel:         () => togglePanel(),
+      togglePanelPosition: () => togglePanelPosition(),
+      splitRight:          () => splitRight(),
+      toggleDocs:          () => toggleDocs(),
+      createNewFile:       () => createNewFile(),
+      createNewFolder:     () => createNewFolder(),
+      exportProject:       () => session.exportProject().catch(e => appendOutput(`Export error: ${e.message}`, "error")),
+      importProject:       () => document.getElementById("import-input").click(),
+    };
+
+    function openCommandPalette() {
+      refreshCommandPaletteFiles();
+      cmdDialog.show();
+      cmdPalette.reset();
+      const input = cmdPalette.querySelector("input");
+      if (input) { input.value = ""; input.focus(); }
+    }
+
+    function closeCommandPalette() {
+      cmdDialog.hide();
+    }
+
+    cmdDialog.addEventListener("close", () => {
+      const group = ag();
+      if (group?.view) setTimeout(() => group.view.focus(), 0);
+    });
+
+    // Dynamic file list
+    async function refreshCommandPaletteFiles() {
+      const label = cmdFilesGroup.querySelector(".cmd-group-label");
+      cmdFilesGroup.replaceChildren(label);
+
+      if (!session.isProjectMode()) {
+        cmdFilesGroup.setAttribute("hidden", "");
+        return;
+      }
+      try {
+        const files = await session.listFiles();
+        const fileEntries = files.filter(f => f.type !== "dir");
+        if (fileEntries.length === 0) { cmdFilesGroup.setAttribute("hidden", ""); return; }
+        cmdFilesGroup.removeAttribute("hidden");
+        for (const f of fileEntries) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "cmd-item";
+          btn.dataset.action = `file:${f.path}`;
+          btn.setAttribute("aria-label", f.path);
+          const name = f.path.split("/").pop();
+          const dir = f.path.includes("/") ? f.path.substring(0, f.path.lastIndexOf("/")) : "";
+          btn.innerHTML = `<span class="cmd-item-label">${name}${dir ? `<span class="cmd-file-path">${dir}</span>` : ""}</span>`;
+          cmdFilesGroup.appendChild(btn);
+        }
+      } catch { cmdFilesGroup.setAttribute("hidden", ""); }
+    }
+
+    // Documentation commands (populated once)
+    function populateDocsCommands() {
+      const label = cmdDocsGroup.querySelector(".cmd-group-label");
+      cmdDocsGroup.replaceChildren(label);
+      for (const group of sidebarConfig) {
+        for (const item of group.items) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "cmd-item";
+          btn.dataset.action = `doc:${item.slug}`;
+          btn.setAttribute("aria-label", `Docs: ${item.label}`);
+          btn.innerHTML = `<span class="cmd-item-label">${item.label}</span>`;
+          cmdDocsGroup.appendChild(btn);
+        }
+      }
+    }
+    populateDocsCommands();
+
+    // Click dispatch
+    cmdPalette.addEventListener("click", (e) => {
+      const btn = e.target.closest(".cmd-item");
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (!action) return;
+      closeCommandPalette();
+      if (action.startsWith("file:")) {
+        openFile(action.substring(5));
+      } else if (action.startsWith("doc:")) {
+        if (!docsGroup) openDocs();
+        loadDocsPage(action.substring(4));
+      } else if (action.startsWith("template:")) {
+        loadTemplate(action.substring(9));
+      } else if (cmdActions[action]) {
+        cmdActions[action]();
+      }
+    });
+
+    // Custom filter: multi-word fuzzy
+    if (cmdPalette.setFilterCallback) {
+      cmdPalette.setFilterCallback(({ query, content }) => {
+        const q = query.toLowerCase().trim();
+        if (!q) return true;
+        const text = (content || "").toLowerCase();
+        return q.split(/\s+/).every(w => text.includes(w));
+      });
+    }
+
+    // Mac shortcut labels
+    if (navigator.platform?.includes("Mac") || navigator.userAgent?.includes("Mac")) {
+      document.querySelectorAll(".cmd-kbd[data-shortcut]").forEach(kbd => {
+        kbd.textContent = kbd.textContent
+          .replace(/Ctrl\+/g, "⌘")
+          .replace(/Shift\+/g, "⇧")
+          .replace(/Alt\+/g, "⌥");
+      });
+    }
 
     // ═══ INIT ═══
     createGroup();
