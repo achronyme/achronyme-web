@@ -507,6 +507,13 @@ import '@fontsource-variable/jetbrains-mono';
     .docs-nav-item.active { color: var(--accent); }
     .docs-group-content { flex: 1; overflow: auto; }
 
+    /* ═══ TAB DRAG & DROP ═══ */
+    .tab[draggable="true"] { cursor: grab; }
+    .tab[draggable="true"]:active { cursor: grabbing; opacity: 0.6; }
+    .drag-over-center { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .drag-over-left { box-shadow: inset 4px 0 0 var(--accent); }
+    .drag-over-right { box-shadow: inset -4px 0 0 var(--accent); }
+
     @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
       .activitybar, .sidebar { display: none; }
@@ -1049,6 +1056,11 @@ import '@fontsource-variable/jetbrains-mono';
         close.addEventListener("click", (e) => { e.stopPropagation(); closeTabInGroup(group, i); });
 
         tab.appendChild(icon); tab.appendChild(label); tab.appendChild(dot); tab.appendChild(close);
+        tab.draggable = true;
+        tab.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/x-ach-tab", JSON.stringify({ groupId: group.id, tabIdx: i, path: t.path }));
+          e.dataTransfer.effectAllowed = "move";
+        });
         tab.addEventListener("click", () => { setActiveGroup(groups.indexOf(group)); switchTabInGroup(group, i); });
         tab.addEventListener("mousedown", (e) => { if (e.button === 1) { e.preventDefault(); closeTabInGroup(group, i); } });
         bar.appendChild(tab);
@@ -1462,6 +1474,138 @@ import '@fontsource-variable/jetbrains-mono';
 
     // Restore docs panel if was open
     if (localStorage.getItem("ach-docs-open") === "true") openDocs();
+
+    // ═══ TAB DRAG & DROP ═══
+    function clearDropIndicators() {
+      document.querySelectorAll(".drag-over-center,.drag-over-left,.drag-over-right").forEach(
+        el => el.classList.remove("drag-over-center", "drag-over-left", "drag-over-right")
+      );
+    }
+
+    groupsWrapper.addEventListener("dragover", (e) => {
+      if (!e.dataTransfer.types.includes("text/x-ach-tab")) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      clearDropIndicators();
+      const target = e.target.closest(".editor-group, .docs-group");
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      if (ratio < 0.2) target.classList.add("drag-over-left");
+      else if (ratio > 0.8) target.classList.add("drag-over-right");
+      else if (target.classList.contains("editor-group")) target.classList.add("drag-over-center");
+    });
+
+    groupsWrapper.addEventListener("dragleave", (e) => {
+      if (!groupsWrapper.contains(e.relatedTarget)) clearDropIndicators();
+    });
+
+    groupsWrapper.addEventListener("drop", (e) => {
+      if (!e.dataTransfer.types.includes("text/x-ach-tab")) return;
+      e.preventDefault();
+      clearDropIndicators();
+      const data = JSON.parse(e.dataTransfer.getData("text/x-ach-tab"));
+      const srcGroup = groups.find(g => g.id === data.groupId);
+      if (!srcGroup) return;
+
+      const target = e.target.closest(".editor-group, .docs-group");
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      const targetIdx = groups.findIndex(g => g.el === target);
+      const isDocsTarget = target.classList.contains("docs-group");
+
+      if (ratio < 0.2) {
+        const insertAt = isDocsTarget ? groups.length : Math.max(0, targetIdx);
+        moveTabToNewGroupAt(srcGroup, data.tabIdx, insertAt);
+      } else if (ratio > 0.8) {
+        const insertAt = isDocsTarget ? groups.length : targetIdx + 1;
+        moveTabToNewGroupAt(srcGroup, data.tabIdx, insertAt);
+      } else if (targetIdx >= 0 && srcGroup !== groups[targetIdx]) {
+        moveTabBetweenGroups(srcGroup, data.tabIdx, groups[targetIdx]);
+      }
+    });
+
+    function moveTabBetweenGroups(src, tabIdx, dst) {
+      src.tabs.saveEditorState(src.view.state);
+      const t = src.tabs.getTabs()[tabIdx];
+      const path = t.path, content = t.editorState.doc.toString();
+      const savedContent = t.savedContent, modified = t.modified;
+
+      src.tabs.closeTab(tabIdx);
+      const rem = src.tabs.getActiveTab();
+      if (rem) src.view.setState(rem.editorState);
+      else if (groups.length > 1) { removeGroup(src); }
+      else src.view.setState(EditorState.create({ doc: "", extensions: editorExtensions(src) }));
+
+      dst.tabs.saveEditorState(dst.view.state);
+      dst.tabs.openTab(path, content, editorExtensions(dst));
+      if (modified) {
+        const ni = dst.tabs.getActiveIndex();
+        dst.tabs.setModified(ni, true);
+        dst.tabs.getTabs()[ni].savedContent = savedContent;
+      }
+      dst.view.setState(dst.tabs.getActiveTab().editorState);
+      setActiveGroup(groups.indexOf(dst));
+      renderAllGroups();
+    }
+
+    function moveTabToNewGroupAt(src, tabIdx, insertAt) {
+      src.tabs.saveEditorState(src.view.state);
+      const t = src.tabs.getTabs()[tabIdx];
+      const path = t.path, content = t.editorState.doc.toString();
+      const savedContent = t.savedContent, modified = t.modified;
+
+      src.tabs.closeTab(tabIdx);
+      const rem = src.tabs.getActiveTab();
+      if (rem) src.view.setState(rem.editorState);
+      else if (groups.length > 1) {
+        const srcIdx = groups.indexOf(src);
+        removeGroup(src);
+        if (insertAt > srcIdx) insertAt--;
+      } else {
+        src.view.setState(EditorState.create({ doc: "", extensions: editorExtensions(src) }));
+      }
+
+      const newGroup = createGroup();
+      // Move to correct position if needed
+      const curIdx = groups.indexOf(newGroup);
+      if (insertAt < curIdx) {
+        groups.splice(curIdx, 1);
+        groups.splice(insertAt, 0, newGroup);
+        rebuildGroupsDOM();
+      }
+
+      newGroup.tabs.openTab(path, content, editorExtensions(newGroup));
+      if (modified) {
+        const ni = newGroup.tabs.getActiveIndex();
+        newGroup.tabs.setModified(ni, true);
+        newGroup.tabs.getTabs()[ni].savedContent = savedContent;
+      }
+      newGroup.view.setState(newGroup.tabs.getActiveTab().editorState);
+      setActiveGroup(groups.indexOf(newGroup));
+      renderAllGroups();
+    }
+
+    function rebuildGroupsDOM() {
+      groupsWrapper.querySelectorAll(".group-split-handle").forEach(h => h.remove());
+      groups.forEach((g, i) => {
+        if (i > 0) {
+          const h = document.createElement("div");
+          h.className = "group-split-handle";
+          setupGroupSplitHandle(h);
+          groupsWrapper.appendChild(h);
+        }
+        groupsWrapper.appendChild(g.el);
+      });
+      if (docsGroup) {
+        const h = document.createElement("div");
+        h.className = "group-split-handle";
+        setupGroupSplitHandle(h);
+        groupsWrapper.append(h, docsGroup.el);
+        docsGroup.handle = h;
+      }
+    }
 
     // ═══ GLOBAL KEYBOARD SHORTCUTS ═══
     document.addEventListener("keydown", (e) => {
