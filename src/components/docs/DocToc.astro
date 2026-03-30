@@ -9,18 +9,18 @@ const filtered = headings.filter(h => h.depth === 2 || h.depth === 3);
 ---
 
 {filtered.length > 0 && (
-  <aside class="hidden xl:block w-[200px] shrink-0">
-    <nav class="sticky top-[92px] max-h-[calc(100vh-92px)] overflow-y-auto py-8 pr-4">
-      <p class="text-xs uppercase tracking-widest text-text-muted font-semibold mb-3">{label}</p>
-      <ul class="space-y-1.5 border-l border-subtle/50" id="toc-list">
+  <aside class="hidden xl:block w-[200px] shrink-0 border-l border-subtle/40">
+    <nav class="sticky top-[92px] max-h-[calc(100vh-92px)] overflow-y-auto py-8 pl-4 pr-4 doc-scroll">
+      <p class="text-[11px] uppercase tracking-[0.08em] text-text-muted/70 font-medium mb-3">{label}</p>
+      <ul class="space-y-1 border-l border-subtle/30" id="toc-list">
         {filtered.map(h => (
           <li>
             <a
               href={`#${h.slug}`}
               class:list={[
-                'toc-link block text-xs leading-relaxed transition-colors duration-150',
-                'text-text-muted hover:text-text-secondary',
-                h.depth === 3 ? 'pl-6' : 'pl-3',
+                'toc-link block text-[12px] leading-relaxed transition-colors duration-150',
+                'text-text-muted/70 hover:text-text-secondary',
+                h.depth === 3 ? 'pl-5' : 'pl-3',
               ]}
               data-slug={h.slug}
             >
