@@ -3,7 +3,7 @@
   "header": {
     "cta": "Get Started",
     "docs": "Docs",
-    "releases": "Releases",
+    "playground": "Playground",
     "banner": "Introducing Achronyme — a language for zero-knowledge proofs. Read the announcement"
   },
   "hero": {

@@ -14,6 +14,9 @@ const altPath = altLocalePath ?? (locale === 'en' ? '/es/' : '/');
 const blogUrl = locale === 'en'
   ? 'https://eddn.dev/blog/achronyme-release/'
   : 'https://eddn.dev/es/blog/achronyme-release/';
+const currentPath = Astro.url.pathname;
+const isOnDocs = currentPath.startsWith('/docs/') || currentPath.startsWith('/es/docs/');
+const isOnPlayground = currentPath.startsWith('/playground');
 ---
 
 <div class="sticky top-0 z-50">
@@ -36,11 +39,11 @@ const blogUrl = locale === 'en'
         achronyme
       </a>
       <nav class="flex items-center gap-4 sm:gap-6">
-        <a href={getLocalizedPath('/docs/getting-started/introduction', locale)} class="text-sm text-text-muted hover:text-text-primary transition-colors">
+        <a href={getLocalizedPath('/docs/getting-started/introduction', locale)} class:list={['text-sm transition-colors', isOnDocs ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
           {s.header.docs}
         </a>
-        <a href="https://github.com/achronyme/achronyme/releases" target="_blank" rel="noopener noreferrer" class="text-sm text-text-muted hover:text-text-primary transition-colors">
-          {s.header.releases}
+        <a href="/playground" class:list={['text-sm transition-colors', isOnPlayground ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
+          {s.header.playground}
         </a>
       </nav>
     </div>

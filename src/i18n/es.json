@@ -3,7 +3,7 @@
   "header": {
     "cta": "Comenzar",
     "docs": "Docs",
-    "releases": "Releases",
+    "playground": "Playground",
     "banner": "Presentamos Achronyme — un lenguaje para pruebas zero-knowledge. Lee el anuncio"
   },
   "hero": {
