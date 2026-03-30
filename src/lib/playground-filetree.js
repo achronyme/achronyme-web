@@ -221,9 +221,47 @@ function showContextMenu(x, y, path, row, callbacks) {
   setTimeout(() => document.addEventListener("click", close), 0);
 }
 
-export function promptNewFile() {
-  const name = prompt("New file name (e.g. src/helpers.ach):");
-  if (!name) return null;
-  if (!name.endsWith(".ach")) return name + ".ach";
-  return name;
+/**
+ * Insert an inline input row at the end of the file tree (VS Code-style).
+ * Calls callbacks.onCreate(name) on commit, does nothing on cancel.
+ */
+export function startInlineCreate(container, callbacks) {
+  // Prevent double input
+  if (container.querySelector(".create-input-row")) return;
+
+  const row = document.createElement("div");
+  row.className = "file-row create-input-row";
+  row.style.paddingLeft = "8px";
+
+  const icon = document.createElement("span");
+  icon.className = "file-icon";
+  icon.innerHTML = fileIconSvg(".ach");
+
+  const input = document.createElement("input");
+  input.className = "rename-input";
+  input.type = "text";
+  input.placeholder = "file.ach";
+
+  row.appendChild(icon);
+  row.appendChild(input);
+  container.appendChild(row);
+  input.focus();
+
+  let done = false;
+  const finish = (cancelled) => {
+    if (done) return;
+    done = true;
+    row.remove();
+    if (cancelled) return;
+    let name = input.value.trim();
+    if (!name) return;
+    if (!name.endsWith(".ach") && !name.endsWith(".toml")) name += ".ach";
+    callbacks.onCreate(name);
+  };
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(false); }
+    if (e.key === "Escape") { e.preventDefault(); finish(true); }
+  });
+  input.addEventListener("blur", () => setTimeout(() => finish(false), 0));
 }
