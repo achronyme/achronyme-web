@@ -2217,13 +2217,21 @@ import '@fontsource-variable/jetbrains-mono';
 
     // ═══ GLOBAL KEYBOARD SHORTCUTS ═══
     document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); toggleSidebar(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "`") { e.preventDefault(); togglePanel(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); togglePanel(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "\\") { e.preventDefault(); splitRight(); }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "D") { e.preventDefault(); toggleDocs(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") { e.preventDefault(); openCommandPalette(); }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "P") { e.preventDefault(); openCommandPalette(); }
+      // Skip when command palette dialog is open (let it handle its own keys)
+      const dialogOpen = document.getElementById("cmd-palette-native")?.open;
+      if (dialogOpen && e.key !== "Escape") return;
+
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      if (e.key === "Enter") { e.preventDefault(); runCode(); }
+      if (e.key === "s") { e.preventDefault(); saveActiveFile(); }
+      if (e.key === "b") { e.preventDefault(); toggleSidebar(); }
+      if (e.key === "`") { e.preventDefault(); togglePanel(); }
+      if (e.key === "j") { e.preventDefault(); togglePanel(); }
+      if (e.key === "\\") { e.preventDefault(); splitRight(); }
+      if (e.shiftKey && e.key === "D") { e.preventDefault(); toggleDocs(); }
+      if (e.key === "k") { e.preventDefault(); openCommandPalette(); }
+      if (e.shiftKey && e.key === "P") { e.preventDefault(); openCommandPalette(); }
     });
 
     // ═══ COMMAND PALETTE ═══
