@@ -37,10 +37,20 @@ impl vm::VerifyHandler for SharedHandler {
 // Safe because each request runs in its own `spawn_blocking` thread.
 thread_local! {
     static OUTPUT: RefCell<Vec<String>> = RefCell::new(Vec::new());
+    static OUTPUT_BYTES: RefCell<usize> = RefCell::new(0);
 }
+
+/// Maximum output size (1 MB). Prevents memory exhaustion from print-heavy loops.
+const MAX_OUTPUT_BYTES: usize = 1024 * 1024;
 
 /// Custom print native that writes to the thread-local buffer.
 fn captured_print(vm: &mut VM, args: &[Value]) -> Result<Value, RuntimeError> {
+    // Check if output is already at capacity
+    let at_cap = OUTPUT_BYTES.with(|b| *b.borrow() >= MAX_OUTPUT_BYTES);
+    if at_cap {
+        return Ok(Value::nil());
+    }
+
     let mut line = String::new();
     for (i, arg) in args.iter().enumerate() {
         if i > 0 {
@@ -48,6 +58,7 @@ fn captured_print(vm: &mut VM, args: &[Value]) -> Result<Value, RuntimeError> {
         }
         line.push_str(&vm.val_to_string(arg));
     }
+    OUTPUT_BYTES.with(|b| *b.borrow_mut() += line.len() + 1);
     OUTPUT.with(|buf| buf.borrow_mut().push(line));
     Ok(Value::nil())
 }
@@ -97,10 +108,15 @@ pub fn run_source_with_base_path(
     backend: crate::prove_handler::ProveBackend,
 ) -> RunOutput {
     OUTPUT.with(|buf| buf.borrow_mut().clear());
+    OUTPUT_BYTES.with(|b| *b.borrow_mut() = 0);
 
     match run_inner(source, budget, max_heap, base_path, backend) {
         Ok(()) => {
-            let output = OUTPUT.with(|buf| buf.borrow().join("\n"));
+            let truncated = OUTPUT_BYTES.with(|b| *b.borrow() >= MAX_OUTPUT_BYTES);
+            let mut output = OUTPUT.with(|buf| buf.borrow().join("\n"));
+            if truncated {
+                output.push_str("\n\n[output truncated — 1 MB limit]");
+            }
             RunOutput {
                 success: true,
                 output,
@@ -108,7 +124,11 @@ pub fn run_source_with_base_path(
             }
         }
         Err(msg) => {
-            let output = OUTPUT.with(|buf| buf.borrow().join("\n"));
+            let truncated = OUTPUT_BYTES.with(|b| *b.borrow() >= MAX_OUTPUT_BYTES);
+            let mut output = OUTPUT.with(|buf| buf.borrow().join("\n"));
+            if truncated {
+                output.push_str("\n\n[output truncated — 1 MB limit]");
+            }
             RunOutput {
                 success: false,
                 output,
