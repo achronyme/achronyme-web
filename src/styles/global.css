@@ -89,14 +89,14 @@ h1, h2, h3, h4 {
 .doc-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 
 /* ── Embed mode (docs in iframe) ─────────────────────── */
-html.embed-mode header,
-html.embed-mode footer,
-html.embed-mode #mobile-nav-toggle,
-html.embed-mode #mobile-nav-dialog { display: none !important; }
+html.embed-mode .sticky.top-0.z-50,
+html.embed-mode footer { display: none !important; }
 html.embed-mode .mx-auto.max-w-\[1400px\] { border: none; }
 html.embed-mode nav.hidden.md\:block { display: none !important; }
 html.embed-mode aside { display: none !important; }
 html.embed-mode main { padding-bottom: 0; }
+html.embed-mode #mobile-nav-toggle { display: flex !important; }
+html.embed-mode #mobile-nav-dialog { max-width: 100%; }
 
 /* ── Documentation prose ─────────────────────────────── */
 
