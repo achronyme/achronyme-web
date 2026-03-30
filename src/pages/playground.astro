@@ -613,9 +613,7 @@
       // Sidebar
       shell.classList.toggle("sidebar-collapsed", sidebarCollapsed);
       explorerIcon.classList.toggle("active", !sidebarCollapsed);
-      if (!sidebarCollapsed) {
-        shell.style.gridTemplateColumns = `48px ${sidebarWidth}px 1fr`;
-      }
+      shell.style.gridTemplateColumns = sidebarCollapsed ? "" : `48px ${sidebarWidth}px 1fr`;
 
       // Panel layout
       editorOutputSplit.classList.toggle("layout-right", panelLayout === "right");
