@@ -7,7 +7,7 @@ All notable changes to Achronyme are documented here. Each release bumps all 10 
 
 ## Unreleased
 
-**Inspector command, proving crate, Bool/List methods, WASM LSP, init template fixes.**
+**Circom frontend infrastructure, bit decomposition, integer division, array params/returns, inspector, proving crate, WASM LSP.**
 
 ### New: `ach inspect` command
 
@@ -79,6 +79,38 @@ circuit main(root: Public, secret: Witness) {
 ```
 
 This is foundational infrastructure for a future Circom frontend: Circom templates map to functions, component instantiation maps to function calls, and signal wiring maps to array params/returns.
+
+### New: `decompose()` — bit decomposition with accessible bits
+
+New builtin that decomposes a field element into individual bit variables:
+
+```ach
+circuit main(x: Witness) {
+    let bits = decompose(x, 8)    // 8 boolean-constrained bit variables
+    assert_eq(bits[1], 1)          // access individual bits
+    assert_eq(bits[0] + bits[1] * 2 + bits[2] * 4, x)  // use in constraints
+}
+```
+
+Unlike `range_check`, which verifies a value fits in N bits but doesn't expose them, `decompose` returns the bits as an array. This is the Achronyme equivalent of Circom's `Num2Bits` template — the foundation for bitwise operations, binary arithmetic, and most of circomlib.
+
+Cost: N+1 constraints (N boolean checks + 1 sum equality).
+
+### New: `int_div()` and `int_mod()` — integer arithmetic in circuits
+
+Integer quotient and remainder on field elements:
+
+```ach
+circuit main(a: Witness, b: Witness) {
+    let q = int_div(a, b, 32)     // floor(a / b), 32-bit range check
+    let r = int_mod(a, b, 32)     // a - b * floor(a / b)
+    assert_eq(b * q + r, a)       // always holds
+}
+```
+
+The third argument `max_bits` specifies the range check bound for soundness — it prevents a malicious prover from exploiting field wraparound. The user chooses the bound based on their value range (8 bits for bytes, 32 for counters, 64 for large values, 252 for full field).
+
+These are the Achronyme equivalents of Circom's `\` and `%` operators.
 
 ### Docs migration
 

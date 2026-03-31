@@ -7,7 +7,7 @@ Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actu
 
 ## Sin publicar
 
-**Comando inspector, crate proving, métodos Bool/List, WASM LSP, fix en plantillas init.**
+**Infraestructura para frontend Circom, descomposición de bits, división entera, parámetros/retornos de arrays, inspector, crate proving, WASM LSP.**
 
 ### Nuevo: comando `ach inspect`
 
@@ -79,6 +79,38 @@ circuit main(root: Public, secret: Witness) {
 ```
 
 Esta es infraestructura fundacional para un futuro frontend de Circom: los templates de Circom mapean a funciones, la instanciación de componentes mapea a llamadas de función, y el cableado de señales mapea a parámetros/retornos de arrays.
+
+### Nuevo: `decompose()` — descomposición de bits accesibles
+
+Nuevo builtin que descompone un field element en variables de bit individuales:
+
+```ach
+circuit main(x: Witness) {
+    let bits = decompose(x, 8)    // 8 variables de bit con constraint booleano
+    assert_eq(bits[1], 1)          // acceder bits individuales
+    assert_eq(bits[0] + bits[1] * 2 + bits[2] * 4, x)  // usar en constraints
+}
+```
+
+A diferencia de `range_check`, que verifica que un valor cabe en N bits pero no los expone, `decompose` retorna los bits como un array. Es el equivalente de Achronyme al template `Num2Bits` de Circom — la base para operaciones bitwise, aritmética binaria, y la mayoría de circomlib.
+
+Costo: N+1 constraints (N checks booleanos + 1 igualdad de suma).
+
+### Nuevo: `int_div()` e `int_mod()` — aritmética entera en circuitos
+
+Cociente y resto entero sobre field elements:
+
+```ach
+circuit main(a: Witness, b: Witness) {
+    let q = int_div(a, b, 32)     // floor(a / b), range check de 32 bits
+    let r = int_mod(a, b, 32)     // a - b * floor(a / b)
+    assert_eq(b * q + r, a)       // siempre se cumple
+}
+```
+
+El tercer argumento `max_bits` especifica el bound del range check para soundness — evita que un prover malicioso explote el wraparound del campo. El usuario elige el bound según el rango de sus valores (8 bits para bytes, 32 para contadores, 64 para valores grandes, 252 para campo completo).
+
+Son los equivalentes de Achronyme a los operadores `\` y `%` de Circom.
 
 ### Migración de docs
 
