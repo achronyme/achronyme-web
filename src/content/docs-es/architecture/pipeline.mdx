@@ -1,44 +1,53 @@
 ---
 title: "Visión General del Pipeline"
-description: "El pipeline de compilación desde el código fuente hasta las restricciones."
+description: "El pipeline de compilación desde el código fuente hasta las pruebas."
 ---
 
-Achronyme compila el mismo lenguaje fuente a través de dos caminos distintos: **Modo VM** para ejecución general y **Modo circuito** para generación de restricciones de conocimiento cero.
+import Mermaid from '../../../components/docs/Mermaid.astro';
+
+Achronyme compila el mismo lenguaje fuente a través de tres caminos distintos: **Modo VM** para ejecución general, **Modo circuito** para generación de restricciones vía `ach circuit`, y **Modo prove** para generación de pruebas en línea vía bloques `prove {}`.
 
 ## Diagrama del Pipeline
 
-```ach
-Fuente (.ach)
-    │
-    ├─► Parser (descenso recursivo) → AST
-    │       │
-    │       ├─► Compilador de Bytecode → VM          (ach run)
-    │       │
-    │       └─► Bajada a IR → SSA IR
-    │               │
-    │           Optimizar (const_fold → dce → bool_prop)
-    │               │
-    │           ┌───┴───┐
-    │           ▼       ▼
-    │        R1CS    Plonkish
-    │      (Groth16) (KZG-PlonK)
-    │           │       │
-    │           ▼       ▼
-    │       .r1cs    Gates/Lookups
-    │       .wtns    Copy constraints
-    │           │       │
-    │           └───┬───┘
-    │               ▼
-    │         Prueba nativa
-    │
-    └─► prove { } → compilar + testigo + verificar + prueba (en línea)
-```
+<Mermaid chart={`graph TD
+    SRC["Fuente (.ach)"] --> PARSER["Parser<br/><small>Pratt + descenso recursivo</small>"]
+    PARSER --> AST["AST"]
+
+    AST --> BC["Compilador de Bytecode"]
+    BC --> OPT_BC["Optimizador de Bytecode<br/><small>peephole · const fold · dead store</small>"]
+    OPT_BC --> VM["VM<br/><small>basada en registros, 37 opcodes</small>"]
+
+    AST --> PROVEIR["Compilador ProveIR<br/><small>plantillas de circuito pre-compiladas</small>"]
+    PROVEIR --> BYTES["Bytes serializados<br/><small>constant pool TAG_BYTES</small>"]
+    BYTES --> VM
+
+    VM -->|"bloque prove { }"| INST["ProveIR Instanciar<br/><small>capturar valores del scope</small>"]
+    INST --> IR["SSA IR"]
+
+    AST -->|"ach circuit"| LOWER["Bajada a IR"]
+    LOWER --> IR
+
+    IR --> OPT["Optimizar<br/><small>const fold · bound inference · CSE · DCE</small>"]
+    OPT --> TAINT["Análisis de Taint<br/><small>warnings sub-restringidos</small>"]
+    TAINT --> BOOL["Propagación Booleana<br/><small>omitir enforcement redundante</small>"]
+
+    BOOL --> R1CS["Backend R1CS"]
+    BOOL --> PLONK["Backend Plonkish"]
+
+    R1CS --> GROTH["Groth16<br/><small>ark-groth16 + ark-bn254</small>"]
+    R1CS --> EXPORT[".r1cs + .wtns<br/><small>compatible con snarkjs</small>"]
+    PLONK --> HALO["PlonK<br/><small>halo2 KZG (fork PSE)</small>"]
+
+    GROTH --> PROOF["Prueba"]
+    HALO --> PROOF
+    PROOF --> SOL["Verificador Solidity<br/><small>verificación on-chain</small>"]
+`} />
 
 ## Etapa 1: Parseo
 
-**Punto de entrada:** `achronyme_parser::parse_program(source) -> Result<Program, String>`
+**Punto de entrada:** `achronyme_parser::parse_program(source)`
 
-El parser es un parser de descenso recursivo escrito a mano con parseo de expresiones Pratt. Produce un AST con nodos `Program`, `Stmt`, `Expr` y `Block`.
+Parser de descenso recursivo escrito a mano con parseo de expresiones Pratt. Produce un AST con nodos `Program`, `Stmt`, `Expr` y `Block`. Maneja declaraciones `public`/`witness`, anotaciones de tipo, bloques `prove {}`, llamadas a métodos y acceso a namespaces estáticos (`Type::MEMBER`).
 
 Precedencia de operadores (de mayor a menor):
 1. `^` (potencia)
@@ -48,117 +57,136 @@ Precedencia de operadores (de mayor a menor):
 5. `&&` (AND lógico)
 6. `||` (OR lógico)
 
-El parser maneja declaraciones `public`/`witness`, rangos `for`, definiciones `fn` y bloques `prove {}`.
+## Etapa 2a: Compilación a Bytecode (Modo VM)
 
-## Etapa 2: Bajada a IR (Modo Circuito)
+**Punto de entrada:** `compiler::FunctionCompiler::compile()`
 
-**Punto de entrada:** `IrLowering::lower_circuit(source, pub_vars, wit_vars) -> IrProgram`
+Para `ach run`, el AST se compila a bytecode para la VM basada en registros (37 opcodes). Un optimizador de bytecode de 3 pases se ejecuta después de la compilación:
 
-El bajador de IR convierte el AST en una lista plana de instrucciones SSA (`IrProgram`). Comportamientos clave:
+- **Peephole** — fusiona secuencias de instrucciones comunes
+- **Plegado de constantes** — evalúa aritmética sobre constantes conocidas
+- **Eliminación de stores muertos** — elimina escrituras a registros que nunca se leen
 
-- Las vinculaciones **`let`** son alias — no se emite instrucción, la variable simplemente apunta a un `SsaVar` existente
-- **`if/else`** se compila a `Mux(cond, then_val, else_val)`
+Los bloques `prove {}` se manejan especialmente: el cuerpo se compila a ProveIR en tiempo de compilación (no en runtime), se serializa como bytes en el constant pool (`TAG_BYTES`), y se deserializa + instancia cuando la VM llega a la expresión prove.
+
+## Etapa 2b: Bajada a IR (Modo Circuito)
+
+**Punto de entrada:** `IrLowering::lower_circuit(source, pub_vars, wit_vars)`
+
+Para `ach circuit`, el AST se baja directamente a SSA IR. Comportamientos clave:
+
+- Las vinculaciones **`let`** son alias — no se emite instrucción
+- **`if/else`** se compila a `Mux(cond, then_val, else_val)` — ambas ramas se evalúan
 - Los bucles **`for`** se desenrollan estáticamente (máximo 10,000 iteraciones)
-- Las **llamadas a funciones** se insertan en línea en cada punto de llamada; la recursión se detecta vía guardia de pila de llamadas
-- Los **arrays** soportan indexación en tiempo de compilación: `a[i]` donde `i` debe ser una constante
+- Las **llamadas a funciones** se insertan en línea; recursión detectada vía guardia de pila
+- Los **arrays** soportan indexación en tiempo de compilación: `a[i]` donde `i` debe ser constante
 
-El bajador rastrea variables vía `HashMap<String, EnvValue>` donde `EnvValue` es `Scalar(SsaVar)` o `Array(Vec<SsaVar>)`.
+## Etapa 2c: Pipeline ProveIR (Modo Prove)
+
+**Punto de entrada:** `ProveIrCompiler::compile_prove_block()`
+
+Los bloques `prove {}` pasan por un pipeline de 8 fases:
+
+| Fase | Nombre | Descripción |
+|------|--------|-------------|
+| A | Compilar | AST → ProveIR (expresiones de circuito tipadas con spans) |
+| B | Serializar | ProveIR → bytes (almacenados en el constant pool del bytecode) |
+| C | Deserializar | bytes → ProveIR (en runtime de la VM, cuando el bloque prove se ejecuta) |
+| D | Instanciar | ProveIR + valores capturados del scope → SSA IR |
+| E | Optimizar | Pases estándar de IR (const fold, CSE, DCE) |
+| F | Backend | IR → restricciones R1CS o Plonkish |
+| G | Testigo | Llenar testigo desde valores capturados |
+| H | Probar | Generar prueba criptográfica |
+
+Este diseño significa que los bloques prove se **pre-compilan en tiempo de compilación** — no hay re-parseo en runtime. El formato ProveIR lleva información de tipos, spans de código y referencias a funciones a través de la serialización.
 
 ## Etapa 3: Optimización
 
 **Punto de entrada:** `ir::passes::optimize(&mut program)`
 
-Tres pases se ejecutan secuencialmente sobre el IR:
+Cinco pases se ejecutan secuencialmente sobre el IR:
 
 ### Plegado de Constantes (`const_fold`)
 
-Pase hacia adelante que evalúa operaciones sobre constantes conocidas:
-- Pliega aritmética: `Const(3) + Const(5)` → `Const(8)`
-- Simplifica identidades: `x * 0 → 0`, `x - x → 0`, `x / x → 1`
-- Pliega lógica booleana y comparaciones sobre constantes
+Pase hacia adelante que evalúa operaciones sobre constantes conocidas. Pliega aritmética (`Const(3) + Const(5)` → `Const(8)`), simplifica identidades (`x * 0 → 0`, `x - x → 0`, `x / x → 1`) y lógica booleana.
+
+### Inferencia de Límites (`bound_inference`)
+
+Reescribe comparaciones `IsLt`/`IsLe` sin límites a variantes acotadas cuando los operandos tienen anchos de bits probados desde `RangeCheck`. Comparaciones sin límites cuestan ~761 restricciones; acotadas cuestan ~(n+3) donde n es el ancho de bits.
+
+### Eliminación de Sub-expresiones Comunes (`cse`)
+
+Pase O(n) que identifica computaciones puras duplicadas y remapea al primer resultado. Cubre aritmética, Poseidon, Mux, operaciones booleanas, comparaciones. Particularmente efectivo en bucles desenrollados.
 
 ### Eliminación de Código Muerto (`dce`)
 
-Pase hacia atrás que elimina instrucciones cuyos resultados nunca se usan. Conservador con instrucciones que tienen efectos secundarios (`Mul`, `Div`, `Mux`, `PoseidonHash`, `RangeCheck`, `Assert`, etc.).
+Pase de punto fijo iterativo que elimina instrucciones cuyos resultados nunca se usan. Instrucciones con efectos secundarios (`AssertEq`, `Assert`, `Input`, `RangeCheck`) nunca se eliminan.
 
 ### Propagación Booleana (`bool_prop`)
 
-Pase hacia adelante que calcula el conjunto de variables SSA probadas como booleanas. Las semillas incluyen:
-- `Const(0)` y `Const(1)`
-- Resultados de comparación (`IsEq`, `IsNeq`, `IsLt`, `IsLe`)
-- Objetivos de `RangeCheck(x, 1)` y operandos de `Assert`
-- Anotaciones de tipo `Bool`
+Calcula el conjunto de variables SSA probadas como booleanas. Semillas desde comparaciones, `RangeCheck(x, 1)`, operandos de `Assert` y anotaciones `Bool`. Se propaga a través de `Not`, `And`, `Or`, `Mux`. El backend R1CS lo usa para omitir enforcement booleano redundante.
 
-Se propaga a través de `Not`, `And`, `Or` y `Mux`. Los backends usan este conjunto para omitir restricciones de verificación booleana redundantes.
+### Análisis de Taint (`taint`)
+
+Advierte sobre entradas testigo sub-restringidas o no usadas. Rastrea el flujo de datos desde testigos hasta assertions — un testigo que no influencia ninguna restricción se marca con un warning.
 
 ## Etapa 4: Compilación de Backend
 
-Dos backends compilan el IR optimizado en sistemas de restricciones:
-
 ### Backend R1CS (predeterminado)
 
-**Punto de entrada:** `R1CSCompiler::compile_ir(program) -> Result<(), R1CSError>`
+**Punto de entrada:** `R1CSCompiler::compile_ir(program)`
 
-Mapea cada `SsaVar` a una `LinearCombination`. Add/Sub/Neg son gratis (aritmética de CL). Mul/Div/Mux/Poseidon emiten restricciones R1CS reales (`A × B = C`).
+Mapea cada `SsaVar` a una `LinearCombination`. Add/Sub/Neg son gratis (aritmética de LC). Mul/Div/Mux/Poseidon emiten restricciones R1CS (`A × B = C`).
 
 Disposición de cables: `[ONE, pub₁..pubₙ, wit₁..witₘ, intermedios...]`
 
-Las entradas públicas se asignan antes de los testigos para compatibilidad con snarkjs.
-
 ### Backend Plonkish
 
-**Punto de entrada:** `PlonkishCompiler::compile_ir(program) -> Result<(), PlonkishError>`
+**Punto de entrada:** `PlonkishCompiler::compile_ir(program)`
 
-Usa **evaluación perezosa** con `PlonkVal` — difiere add/sub/neg hasta que un mul o función integrada fuerza la materialización. Cada multiplicación emite una fila usando la puerta aritmética estándar: `s_arith · (a·b + c − d) = 0`.
+Evaluación perezosa con `PlonkVal` — difiere add/sub/neg hasta que una multiplicación fuerza materialización. Puerta estándar: `s_arith · (a·b + c − d) = 0`. Verificaciones de rango usan tabla de lookup (1 fila vs n+1 restricciones en R1CS).
 
-Las verificaciones de rango usan una **tabla de lookup** (1 fila) en lugar de descomposición de bits (n+1 restricciones en R1CS).
+## Etapa 5: Generación de Pruebas
 
-## Etapa 5: Generación de Testigos
+**Crate:** `proving`
 
-**Punto de entrada:** `R1CSCompiler::compile_ir_with_witness(program, inputs)`
+Generación de pruebas nativa en proceso — no requiere herramientas externas.
 
-El testigo se genera vía **reproducción de traza**:
+| Backend | Prover | Librería |
+|---------|--------|----------|
+| R1CS | Groth16 | `ark-groth16` + `ark-bn254` |
+| Plonkish | PlonK | `halo2_proofs` (fork KZG de PSE) |
 
-1. El IR se evalúa con entradas concretas usando `ir::eval::evaluate()` para validación temprana
-2. El backend compila el IR, registrando un `WitnessOp` para cada variable intermedia
-3. Se asigna un vector de testigo (`num_variables()` slots)
-4. Las entradas públicas/testigo se llenan desde los valores proporcionados por el usuario
-5. La traza se reproduce para calcular todos los valores intermedios
+También genera **contratos verificadores Solidity** para verificación on-chain de pruebas Groth16.
 
-## Etapa 6: Exportación Binaria (solo R1CS)
+Las exportaciones binarias `.r1cs` y `.wtns` siguen siendo compatibles con snarkjs para usuarios que prefieren herramientas externas.
 
-**Funciones:**
-- `write_r1cs(cs) -> Vec<u8>` — formato binario iden3 `.r1cs` v1
-- `write_wtns(witness) -> Vec<u8>` — formato binario iden3 `.wtns` v2
+## Soporte Multi-Prime
 
-Los archivos exportados son compatibles con snarkjs para generación y verificación de pruebas:
+El pipeline es genérico sobre el campo primo vía `FieldElement<F: FieldBackend>`. Tres backends implementados:
 
-```bash
-snarkjs groth16 setup circuit.r1cs pot12_final.ptau circuit_final.zkey
-snarkjs groth16 prove circuit_final.zkey witness.wtns proof.json public.json
-snarkjs groth16 verify verification_key.json public.json proof.json
-```
+| Campo | Backend | Poseidon α | Sistemas de Prueba |
+|-------|---------|-----------|-------------------|
+| BN254 (defecto) | `Bn254Fr` | 5 | Groth16, PlonK |
+| BLS12-381 | `Bls12_381Fr` | 5 | PlonK |
+| Goldilocks | `GoldilocksFr` | 7 | STARK (futuro) |
 
-## Bloques Prove (Modo Puente)
-
-La expresión `prove {}` conecta los modos VM y circuito:
-
-1. La VM encuentra un bloque `prove {}` durante la ejecución
-2. El cuerpo del bloque se compila como un circuito (IR → optimizar → R1CS)
-3. Las variables capturadas del ámbito de la VM se convierten en entradas testigo/públicas
-4. Se genera un testigo y se verifican las restricciones
-5. Se produce una prueba Groth16 vía snarkjs (si hay un archivo ptau disponible)
-6. La prueba se devuelve a la VM como un `ProofObject` de primera clase
+La selección de campo se resuelve una vez en el boundary de sesión; la monomorfización elimina todo overhead en runtime.
 
 ## Archivos Fuente
 
 | Etapa | Archivo |
-|-------|------|
+|-------|---------|
 | Parser | `achronyme-parser/src/parser.rs` |
-| Bajada a IR | `ir/src/lower.rs` |
-| Optimización | `ir/src/passes/` (`const_fold.rs`, `dce.rs`, `bool_prop.rs`) |
+| Compilador de Bytecode | `compiler/src/codegen.rs` |
+| Optimizador de Bytecode | `compiler/src/optimizer.rs` |
+| Compilador ProveIR | `ir/src/prove_ir/compiler.rs` |
+| Instanciación ProveIR | `ir/src/prove_ir/instantiate.rs` |
+| Bajada a IR | `ir/src/lower/mod.rs` |
+| Pases de Optimización | `ir/src/passes/` |
 | Backend R1CS | `compiler/src/r1cs_backend.rs` |
-| Backend Plonkish | `compiler/src/plonkish_backend.rs` |
-| Generación de testigos | `compiler/src/witness_gen.rs` |
-| Exportación binaria | `constraints/src/export.rs` |
-| Despacho del CLI | `cli/src/commands/circuit.rs` |
+| Backend Plonkish | `compiler/src/plonkish_backend/` |
+| Generación de Testigos | `compiler/src/witness_gen.rs` |
+| Exportación Binaria | `constraints/src/export.rs` |
+| Proving | `proving/src/` |
+| Despacho CLI | `cli/src/commands/circuit.rs` |

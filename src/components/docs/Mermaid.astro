@@ -1,0 +1,73 @@
+---
+interface Props {
+  chart: string;
+}
+
+const { chart } = Astro.props;
+const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<div class="mermaid-wrapper" id={id} data-chart={chart}></div>
+
+<script>
+  import mermaid from 'mermaid';
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#1a1a2e',
+      primaryColor: '#6d5dfc',
+      primaryTextColor: '#e0e0e0',
+      primaryBorderColor: '#6d5dfc',
+      secondaryColor: '#2a2a4a',
+      tertiaryColor: '#1e1e3a',
+      lineColor: '#888',
+      textColor: '#e0e0e0',
+      mainBkg: '#252540',
+      nodeBorder: '#6d5dfc',
+      clusterBkg: '#1e1e3a',
+      fontSize: '14px',
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 16,
+      nodeSpacing: 30,
+      rankSpacing: 40,
+    },
+  });
+
+  async function renderAll() {
+    const wrappers = document.querySelectorAll<HTMLDivElement>('.mermaid-wrapper[data-chart]');
+    for (const el of wrappers) {
+      const chart = el.getAttribute('data-chart');
+      if (!chart || el.querySelector('svg')) continue;
+      const { svg } = await mermaid.render(`${el.id}-svg`, chart);
+      el.innerHTML = svg;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderAll);
+  } else {
+    renderAll();
+  }
+</script>
+
+<style>
+  .mermaid-wrapper {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+
+  .mermaid-wrapper :global(svg) {
+    max-width: 100%;
+    height: auto;
+  }
+</style>
