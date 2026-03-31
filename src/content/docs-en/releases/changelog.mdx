@@ -5,6 +5,32 @@ description: Release history for Achronyme.
 
 All notable changes to Achronyme are documented here. Each release bumps all 10 workspace crates to the same version.
 
+## Unreleased (multi-prime branch)
+
+**Multi-prime field architecture: compile-time generics over any prime field.**
+
+### New: `FieldBackend` trait and generic `FieldElement<F>`
+
+The field layer is now generic over the prime. `FieldElement<F: FieldBackend = Bn254Fr>` wraps an associated `Repr` type (e.g., `[u64; 4]` for 254/255-bit curves, `u64` for Goldilocks). One `match` at the session boundary selects the backend; monomorphization carries it everywhere else — no runtime overhead.
+
+### New: `PrimeId` enum
+
+Identifies which prime field is in use across serialization boundaries and CLI flags. Supports 8 curves: BN254, BLS12-381, Goldilocks, Grumpkin, Pallas, Vesta, secp256r1, BLS12-377.
+
+### New: BLS12-381 scalar field backend
+
+`Bls12_381Fr` — same CIOS Montgomery algorithm as BN254, different constants. 255-bit modulus, `Repr = [u64; 4]`. 28 unit tests including BigUint constant verification.
+
+### New: Goldilocks prime field backend
+
+`GoldilocksFr` — the first non-Montgomery backend with `Repr = u64`. Uses the Goldilocks identity 2⁶⁴ ≡ 2³² − 1 (mod p) for fast branchless reduction without division. 36 unit tests including Fermat's little theorem verification.
+
+### New: Multi-field Poseidon
+
+`PoseidonParams<F>` is now generic over the field backend with a configurable S-box exponent (`alpha`). Constructors for BN254 (circomlibjs, α=5), BLS12-381 (LFSR, α=5), and Goldilocks (LFSR, α=7). The Grain LFSR generates paper-compliant constants for any field. Native hash functions (`poseidon_hash`, `poseidon_permutation`) are fully generic. R1CS `sbox_circuit` supports both α=5 (3 constraints) and α=7 (4 constraints).
+
+---
+
 ## 0.1.0-beta.18 — 2026-03-30
 
 **Circom parity infrastructure, bit decomposition, integer division, array params/returns in circuit functions, inspector, proving crate, WASM LSP.**

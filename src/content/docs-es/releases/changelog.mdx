@@ -5,6 +5,32 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza los 10 crates del workspace a la misma versión.
 
+## Sin publicar (branch multi-prime)
+
+**Arquitectura multi-prime: genéricos en tiempo de compilación sobre cualquier campo primo.**
+
+### Nuevo: trait `FieldBackend` y `FieldElement<F>` genérico
+
+La capa de campos ahora es genérica sobre el primo. `FieldElement<F: FieldBackend = Bn254Fr>` envuelve un tipo asociado `Repr` (ej. `[u64; 4]` para curvas de 254/255 bits, `u64` para Goldilocks). Un solo `match` en el boundary de sesión selecciona el backend; la monomorfización lo propaga al resto — sin overhead en runtime.
+
+### Nuevo: enum `PrimeId`
+
+Identifica qué campo primo está en uso en boundaries de serialización y flags CLI. Soporta 8 curvas: BN254, BLS12-381, Goldilocks, Grumpkin, Pallas, Vesta, secp256r1, BLS12-377.
+
+### Nuevo: backend BLS12-381
+
+`Bls12_381Fr` — mismo algoritmo CIOS Montgomery que BN254, constantes distintas. Módulo de 255 bits, `Repr = [u64; 4]`. 28 tests unitarios incluyendo verificación de constantes con BigUint.
+
+### Nuevo: backend Goldilocks
+
+`GoldilocksFr` — el primer backend sin Montgomery con `Repr = u64`. Usa la identidad de Goldilocks 2⁶⁴ ≡ 2³² − 1 (mod p) para reducción rápida sin ramas ni divisiones. 36 tests unitarios incluyendo verificación del pequeño teorema de Fermat.
+
+### Nuevo: Poseidon multi-campo
+
+`PoseidonParams<F>` es ahora genérico sobre el backend con exponente S-box configurable (`alpha`). Constructores para BN254 (circomlibjs, α=5), BLS12-381 (LFSR, α=5) y Goldilocks (LFSR, α=7). El LFSR Grain genera constantes conformes al paper para cualquier campo. Las funciones nativas de hash (`poseidon_hash`, `poseidon_permutation`) son completamente genéricas. El `sbox_circuit` R1CS soporta tanto α=5 (3 restricciones) como α=7 (4 restricciones).
+
+---
+
 ## 0.1.0-beta.18 — 2026-03-30
 
 **Infraestructura de paridad con Circom, descomposición de bits, división entera, parámetros/retornos de arrays en funciones de circuito, inspector, crate proving, WASM LSP.**
