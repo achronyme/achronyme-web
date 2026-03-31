@@ -2068,7 +2068,32 @@ import '@fontsource-variable/jetbrains-mono';
         `;
         shadow.appendChild(overrides);
 
-        if (article) shadow.appendChild(article.cloneNode(true));
+        if (article) {
+          const cloned = article.cloneNode(true);
+          shadow.appendChild(cloned);
+          // Re-create copy buttons inside shadow DOM (el-copyable doesn't work across shadow boundaries)
+          cloned.querySelectorAll('pre').forEach((pre, i) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block-wrapper';
+            pre.parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(pre);
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'copy-btn';
+            btn.ariaLabel = 'Copy code';
+            btn.innerHTML =
+              '<svg class="icon-copy" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+              '<svg class="icon-check" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+            btn.addEventListener('click', () => {
+              navigator.clipboard.writeText(pre.textContent ?? '').then(() => {
+                btn.setAttribute('data-copied', '');
+                setTimeout(() => btn.removeAttribute('data-copied'), 2000);
+              });
+            });
+            wrapper.appendChild(btn);
+          });
+        }
         if (pagination) shadow.appendChild(pagination.cloneNode(true));
       } catch {
         const container = docsGroup.content;
