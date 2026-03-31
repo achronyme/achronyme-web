@@ -58,6 +58,28 @@ Las plantillas `main.ach`, `circuit.ach` y `prove.ach` generadas por `ach init` 
 
 `CircuitNode::Expr` ahora lleva spans de código a través de la instanciación, permitiendo al inspector (y futuros mensajes de error) apuntar a la ubicación original en el código fuente para cada restricción.
 
+### Fix: parámetros y retornos de arrays en funciones de circuitos
+
+Las funciones dentro de bloques `circuit` y `prove` ahora aceptan parámetros de tipo array y pueden retornar arrays. Anteriormente, la anotación de tipo array en parámetros de funciones era ignorada silenciosamente, causando un error "expected scalar, got array" al pasar arrays. Esto habilita un patrón de composición tipo componente donde funciones reutilizables que generan restricciones pueden componerse:
+
+```ach
+fn verify_path(leaf, siblings: Field[2], dirs: Field[2]) -> Field {
+    let l1 = poseidon(mux(dirs[0] == 0, leaf, siblings[0]),
+                       mux(dirs[0] == 0, siblings[0], leaf))
+    let l2 = poseidon(mux(dirs[1] == 0, l1, siblings[1]),
+                       mux(dirs[1] == 0, siblings[1], l1))
+    l2
+}
+
+circuit main(root: Public, secret: Witness) {
+    let path: Field[2] = [sibling0, sibling1]
+    let dirs: Field[2] = [0, 0]
+    assert_eq(verify_path(poseidon(secret, 0), path, dirs), root)
+}
+```
+
+Esta es infraestructura fundacional para un futuro frontend de Circom: los templates de Circom mapean a funciones, la instanciación de componentes mapea a llamadas de función, y el cableado de señales mapea a parámetros/retornos de arrays.
+
 ### Migración de docs
 
 El directorio `docs/` y su workflow de deploy se han eliminado del repositorio principal. La documentación ahora vive en `achronyme-web`.
