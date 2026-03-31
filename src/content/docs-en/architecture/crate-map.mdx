@@ -3,19 +3,22 @@ title: "Crate Map"
 description: "Workspace crate dependencies and responsibilities."
 ---
 
-The Achronyme workspace contains 7 crates. All are at version 0.7.0, edition 2021.
+The Achronyme workspace contains 10 crates. All share the same version, edition 2021.
 
 ## Crate Overview
 
 | Crate | Path | Purpose |
 |-------|------|---------|
-| `memory` | `memory/` | Value representation, `FieldElement` (BN254 Montgomery), heap arenas, GC |
+| `memory` | `memory/` | `FieldElement<F>` (BN254, BLS12-381, Goldilocks), `FieldBackend` trait, heap arenas, GC |
 | `achronyme-parser` | `achronyme-parser/` | Recursive descent parser, owned AST types |
-| `constraints` | `constraints/` | R1CS constraint system, Plonkish system, Poseidon hash, binary export |
-| `ir` | `ir/` | SSA intermediate representation, AST→IR lowering, optimization passes |
-| `vm` | `vm/` | Register-based virtual machine, bytecode interpreter, native functions |
+| `constraints` | `constraints/` | R1CS constraint system, Plonkish system, Poseidon hash (multi-field), binary export |
+| `ir` | `ir/` | SSA intermediate representation, AST→IR lowering, optimization passes, ProveIR |
+| `vm` | `vm/` | Register-based virtual machine, bytecode interpreter, prototype method dispatch |
 | `compiler` | `compiler/` | R1CS and Plonkish backends, witness generation |
-| `cli` | `cli/` | Command-line interface, proof orchestration (arkworks Groth16, halo2 PlonK) |
+| `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), Solidity verifier generation |
+| `achronyme-std` | `std/` | Standard library via `NativeModule` trait (parse_int, join, I/O) |
+| `ach-macros` | `ach-macros/` | Proc-macros: `#[ach_native]`, `#[ach_module]` |
+| `cli` | `cli/` | Command-line interface, proof orchestration |
 
 ## Dependency Graph
 
@@ -42,7 +45,7 @@ constraints   ┌────────┘
 
 ### Foundation (no workspace dependencies)
 
-**`memory`** — The base layer. Defines `FieldElement` (BN254 scalar field in Montgomery form, `[u64; 4]` limbs), tagged `Value` (4-bit tag + 60-bit payload), typed heap arenas, and mark-and-sweep GC.
+**`memory`** — The base layer. Defines `FieldElement<F: FieldBackend>`, a generic field element parameterized by a zero-sized backend marker type. Three backends are implemented: `Bn254Fr` (Montgomery `[u64; 4]`), `Bls12_381Fr` (Montgomery `[u64; 4]`), and `GoldilocksFr` (direct `u64`). The default type parameter is `Bn254Fr`, so bare `FieldElement` means BN254. Also provides tagged `Value` (4-bit tag + 60-bit payload), typed heap arenas, and mark-and-sweep GC.
 
 **`achronyme-parser`** — Standalone parser. Recursive descent with Pratt expression parsing. Exports `parse_program(source) -> Result<Program, String>` and owned AST types (`Program`, `Stmt`, `Expr`, `Block`).
 

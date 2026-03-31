@@ -18,7 +18,7 @@ El `Heap` contiene 9 arenas tipadas, una por tipo de objeto del heap:
 | `closures` | `Closure` | handle de función + handles de upvalue |
 | `upvalues` | `Upvalue` | ubicación + puntero de lista enlazada |
 | `iterators` | `IteratorObj` | valor fuente + estado |
-| `fields` | `FieldElement` | 32 bytes (forma Montgomery BN254) |
+| `fields` | `FieldElement` | 32 bytes (forma Montgomery BN254, backend por defecto) |
 | `proofs` | `ProofObject` | 3 cadenas JSON (prueba + público + vkey) |
 
 ### Implementación de Arena

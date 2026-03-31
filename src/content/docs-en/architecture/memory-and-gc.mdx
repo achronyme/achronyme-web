@@ -18,7 +18,7 @@ The `Heap` contains 10 typed arenas, one per heap object type:
 | `closures` | `Closure` | function handle + upvalue handles |
 | `upvalues` | `Upvalue` | location + linked list pointer |
 | `iterators` | `IteratorObj` | source value + state |
-| `fields` | `FieldElement` | 32 bytes (BN254 Montgomery form) |
+| `fields` | `FieldElement` | 32 bytes (BN254 Montgomery form, default backend) |
 | `proofs` | `ProofObject` | 3 JSON strings (proof + public + vkey) |
 | `bigints` | `BigInt` | 32–64 bytes |
 

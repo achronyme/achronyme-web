@@ -1,15 +1,25 @@
 ---
 title: "Elementos de Campo"
-description: "Aritmética del campo escalar BN254."
+description: "Aritmética de campos primos — BN254, BLS12-381 y Goldilocks."
 ---
 
-Un **elemento de campo** es un número en el campo escalar BN254 — enteros módulo el primo:
+Un **elemento de campo** es un número en un campo primo — enteros módulo un primo `p`. Toda la aritmética es **modular**: la suma, resta y multiplicación se envuelven en `p`, y la división calcula el inverso modular.
+
+## Campos Soportados
+
+Achronyme soporta tres campos primos vía el trait `FieldBackend`:
+
+| Campo | Bits del módulo | Repr | Caso de uso |
+|-------|-----------------|------|-------------|
+| **BN254** (por defecto) | 254 | `[u64; 4]` Montgomery | Groth16, Ethereum (precompilados EVM) |
+| **BLS12-381** | 255 | `[u64; 4]` Montgomery | Zcash, Filecoin, beacon chain de Ethereum |
+| **Goldilocks** | 64 | `u64` directo | STARKs (Plonky2/Plonky3), prover rápido |
+
+El campo por defecto es BN254 (el mismo campo usado por circom, snarkjs y Ethereum):
 
 ```ach
 p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
 ```
-
-Toda la aritmética sobre elementos de campo es **modular**: la suma, resta y multiplicación se envuelven en `p`, y la división calcula el inverso modular.
 
 ## Int vs Field
 

@@ -1,15 +1,25 @@
 ---
 title: "Field Elements"
-description: "BN254 scalar field arithmetic."
+description: "Prime field arithmetic — BN254, BLS12-381, and Goldilocks."
 ---
 
-A **field element** is a number in the BN254 scalar field — integers modulo the prime:
+A **field element** is a number in a prime field — integers modulo a prime `p`. All arithmetic is **modular**: addition, subtraction, and multiplication wrap around at `p`, and division computes the modular inverse.
+
+## Supported Fields
+
+Achronyme supports three prime fields via the `FieldBackend` trait:
+
+| Field | Modulus bits | Repr | Use case |
+|-------|-------------|------|----------|
+| **BN254** (default) | 254 | `[u64; 4]` Montgomery | Groth16, Ethereum (EVM precompiles) |
+| **BLS12-381** | 255 | `[u64; 4]` Montgomery | Zcash, Filecoin, Ethereum beacon chain |
+| **Goldilocks** | 64 | `u64` direct | STARKs (Plonky2/Plonky3), fast prover |
+
+The default field is BN254 (the same field used by circom, snarkjs, and Ethereum):
 
 ```ach
 p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
 ```
-
-All arithmetic on field elements is **modular**: addition, subtraction, and multiplication wrap around at `p`, and division computes the modular inverse.
 
 ## Int vs Field
 

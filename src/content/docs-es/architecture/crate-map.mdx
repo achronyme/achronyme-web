@@ -3,19 +3,22 @@ title: "Mapa de Crates"
 description: "Dependencias y responsabilidades de los crates del workspace."
 ---
 
-El workspace de Achronyme contiene 7 crates. Todos están en la versión 0.7.0, edición 2021.
+El workspace de Achronyme contiene 10 crates. Todos comparten la misma versión, edición 2021.
 
 ## Resumen de Crates
 
 | Crate | Ruta | Propósito |
 |-------|------|---------|
-| `memory` | `memory/` | Representación de valores, `FieldElement` (BN254 Montgomery), arenas del heap, GC |
+| `memory` | `memory/` | `FieldElement<F>` (BN254, BLS12-381, Goldilocks), trait `FieldBackend`, arenas del heap, GC |
 | `achronyme-parser` | `achronyme-parser/` | Parser de descenso recursivo, tipos del AST |
-| `constraints` | `constraints/` | Sistema de restricciones R1CS, sistema Plonkish, hash Poseidon, exportación binaria |
-| `ir` | `ir/` | Representación intermedia SSA, bajada AST→IR, pases de optimización |
-| `vm` | `vm/` | Máquina virtual basada en registros, intérprete de bytecode, funciones nativas |
+| `constraints` | `constraints/` | Sistema de restricciones R1CS, sistema Plonkish, hash Poseidon (multi-campo), exportación binaria |
+| `ir` | `ir/` | Representación intermedia SSA, bajada AST→IR, pases de optimización, ProveIR |
+| `vm` | `vm/` | Máquina virtual basada en registros, intérprete de bytecode, despacho de métodos por prototipos |
 | `compiler` | `compiler/` | Backends R1CS y Plonkish, generación de testigos |
-| `cli` | `cli/` | Interfaz de línea de comandos, orquestación de pruebas (arkworks Groth16, halo2 PlonK) |
+| `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), generación de verificadores Solidity |
+| `achronyme-std` | `std/` | Librería estándar vía trait `NativeModule` (parse_int, join, I/O) |
+| `ach-macros` | `ach-macros/` | Proc-macros: `#[ach_native]`, `#[ach_module]` |
+| `cli` | `cli/` | Interfaz de línea de comandos, orquestación de pruebas |
 
 ## Grafo de Dependencias
 
@@ -42,7 +45,7 @@ constraints   ┌────────┘
 
 ### Fundación (sin dependencias del workspace)
 
-**`memory`** — La capa base. Define `FieldElement` (campo escalar BN254 en forma Montgomery, limbs `[u64; 4]`), `Value` etiquetado (etiqueta de 4 bits + payload de 60 bits), arenas tipadas del heap y GC mark-and-sweep.
+**`memory`** — La capa base. Define `FieldElement<F: FieldBackend>`, un elemento de campo genérico parametrizado por un tipo marcador zero-sized. Tres backends implementados: `Bn254Fr` (Montgomery `[u64; 4]`), `Bls12_381Fr` (Montgomery `[u64; 4]`) y `GoldilocksFr` (directo `u64`). El parámetro de tipo por defecto es `Bn254Fr`, así que `FieldElement` sin parámetros significa BN254. También provee `Value` etiquetado (etiqueta de 4 bits + payload de 60 bits), arenas tipadas del heap y GC mark-and-sweep.
 
 **`achronyme-parser`** — Parser independiente. Descenso recursivo con parseo de expresiones Pratt. Exporta `parse_program(source) -> Result<Program, String>` y tipos del AST (`Program`, `Stmt`, `Expr`, `Block`).
 
