@@ -60,7 +60,7 @@ impl ProveHandler for ServerProveHandler {
         scope_values: &HashMap<String, FieldElement>,
     ) -> Result<ProveResult, ProveError> {
         // 1. Deserialize ProveIR
-        let prove_ir = ir::prove_ir::ProveIR::from_bytes(prove_ir_bytes)
+        let (prove_ir, _prime_id) = ir::prove_ir::ProveIR::from_bytes(prove_ir_bytes)
             .map_err(|e| ProveError::IrLowering(format!("ProveIR deserialization: {e}")))?;
 
         // 2. Instantiate with scope values
@@ -135,8 +135,9 @@ impl ServerProveHandler {
 
         let n_constraints = r1cs.cs.num_constraints();
 
-        let result = proving::groth16::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
-            .map_err(ProveError::ProofGeneration)?;
+        let result =
+            proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
+                .map_err(ProveError::ProofGeneration)?;
 
         // Capture proof artifacts
         if let ProveResult::Proof {
@@ -203,7 +204,7 @@ impl ServerProveHandler {
 
 impl VerifyHandler for ServerProveHandler {
     fn verify_proof(&self, proof: &memory::ProofObject) -> Result<bool, String> {
-        proving::groth16::verify_proof_from_json(
+        proving::groth16_bn254::verify_proof_from_json(
             &proof.proof_json,
             &proof.public_json,
             &proof.vkey_json,

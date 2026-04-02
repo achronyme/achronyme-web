@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use compiler::r1cs_backend::R1CSCompiler;
 use constraints::write_r1cs;
 use ir::prove_ir::ProveIrCompiler;
+use memory::field::PrimeId;
 use memory::FieldElement;
 use vm::ProveResult;
 
@@ -94,18 +95,19 @@ fn compile_circuit(
     }
     let has_inputs = !inputs.is_empty();
 
-    // Compile circuit to ProveIR
-    let prove_ir = ProveIrCompiler::compile_circuit(source, Some(source_path))
-        .map_err(|e| format!("{e}"))?;
+    // Compile circuit to ProveIR and instantiate
+    let prove_ir =
+        ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
+            .map_err(|e| format!("{e}"))?;
+
+    let n_public = prove_ir.public_inputs.len();
+    let n_witness = prove_ir.witness_inputs.len();
 
     let mut program = prove_ir
         .instantiate(&HashMap::new())
         .map_err(|e| format!("{e}"))?;
 
     ir::passes::optimize(&mut program);
-
-    let n_public = prove_ir.public_inputs.len();
-    let n_witness = prove_ir.witness_inputs.len();
 
     let cache_dir = std::env::temp_dir().join("ach-server-cache");
 
@@ -164,12 +166,12 @@ fn compile_r1cs(
             .map_err(|e| format!("constraint verification failed: {e}"))?;
 
         // Serialize R1CS
-        let r1cs_data = write_r1cs(&r1cs.cs);
+        let r1cs_data = write_r1cs(&r1cs.cs, PrimeId::Bn254);
         r1cs_b64 = Some(b64.encode(&r1cs_data));
 
         // Generate proof if requested
         if do_prove {
-            let result = proving::groth16::generate_proof(&r1cs.cs, &witness, cache_dir)
+            let result = proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, cache_dir)
                 .map_err(|e| format!("proof generation failed: {e}"))?;
 
             if let ProveResult::Proof {
@@ -188,13 +190,13 @@ fn compile_r1cs(
         r1cs.compile_ir(program)
             .map_err(|e| format!("{e}"))?;
 
-        let r1cs_data = write_r1cs(&r1cs.cs);
+        let r1cs_data = write_r1cs(&r1cs.cs, PrimeId::Bn254);
         r1cs_b64 = Some(b64.encode(&r1cs_data));
     }
 
     // Generate Solidity verifier if requested
     if do_solidity {
-        let vk = proving::groth16::setup_vk_only(&r1cs.cs, cache_dir)
+        let vk = proving::groth16_bn254::setup_vk_only(&r1cs.cs, cache_dir)
             .map_err(|e| format!("Groth16 setup failed: {e}"))?;
         solidity_src = Some(proving::solidity::generate_solidity_verifier(&vk));
     }

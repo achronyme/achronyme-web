@@ -77,8 +77,9 @@ fn prove_circuit(
     }
 
     // Compile circuit
-    let prove_ir = ProveIrCompiler::compile_circuit(source, Some(source_path))
-        .map_err(|e| format!("{e}"))?;
+    let prove_ir =
+        ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
+            .map_err(|e| format!("{e}"))?;
 
     let mut program = prove_ir
         .instantiate(&HashMap::new())
@@ -115,7 +116,7 @@ fn prove_r1cs(
 
     let n_constraints = r1cs.cs.num_constraints();
 
-    let result = proving::groth16::generate_proof(&r1cs.cs, &witness, cache_dir)
+    let result = proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, cache_dir)
         .map_err(|e| format!("proof generation failed: {e}"))?;
 
     match result {
