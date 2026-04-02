@@ -17,6 +17,7 @@ const blogUrl = locale === 'en'
 const currentPath = Astro.url.pathname;
 const isOnDocs = currentPath.startsWith('/docs/') || currentPath.startsWith('/es/docs/');
 const isOnPlayground = currentPath.startsWith('/playground');
+const isOnRoadmap = currentPath.startsWith('/roadmap') || currentPath.startsWith('/es/roadmap');
 ---
 
 <div class="sticky top-0 z-50">
@@ -44,6 +45,9 @@ const isOnPlayground = currentPath.startsWith('/playground');
         </a>
         <a href="/playground" class:list={['text-sm transition-colors', isOnPlayground ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
           {s.header.playground}
+        </a>
+        <a href={getLocalizedPath('/roadmap', locale)} class:list={['text-sm transition-colors', isOnRoadmap ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
+          Roadmap
         </a>
       </nav>
     </div>

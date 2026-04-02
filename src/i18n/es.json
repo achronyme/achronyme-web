@@ -56,6 +56,37 @@
     "natives": "50 metodos",
     "deps": "0 JS deps"
   },
+  "roadmap": {
+    "title": "Roadmap",
+    "subtitle": "Lo que estamos construyendo y lo que viene despues.",
+    "now": "Ahora",
+    "nowDesc": "En produccion",
+    "next": "Siguiente",
+    "nextDesc": "En desarrollo",
+    "later": "Despues",
+    "laterDesc": "Planeado",
+    "future": "Futuro",
+    "futureDesc": "Explorando",
+    "items": {
+      "multiPrime": "Soporte multi-curva",
+      "multiPrimeDesc": "FieldBackend generico en todo el pipeline. BN254, BLS12-381 y Goldilocks compilan nativamente.",
+      "proveIR": "Pipeline ProveIR",
+      "proveIRDesc": "Plantillas de circuito pre-compiladas serializadas en bytecode. Los bloques prove {} son valores first-class.",
+      "solidity": "Generacion de verificadores Solidity",
+      "solidityDesc": "Exporta contratos verificadores Groth16 para verificacion on-chain en Ethereum.",
+      "playground": "Playground Web",
+      "playgroundDesc": "Compilador + VM compilados a WASM corriendo en el navegador. Escribe, ejecuta y prueba circuitos online.",
+      "starkBackend": "Backend STARK (Goldilocks)",
+      "starkBackendDesc": "Backend de restricciones AIR usando Plonky3 para pruebas STARK transparentes sobre el campo Goldilocks.",
+      "multiFieldVM": "VM multi-campo",
+      "multiFieldVMDesc": "Runtime de la VM parametrizado sobre FieldBackend. Los bloques prove {} usan aritmetica nativa del campo para cualquier curva.",
+      "frontendParsers": "Frontends Circom / Noir",
+      "frontendParsersDesc": "Importa templates de Circom y programas Noir como modulos ProveIR. Usa circuitos existentes dentro de Achronyme.",
+      "apiFreeze": "API estable 1.0",
+      "apiFreezeDesc": "Congelamiento de especificacion del lenguaje, garantias de compatibilidad hacia atras y formato de bytecode estable."
+    },
+    "shipped": "Lanzado"
+  },
   "docs": {
     "onThisPage": "En esta pagina",
     "previous": "Anterior",

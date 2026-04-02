@@ -1,0 +1,152 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { t } from '../../i18n';
+
+const s = t('es');
+const r = s.roadmap;
+---
+
+<Layout
+  title="Roadmap — Achronyme"
+  description="Lo que estamos construyendo y lo que viene despues. Soporte multi-curva, backend STARK, playground web y mas."
+  lang="es"
+>
+  <Header locale="es" altLocalePath="/roadmap" />
+  <main class="mx-auto max-w-[1400px] border-x border-subtle/77">
+
+    <!-- Hero -->
+    <div class="border-b border-subtle/77 px-8 lg:px-16 py-16 lg:py-24 relative">
+      <div class="grid-dot absolute -top-[3px] -left-[3px] z-10"></div>
+      <div class="grid-dot absolute -top-[3px] -right-[3px] z-10"></div>
+      <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+      <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+      <div class="reveal">
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{r.title}</h1>
+        <p class="mt-4 text-text-secondary text-lg max-w-2xl">{r.subtitle}</p>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="relative">
+
+      <!-- NOW -->
+      <section class="border-b border-subtle/77 relative">
+        <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+        <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+        <div class="px-8 lg:px-16 py-4 border-b border-subtle/50 flex items-center gap-3">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-valid/10 px-3 py-1 text-xs font-semibold text-valid uppercase tracking-wider">
+            <span class="h-1.5 w-1.5 rounded-full bg-valid animate-pulse"></span>
+            {r.now}
+          </span>
+          <span class="text-sm text-text-muted">{r.nowDesc}</span>
+        </div>
+        <div class="px-8 lg:px-16 py-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-valid text-sm">{r.shipped}</span>
+            </div>
+            <h3 class="font-semibold text-text-primary">{r.items.multiPrime}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.multiPrimeDesc}</p>
+          </div>
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-valid text-sm">{r.shipped}</span>
+            </div>
+            <h3 class="font-semibold text-text-primary">{r.items.proveIR}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.proveIRDesc}</p>
+          </div>
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-valid text-sm">{r.shipped}</span>
+            </div>
+            <h3 class="font-semibold text-text-primary">{r.items.solidity}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.solidityDesc}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- NEXT -->
+      <section class="border-b border-subtle/77 relative">
+        <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+        <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+        <div class="px-8 lg:px-16 py-4 border-b border-subtle/50 flex items-center gap-3">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-proof/10 px-3 py-1 text-xs font-semibold text-proof-light uppercase tracking-wider">
+            <span class="h-1.5 w-1.5 rounded-full bg-proof"></span>
+            {r.next}
+          </span>
+          <span class="text-sm text-text-muted">{r.nextDesc}</span>
+        </div>
+        <div class="px-8 lg:px-16 py-8 grid gap-6 sm:grid-cols-2">
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <h3 class="font-semibold text-text-primary">{r.items.playground}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.playgroundDesc}</p>
+          </div>
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <h3 class="font-semibold text-text-primary">{r.items.multiFieldVM}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.multiFieldVMDesc}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- LATER -->
+      <section class="border-b border-subtle/77 relative">
+        <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+        <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+        <div class="px-8 lg:px-16 py-4 border-b border-subtle/50 flex items-center gap-3">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-info/10 px-3 py-1 text-xs font-semibold text-info uppercase tracking-wider">
+            <span class="h-1.5 w-1.5 rounded-full bg-info"></span>
+            {r.later}
+          </span>
+          <span class="text-sm text-text-muted">{r.laterDesc}</span>
+        </div>
+        <div class="px-8 lg:px-16 py-8 grid gap-6 sm:grid-cols-2">
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <h3 class="font-semibold text-text-primary">{r.items.starkBackend}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.starkBackendDesc}</p>
+          </div>
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6">
+            <h3 class="font-semibold text-text-primary">{r.items.frontendParsers}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.frontendParsersDesc}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- FUTURE -->
+      <section class="border-b border-subtle/77 relative">
+        <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+        <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+        <div class="px-8 lg:px-16 py-4 border-b border-subtle/50 flex items-center gap-3">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-text-muted/10 px-3 py-1 text-xs font-semibold text-text-muted uppercase tracking-wider">
+            <span class="h-1.5 w-1.5 rounded-full bg-text-muted"></span>
+            {r.future}
+          </span>
+          <span class="text-sm text-text-muted">{r.futureDesc}</span>
+        </div>
+        <div class="px-8 lg:px-16 py-8">
+          <div class="reveal rounded-lg border border-subtle/60 bg-surface/20 p-6 max-w-lg">
+            <h3 class="font-semibold text-text-primary">{r.items.apiFreeze}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.apiFreezeDesc}</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+  <Footer locale="es" />
+</Layout>
+
+<script>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    },
+    { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+  );
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+</script>

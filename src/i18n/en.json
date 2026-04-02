@@ -56,6 +56,37 @@
     "natives": "50 methods",
     "deps": "0 JS deps"
   },
+  "roadmap": {
+    "title": "Roadmap",
+    "subtitle": "What we're building, and what's coming next.",
+    "now": "Now",
+    "nowDesc": "Actively shipping",
+    "next": "Next",
+    "nextDesc": "In development",
+    "later": "Later",
+    "laterDesc": "Planned",
+    "future": "Future",
+    "futureDesc": "Exploring",
+    "items": {
+      "multiPrime": "Multi-prime field support",
+      "multiPrimeDesc": "Generic FieldBackend across the full pipeline. BN254, BLS12-381, and Goldilocks compile natively.",
+      "proveIR": "ProveIR pipeline",
+      "proveIRDesc": "Pre-compiled circuit templates serialized in bytecode. prove {} blocks are first-class values.",
+      "solidity": "Solidity verifier generation",
+      "solidityDesc": "Export Groth16 verifier contracts for on-chain proof verification on Ethereum.",
+      "playground": "Web Playground",
+      "playgroundDesc": "WASM-compiled compiler + VM running in the browser. Write, run, and prove circuits online.",
+      "starkBackend": "STARK backend (Goldilocks)",
+      "starkBackendDesc": "AIR constraint backend using Plonky3 for transparent STARK proofs over the Goldilocks field.",
+      "multiFieldVM": "Multi-field VM",
+      "multiFieldVMDesc": "VM runtime parameterized over FieldBackend. prove {} blocks use native field arithmetic for any curve.",
+      "frontendParsers": "Circom / Noir frontends",
+      "frontendParsersDesc": "Import Circom templates and Noir programs as ProveIR modules. Use existing circuits inside Achronyme.",
+      "apiFreeze": "1.0 stable API",
+      "apiFreezeDesc": "Language specification freeze, backward compatibility guarantees, and stable bytecode format."
+    },
+    "shipped": "Shipped"
+  },
   "docs": {
     "onThisPage": "On this page",
     "previous": "Previous",
