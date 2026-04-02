@@ -16,7 +16,7 @@ ach circuit <ruta> [opciones]
 | `--inputs <vals>` | Pares `clave=valor` separados por comas (ej., `--inputs "a=6,b=7,c=42"`) |
 | `--input-file <ruta>` | Archivo TOML con valores de entrada (arrays soportados nativamente) |
 
-Los valores se parsean como elementos del campo BN254. Soporta decimal, hex (`0xFF`) y valores negativos. Las dos banderas son mutuamente excluyentes.
+Los valores se parsean como elementos del campo primo activo (BN254 por defecto, configurable via `--prime`). Soporta decimal, hex (`0xFF`) y valores negativos. Las dos banderas son mutuamente excluyentes.
 
 ### Archivo TOML de entradas
 

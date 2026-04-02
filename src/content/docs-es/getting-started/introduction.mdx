@@ -53,7 +53,7 @@ Achronyme tiene dos modos de ejecución desde el mismo código fuente:
 
 **Modo VM** (`ach run`) — Lenguaje completo: closures, recursión, GC, arrays, maps, strings, E/S. El código se ejecuta como cualquier lenguaje de scripting.
 
-**Modo circuito** (`ach circuit`) — Compila a restricciones aritméticas sobre BN254. Sin bucles en tiempo de ejecución, sin E/S — todo se desenrolla y aplana en un sistema de restricciones para pruebas de conocimiento cero.
+**Modo circuito** (`ach circuit`) — Compila a restricciones aritméticas sobre un campo primo configurable (BN254, BLS12-381 o Goldilocks via `--prime`). Sin bucles en tiempo de ejecución, sin E/S — todo se desenrolla y aplana en un sistema de restricciones para pruebas de conocimiento cero.
 
 El bloque `prove {}` conecta ambos: se ejecuta dentro de la VM, compila su cuerpo como un circuito, genera un testigo a partir de variables capturadas y produce una prueba criptográfica — todo en una sola expresión.
 

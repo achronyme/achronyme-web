@@ -7,7 +7,7 @@
     "banner": "Introducing Achronyme — a language for zero-knowledge proofs. Read the announcement"
   },
   "hero": {
-    "badge": "v0.1.0-beta.18 — Public beta",
+    "badge": "v0.1.0-beta.19 — Public beta",
     "headline1": "Write code.",
     "headline2": "Generate proofs.",
     "subtitle": "A zero-knowledge language. Same syntax runs in a VM or compiles to arithmetic circuits.",

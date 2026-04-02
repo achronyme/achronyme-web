@@ -16,7 +16,7 @@ ach circuit <path> [options]
 | `--inputs <vals>` | Comma-separated `key=value` pairs (e.g., `--inputs "a=6,b=7,c=42"`) |
 | `--input-file <path>` | TOML file with input values (arrays supported natively) |
 
-Values are parsed as BN254 field elements. Supports decimal, hex (`0xFF`), and negative values. The two flags are mutually exclusive.
+Values are parsed as field elements in the active prime field (BN254 by default, configurable via `--prime`). Supports decimal, hex (`0xFF`), and negative values. The two flags are mutually exclusive.
 
 ### TOML input file
 
