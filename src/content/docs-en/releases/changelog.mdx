@@ -59,6 +59,38 @@ Component instantiation (`component c = Template(args)`) inlines the template bo
 
 Template parameters are classified as `StructureOnly` (loop bounds, array sizes), `CircuitInput` (constraint expressions), or `Both`, enabling ProveIR to optimize how captures are resolved during instantiation.
 
+### New: E2E Groth16 proofs for circomlib templates
+
+Full pipeline verified end-to-end for real circomlib circuits: **Num2Bits(8)** (17 constraints), **IsZero()** (4 constraints), and **LessThan(8)** (component composition with Num2Bits inlining). Each generates and verifies a Groth16 proof on BN254.
+
+### New: Dynamic loop bounds in `prove {}` blocks
+
+`for i in 0..n` and `for i in 0..n+1` now work in prove blocks when `n` is captured from the outer scope. The parser accepts `ForIterable::ExprRange`, and the ProveIR compiler emits `ForRange::WithCapture` (simple captures) or `ForRange::WithExpr` (computed expressions). The loop is unrolled at instantiation time when capture values are known.
+
+```
+let size = 8
+prove my_proof(result: Public) {
+    for i in 0..size {
+        // size is auto-captured from outer scope
+    }
+    for i in 0..size + 1 {
+        // computed bounds work too
+    }
+}
+```
+
+### New: Computed template arguments in component inlining
+
+Component instantiation with expression arguments like `Num2Bits(n+1)` inside templates (e.g., `LessThan`) now works correctly. The `ForRange::WithExpr` variant preserves the bound expression through inlining, and the instantiator evaluates it using `eval_const_expr` when capture values are resolved.
+
+### Improved: Capture resolution in shifts and array indices
+
+Shift operations (`x >> n`, `1 << n`) and array indexing (`arr[n]`) now resolve captures at instantiation time via `eval_const_expr`, falling back to the previous `extract_const` method. This enables patterns where a template parameter is used both structurally (loop bounds) and in constraint expressions.
+
+### Improved: Lazy Mux evaluation in witness hints
+
+The witness evaluator now short-circuits ternary expressions (`cond ? a : b`), only evaluating the taken branch. This prevents division-by-zero errors in patterns like `in != 0 ? 1/in : 0` (used by IsZero) when the condition is false.
+
 ---
 
 ## 0.1.0-beta.19 — 2026-04-02

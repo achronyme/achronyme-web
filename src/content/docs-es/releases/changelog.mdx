@@ -59,6 +59,38 @@ La instanciación de componentes (`component c = Template(args)`) inlinea el cue
 
 Los parámetros de template se clasifican como `StructureOnly` (bounds de loops, tamaños de arrays), `CircuitInput` (expresiones de restricción), o `Both`, permitiendo que ProveIR optimice cómo se resuelven los captures durante la instanciación.
 
+### Nuevo: pruebas Groth16 E2E para templates de circomlib
+
+Pipeline completo verificado end-to-end para circuitos reales de circomlib: **Num2Bits(8)** (17 restricciones), **IsZero()** (4 restricciones) y **LessThan(8)** (composición de componentes con inlining de Num2Bits). Cada uno genera y verifica una prueba Groth16 sobre BN254.
+
+### Nuevo: bounds dinámicos en loops de bloques `prove {}`
+
+`for i in 0..n` y `for i in 0..n+1` ahora funcionan en bloques prove cuando `n` se captura del scope externo. El parser acepta `ForIterable::ExprRange`, y el compilador ProveIR emite `ForRange::WithCapture` (captures simples) o `ForRange::WithExpr` (expresiones computadas). El loop se desenrolla en tiempo de instanciación cuando los valores de captura son conocidos.
+
+```
+let size = 8
+prove my_proof(result: Public) {
+    for i in 0..size {
+        // size se auto-captura del scope externo
+    }
+    for i in 0..size + 1 {
+        // bounds computados también funcionan
+    }
+}
+```
+
+### Nuevo: argumentos de template computados en inlining de componentes
+
+La instanciación de componentes con argumentos expresión como `Num2Bits(n+1)` dentro de templates (ej. `LessThan`) ahora funciona correctamente. La variante `ForRange::WithExpr` preserva la expresión del bound a través del inlining, y el instanciador la evalúa usando `eval_const_expr` cuando los valores de captura se resuelven.
+
+### Mejorado: resolución de captures en shifts e índices de arrays
+
+Las operaciones de shift (`x >> n`, `1 << n`) e indexación de arrays (`arr[n]`) ahora resuelven captures en tiempo de instanciación via `eval_const_expr`, con fallback al método previo `extract_const`. Esto habilita patrones donde un parámetro de template se usa tanto estructuralmente (bounds de loops) como en expresiones de restricción.
+
+### Mejorado: evaluación lazy de Mux en witness hints
+
+El evaluador de testigos ahora cortocircuita expresiones ternarias (`cond ? a : b`), evaluando solo la rama tomada. Esto previene errores de división por cero en patrones como `in != 0 ? 1/in : 0` (usado por IsZero) cuando la condición es falsa.
+
 ---
 
 ## 0.1.0-beta.19 — 2026-04-02
