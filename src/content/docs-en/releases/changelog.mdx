@@ -5,6 +5,62 @@ description: Release history for Achronyme.
 
 All notable changes to Achronyme are documented here. Each release bumps all 10 workspace crates to the same version.
 
+## 0.1.0-beta.20 — Unreleased
+
+**Circom frontend: compile `.circom` files through Achronyme's pipeline with structural safety guarantees that the original compiler doesn't provide.**
+
+### New: `ach circom` command
+
+End-to-end compilation of `.circom` files: parse → constraint analysis → lower to ProveIR → optimize → R1CS → Groth16 proof.
+
+```bash
+ach circom circuit.circom --inputs "a=3,b=7" --prove
+```
+
+Supports `--input-file input.toml`, `--prove`, `--r1cs`, `--wtns`, `--solidity`, and `--prove-backend r1cs|plonkish`.
+
+### New: Circom parser (full Circom 2.x syntax)
+
+Hand-written Pratt parser covering all Circom constructs: templates, functions, signals (input/output/intermediate), component declarations, `<==`, `<--`, `-->`, `==>`, `===`, for/while/if-else, anonymous components, parallel ops, tags, pragmas, includes.
+
+### New: `WitnessHint` — correct `<--` semantics
+
+`<--` in Circom is a witness computation hint with **zero constraints**. Our `CircuitNode::WitnessHint` models this correctly: the hint expression is evaluated off-circuit by the prover, and only `===` constraints verify the result. This prevents the Circom-common bug where witness hints accidentally inflate constraint counts.
+
+A dedicated witness evaluator computes hint values using integer arithmetic on the canonical 4-limb representation, supporting all bitwise operations (`>>`, `<<`, `&`, `|`, `^`, `~`) natively.
+
+### New: E100 — under-constrained signal detection
+
+Hard error when a signal assigned via `<--` has no corresponding `===` constraint. This catches the #1 source of ZK vulnerabilities at compile time — bare `<--` without verification.
+
+### New: W101 — unconstrained input/output signal warning
+
+Warning when an input or output signal doesn't participate in any constraint expression. A malicious prover can set unverified signals to arbitrary values. **The original Circom compiler does not detect this.**
+
+```
+warning: input signal `in` is not referenced in any constraint
+  note: a input signal that doesn't participate in constraints cannot be verified
+        — a malicious prover can set it to any value
+```
+
+### New: Bitwise operations via Decompose
+
+Six new `CircuitExpr` variants (`BitAnd`, `BitOr`, `BitXor`, `BitNot`, `ShiftR`, `ShiftL`) expanded during instantiation using the existing `Decompose` infrastructure. Each operation decomposes operands into bits, applies the operation per bit using field arithmetic (AND = multiply, OR = a+b−ab, XOR = a+b−2ab), and recomposes the result.
+
+### New: Large number literals
+
+`FieldConst::from_decimal_str` and `from_hex_str` support constants up to 256 bits, covering the full BN254 field range. The Circom lowering falls back to these when literals exceed u64.
+
+### New: Component inlining and function inlining
+
+Component instantiation (`component c = Template(args)`) inlines the template body with `.`-separated name mangling (collision-free by construction — `.` cannot appear in Circom identifiers). Function calls are inlined with parameter substitution, depth-limited to 64 levels.
+
+### New: Capture classification
+
+Template parameters are classified as `StructureOnly` (loop bounds, array sizes), `CircuitInput` (constraint expressions), or `Both`, enabling ProveIR to optimize how captures are resolved during instantiation.
+
+---
+
 ## 0.1.0-beta.19 — 2026-04-02
 
 **Multi-prime field architecture: compile-time generics over any prime field.**

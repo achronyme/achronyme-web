@@ -5,6 +5,62 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza los 10 crates del workspace a la misma versión.
 
+## 0.1.0-beta.20 — No publicado
+
+**Frontend Circom: compila archivos `.circom` a través del pipeline de Achronyme con garantías de seguridad estructural que el compilador original no provee.**
+
+### Nuevo: comando `ach circom`
+
+Compilación end-to-end de archivos `.circom`: parse → análisis de restricciones → lowering a ProveIR → optimización → R1CS → prueba Groth16.
+
+```bash
+ach circom circuit.circom --inputs "a=3,b=7" --prove
+```
+
+Soporta `--input-file input.toml`, `--prove`, `--r1cs`, `--wtns`, `--solidity` y `--prove-backend r1cs|plonkish`.
+
+### Nuevo: parser Circom (sintaxis completa Circom 2.x)
+
+Parser Pratt escrito a mano cubriendo todos los constructos de Circom: templates, funciones, señales (input/output/intermediate), declaraciones de componentes, `<==`, `<--`, `-->`, `==>`, `===`, for/while/if-else, componentes anónimos, operaciones parallel, tags, pragmas, includes.
+
+### Nuevo: `WitnessHint` — semántica correcta de `<--`
+
+`<--` en Circom es un hint de computación de testigo con **cero restricciones**. Nuestro `CircuitNode::WitnessHint` modela esto correctamente: la expresión del hint se evalúa off-circuit por el prover, y solo las restricciones `===` verifican el resultado. Esto previene el bug común en Circom donde los hints inflan accidentalmente el conteo de restricciones.
+
+Un evaluador de testigos dedicado computa los valores de hints usando aritmética de enteros sobre la representación canónica de 4 limbs, soportando todas las operaciones bitwise (`>>`, `<<`, `&`, `|`, `^`, `~`) nativamente.
+
+### Nuevo: E100 — detección de señales sub-restringidas
+
+Error duro cuando una señal asignada via `<--` no tiene una restricción `===` correspondiente. Esto atrapa la fuente #1 de vulnerabilidades ZK en tiempo de compilación — `<--` sin verificación.
+
+### Nuevo: W101 — warning de señales input/output sin restricciones
+
+Warning cuando una señal input o output no participa en ninguna expresión de restricción. Un prover malicioso puede asignar valores arbitrarios a señales no verificadas. **El compilador original de Circom no detecta esto.**
+
+```
+warning: input signal `in` is not referenced in any constraint
+  note: a input signal that doesn't participate in constraints cannot be verified
+        — a malicious prover can set it to any value
+```
+
+### Nuevo: operaciones bitwise via Decompose
+
+Seis nuevas variantes de `CircuitExpr` (`BitAnd`, `BitOr`, `BitXor`, `BitNot`, `ShiftR`, `ShiftL`) expandidas durante la instanciación usando la infraestructura existente de `Decompose`. Cada operación descompone los operandos en bits, aplica la operación por bit usando aritmética de campo (AND = multiplicación, OR = a+b−ab, XOR = a+b−2ab), y recompone el resultado.
+
+### Nuevo: literales numéricos grandes
+
+`FieldConst::from_decimal_str` y `from_hex_str` soportan constantes hasta 256 bits, cubriendo el rango completo del campo BN254. El lowering de Circom recurre a estos métodos cuando los literales exceden u64.
+
+### Nuevo: inlining de componentes y funciones
+
+La instanciación de componentes (`component c = Template(args)`) inlinea el cuerpo del template con name mangling separado por `.` (libre de colisiones por construcción — `.` no puede aparecer en identificadores de Circom). Las llamadas a funciones se inlinean con sustitución de parámetros, limitadas a 64 niveles de profundidad.
+
+### Nuevo: clasificación de captures
+
+Los parámetros de template se clasifican como `StructureOnly` (bounds de loops, tamaños de arrays), `CircuitInput` (expresiones de restricción), o `Both`, permitiendo que ProveIR optimice cómo se resuelven los captures durante la instanciación.
+
+---
+
 ## 0.1.0-beta.19 — 2026-04-02
 
 **Arquitectura multi-prime: genéricos en tiempo de compilación sobre cualquier campo primo.**
