@@ -59,9 +59,9 @@ Component instantiation (`component c = Template(args)`) inlines the template bo
 
 Template parameters are classified as `StructureOnly` (loop bounds, array sizes), `CircuitInput` (constraint expressions), or `Both`, enabling ProveIR to optimize how captures are resolved during instantiation.
 
-### New: E2E Groth16 proofs for circomlib templates
+### New: E2E Groth16 proofs for 32 circomlib templates
 
-Full pipeline verified end-to-end for real circomlib circuits: **Num2Bits(8)** (17 constraints), **IsZero()** (4 constraints), and **LessThan(8)** (component composition with Num2Bits inlining). Each generates and verifies a Groth16 proof on BN254.
+Full pipeline verified end-to-end for 32 real circomlib circuits: Multiplier, logic gates (AND, OR, XOR, NOT, NAND, NOR), MultiAND, Num2Bits(8), Bits2Num(8), IsZero, IsEqual, Mux1, MultiMux1/2/4, Switcher, BinSum(4), LessThan(8), LessEqThan(8), GreaterThan(8), GreaterEqThan(8), ForceEqualIfEnabled, RangeProof(8), Min(8), AbsDiff(8), Decoder(4), DoubleMultiplier, MerkleProof(2), ParallelMul(3), FuncNbits, FuncSimple. Each generates and verifies a Groth16 proof on BN254.
 
 ### New: Dynamic loop bounds in `prove {}` blocks
 
@@ -82,6 +82,39 @@ prove my_proof(result: Public) {
 ### New: Computed template arguments in component inlining
 
 Component instantiation with expression arguments like `Num2Bits(n+1)` inside templates (e.g., `LessThan`) now works correctly. The `ForRange::WithExpr` variant preserves the bound expression through inlining, and the instantiator evaluates it using `eval_const_expr` when capture values are resolved.
+
+### New: Compile-time function evaluation
+
+Circom `function` bodies with imperative logic (`var`, `while`, `for`, `if/else`, `return`, `++`, `*=`, nested calls) are now fully evaluated at compile time. Functions like `nbits(a)` that compute array sizes or loop bounds resolve to constants during lowering — no runtime overhead.
+
+A pre-pass (`precompute_vars`) evaluates `var` declarations before signal layout extraction, enabling patterns like `var nb = nbits(n); signal output out[nb];` where the output array size depends on a function result.
+
+```circom
+function nbits(a) {
+    var n = 1;
+    var r = 0;
+    while (n - 1 < a) { r++; n *= 2; }
+    return r;
+}
+
+template T(maxval) {
+    var nb = nbits(maxval);      // evaluated at compile time → 8
+    signal output out[nb];       // array dimension resolved from function result
+}
+component main = T(255);
+```
+
+### New: Component arrays
+
+`component muls[n]` declares an array of component instances. Loop bodies containing component array operations (`muls[i] = Template()`, `muls[i].signal <== expr`) are automatically unrolled at lowering time using `known_constants`, since component inlining requires concrete names like `muls_0`, `muls_1`.
+
+### New: Multi-dimensional array support
+
+N-dimensional signal arrays like `signal c[n][2]` are linearized using stride-based indexing during lowering. `c[i][j]` compiles to `c[i*2+j]`, generalizing to arbitrary dimensions with strides computed right-to-left.
+
+### New: Indexed array assignment in `prove {}` blocks
+
+Mutable arrays in `.ach` prove blocks support indexed assignment: `mut arr = [0, 0, 0]; arr[i] = expr` emits `CircuitNode::LetIndexed`. Validates that the array exists and is declared with `mut`. Works in both `prove {}` blocks and `.ach` circuit files.
 
 ### Improved: Capture resolution in shifts and array indices
 

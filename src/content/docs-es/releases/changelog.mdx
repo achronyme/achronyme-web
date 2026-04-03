@@ -59,9 +59,9 @@ La instanciación de componentes (`component c = Template(args)`) inlinea el cue
 
 Los parámetros de template se clasifican como `StructureOnly` (bounds de loops, tamaños de arrays), `CircuitInput` (expresiones de restricción), o `Both`, permitiendo que ProveIR optimice cómo se resuelven los captures durante la instanciación.
 
-### Nuevo: pruebas Groth16 E2E para templates de circomlib
+### Nuevo: pruebas Groth16 E2E para 32 templates de circomlib
 
-Pipeline completo verificado end-to-end para circuitos reales de circomlib: **Num2Bits(8)** (17 restricciones), **IsZero()** (4 restricciones) y **LessThan(8)** (composición de componentes con inlining de Num2Bits). Cada uno genera y verifica una prueba Groth16 sobre BN254.
+Pipeline completo verificado end-to-end para 32 circuitos reales de circomlib: Multiplier, compuertas lógicas (AND, OR, XOR, NOT, NAND, NOR), MultiAND, Num2Bits(8), Bits2Num(8), IsZero, IsEqual, Mux1, MultiMux1/2/4, Switcher, BinSum(4), LessThan(8), LessEqThan(8), GreaterThan(8), GreaterEqThan(8), ForceEqualIfEnabled, RangeProof(8), Min(8), AbsDiff(8), Decoder(4), DoubleMultiplier, MerkleProof(2), ParallelMul(3), FuncNbits, FuncSimple. Cada uno genera y verifica una prueba Groth16 sobre BN254.
 
 ### Nuevo: bounds dinámicos en loops de bloques `prove {}`
 
@@ -82,6 +82,39 @@ prove my_proof(result: Public) {
 ### Nuevo: argumentos de template computados en inlining de componentes
 
 La instanciación de componentes con argumentos expresión como `Num2Bits(n+1)` dentro de templates (ej. `LessThan`) ahora funciona correctamente. La variante `ForRange::WithExpr` preserva la expresión del bound a través del inlining, y el instanciador la evalúa usando `eval_const_expr` cuando los valores de captura se resuelven.
+
+### Nuevo: evaluación de funciones en tiempo de compilación
+
+Los cuerpos de `function` de Circom con lógica imperativa (`var`, `while`, `for`, `if/else`, `return`, `++`, `*=`, llamadas anidadas) se evalúan completamente en tiempo de compilación. Funciones como `nbits(a)` que calculan tamaños de arrays o bounds de loops se resuelven a constantes durante el lowering — sin overhead en runtime.
+
+Un pre-paso (`precompute_vars`) evalúa declaraciones `var` antes de la extracción del layout de señales, habilitando patrones como `var nb = nbits(n); signal output out[nb];` donde el tamaño del array de salida depende del resultado de una función.
+
+```circom
+function nbits(a) {
+    var n = 1;
+    var r = 0;
+    while (n - 1 < a) { r++; n *= 2; }
+    return r;
+}
+
+template T(maxval) {
+    var nb = nbits(maxval);      // evaluado en tiempo de compilación → 8
+    signal output out[nb];       // dimensión del array resuelta desde resultado de función
+}
+component main = T(255);
+```
+
+### Nuevo: arrays de componentes
+
+`component muls[n]` declara un array de instancias de componentes. Los cuerpos de loops que contienen operaciones de arrays de componentes (`muls[i] = Template()`, `muls[i].signal <== expr`) se desenrollan automáticamente en tiempo de lowering usando `known_constants`, ya que el inlining de componentes requiere nombres concretos como `muls_0`, `muls_1`.
+
+### Nuevo: soporte para arrays multi-dimensionales
+
+Arrays de señales N-dimensionales como `signal c[n][2]` se linealizan usando indexación basada en strides durante el lowering. `c[i][j]` compila a `c[i*2+j]`, generalizando a dimensiones arbitrarias con strides computados de derecha a izquierda.
+
+### Nuevo: asignación indexada en bloques `prove {}`
+
+Arrays mutables en bloques prove de `.ach` soportan asignación indexada: `mut arr = [0, 0, 0]; arr[i] = expr` emite `CircuitNode::LetIndexed`. Valida que el array existe y fue declarado con `mut`. Funciona tanto en bloques `prove {}` como en archivos `.ach` de circuitos.
 
 ### Mejorado: resolución de captures en shifts e índices de arrays
 
