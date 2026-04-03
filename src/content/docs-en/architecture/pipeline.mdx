@@ -5,13 +5,19 @@ description: "The compilation pipeline from source to proofs."
 
 import Mermaid from '../../../components/docs/Mermaid.astro';
 
-Achronyme compiles the same source language through three distinct paths: **VM mode** for general execution, **Circuit mode** for constraint generation via `ach circuit`, and **Prove mode** for inline proof generation via `prove {}` blocks.
+Achronyme compiles source code through four distinct paths: **VM mode** for general execution, **Circuit mode** for constraint generation via `ach circuit`, **Prove mode** for inline proof generation via `prove {}` blocks, and **Circom mode** for compiling `.circom` files through the same backend pipeline.
 
 ## Pipeline Diagram
 
 <Mermaid chart={`graph TD
     SRC["Source (.ach)"] --> PARSER["Parser<br/><small>Pratt + recursive descent</small>"]
     PARSER --> AST["AST"]
+
+    CIRCOM_SRC["Source (.circom)"] --> CIRCOM_PARSER["Circom Parser<br/><small>hand-written Pratt</small>"]
+    CIRCOM_PARSER --> CIRCOM_AST["Circom AST"]
+    CIRCOM_AST --> ANALYSIS["Constraint Analysis<br/><small>&lt;-- without === = error</small>"]
+    ANALYSIS --> CIRCOM_LOWER["Circom Lowering<br/><small>signals · expressions · statements</small>"]
+    CIRCOM_LOWER --> PROVEIR2["ProveIR"]
 
     AST --> BC["Bytecode Compiler"]
     BC --> OPT_BC["Bytecode Optimizer<br/><small>peephole · const fold · dead store</small>"]
@@ -23,6 +29,7 @@ Achronyme compiles the same source language through three distinct paths: **VM m
 
     VM -->|"prove { } block"| INST["ProveIR Instantiate<br/><small>capture scope values</small>"]
     INST --> IR["SSA IR"]
+    PROVEIR2 -->|"ach circom"| INST
 
     AST -->|"ach circuit"| LOWER["IR Lowering"]
     LOWER --> IR
@@ -99,6 +106,21 @@ For `ach circuit`, the AST is lowered directly to SSA IR. Key behaviors:
 | H | Prove | Generate cryptographic proof |
 
 This design means prove blocks are **pre-compiled at compile time** — no re-parsing at runtime. The ProveIR format carries type information, source spans, and function references through serialization.
+
+## Stage 2d: Circom Frontend
+
+**Crate:** `circom` — **Entry point:** `circom::parser::parse_circom(source)`
+
+Compiles `.circom` files through the same ProveIR → IR → Backend pipeline. The Circom frontend adds structural safety: `<--` (unconstrained signal assignment) without a corresponding `===` constraint produces a hard compile-time error (E100), catching under-constrained signals that are the #1 source of ZK vulnerabilities.
+
+| Stage | Module | Description |
+|-------|--------|-------------|
+| Lex | `circom::lexer` | Single-pass tokenizer, disambiguates `<` vs `<=` vs `<==` vs `<--` |
+| Parse | `circom::parser` | Hand-written Pratt parser for Circom 2.x (templates, signals, components) |
+| Analyze | `circom::analysis` | Constraint pairing check, include resolution with cycle detection |
+| Lower | `circom::lowering` | Signals → `ProveInputDecl`, expressions → `CircuitExpr`, statements → `CircuitNode` |
+
+The lowered ProveIR feeds into the same instantiation → optimization → backend pipeline as `prove {}` blocks and `ach circuit`.
 
 ## Stage 3: Optimization
 
@@ -178,6 +200,10 @@ Field selection is resolved once at the session boundary; monomorphization elimi
 | Stage | File |
 |-------|------|
 | Parser | `achronyme-parser/src/parser.rs` |
+| Circom Lexer | `circom/src/lexer.rs` |
+| Circom Parser | `circom/src/parser/` |
+| Circom Analysis | `circom/src/analysis/` |
+| Circom Lowering | `circom/src/lowering/` |
 | Bytecode Compiler | `compiler/src/codegen.rs` |
 | Bytecode Optimizer | `compiler/src/optimizer.rs` |
 | ProveIR Compiler | `ir/src/prove_ir/compiler.rs` |
