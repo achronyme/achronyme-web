@@ -59,9 +59,11 @@ Component instantiation (`component c = Template(args)`) inlines the template bo
 
 Template parameters are classified as `StructureOnly` (loop bounds, array sizes), `CircuitInput` (constraint expressions), or `Both`, enabling ProveIR to optimize how captures are resolved during instantiation.
 
-### New: E2E Groth16 proofs for 32 circomlib templates
+### New: E2E Groth16 proofs for 33 circomlib templates
 
-Full pipeline verified end-to-end for 32 real circomlib circuits: Multiplier, logic gates (AND, OR, XOR, NOT, NAND, NOR), MultiAND, Num2Bits(8), Bits2Num(8), IsZero, IsEqual, Mux1, MultiMux1/2/4, Switcher, BinSum(4), LessThan(8), LessEqThan(8), GreaterThan(8), GreaterEqThan(8), ForceEqualIfEnabled, RangeProof(8), Min(8), AbsDiff(8), Decoder(4), DoubleMultiplier, MerkleProof(2), ParallelMul(3), FuncNbits, FuncSimple. Each generates and verifies a Groth16 proof on BN254.
+Full pipeline verified end-to-end for 33 real circomlib circuits: Multiplier, logic gates (AND, OR, XOR, NOT, NAND, NOR), MultiAND, Num2Bits(8), Bits2Num(8), IsZero, IsEqual, Mux1, MultiMux1/2/4, Switcher, BinSum(4), LessThan(8), LessEqThan(8), GreaterThan(8), GreaterEqThan(8), ForceEqualIfEnabled, RangeProof(8), Min(8), AbsDiff(8), Decoder(4), DoubleMultiplier, MerkleProof(2), ParallelMul(3), FuncNbits, FuncSimple, **Poseidon(2)**. Each generates and verifies a Groth16 proof on BN254.
+
+Poseidon(2) compiles the real circomlib implementation through include chains (`poseidon.circom` → `poseidon_constants.circom` → helper functions) using compile-time array evaluation for the 960+ round constants.
 
 ### New: Dynamic loop bounds in `prove {}` blocks
 
@@ -123,6 +125,68 @@ Shift operations (`x >> n`, `1 << n`) and array indexing (`arr[n]`) now resolve 
 ### Improved: Lazy Mux evaluation in witness hints
 
 The witness evaluator now short-circuits ternary expressions (`cond ? a : b`), only evaluating the taken branch. This prevents division-by-zero errors in patterns like `in != 0 ? 1/in : 0` (used by IsZero) when the condition is false.
+
+### New: Include resolution with `-l` flag
+
+Multi-file compilation with `include` directives:
+
+```bash
+ach circom circuit.circom -l ./node_modules/circomlib/circuits/
+```
+
+The `compile_file()` API resolves `include` directives by searching the file's directory first, then any `-l` library directories. Mutual includes are deduplicated by canonical path. Circular includes are detected and reported.
+
+### New: Array-returning functions and compile-time array variables
+
+Functions like `POSEIDON_C(t)` that return arrays via if-else chains are fully evaluated at compile time. `EvalValue` supports three forms: `Scalar(i64)`, `Array(Vec<EvalValue>)`, and `Expr(Box<Expr>)` for constants too large for i64 (256-bit field elements).
+
+```circom
+function POSEIDON_C(t) {
+    if (t == 2) { return [0x09c46e..., 0x0c19da..., ...]; }
+    // ... 960+ constants per configuration
+}
+
+template Poseidon(nInputs) {
+    var t = nInputs + 1;
+    var C[t] = POSEIDON_C(t);   // evaluated at compile time
+    var M[t][t] = POSEIDON_M(t); // 2-D arrays with stride linearization
+    // C[i+r] resolves from known_array_values during lowering
+}
+```
+
+2-D arrays are flattened with stride-based indexing: `M[i][j]` compiles to `M[i*cols+j]`. A unified `precompute_all` pass processes both scalar and array vars in declaration order, allowing later vars to reference earlier ones (e.g., `var nRoundsP = N_ROUNDS_P[t - 2]`).
+
+### New: Structured diagnostics — rustc-style error reporting
+
+Circom errors now render with source snippets, underlined spans, error codes, and ANSI colors — identical to Achronyme's native `.ach` diagnostic output:
+
+```
+error[E200]: undefined variable `amout` in circuit context
+  --> circuit.circom:6:16
+  |
+6 |     result <== amout * 2;
+  |                ^^^^^
+  |
+  = help: a similar name exists in scope: `amount`
+```
+
+All error types produce structured `Diagnostic` objects:
+- **E100–E102, W101–W103**: Constraint analysis (existing)
+- **E200**: Undefined variable/signal (with "did you mean?" via Levenshtein distance)
+- **E201**: Undefined function (with suggestion)
+- **E202**: Undefined template (with suggestion)
+- **E203–E204**: Include errors (I/O, not found, circular)
+- **E205**: Unsupported features (bus types, custom templates)
+- **E206**: Arity mismatch
+- **E208**: Loop constraint violations
+- **E209**: Compile-time evaluation failures
+- **E210–E211**: Missing or undefined main component
+
+Three output formats via `--error-format`: `human` (default, rustc-style), `json` (JSON Lines for tooling), `short` (`file:line:col: severity: message`).
+
+### Improved: Lowering architecture
+
+The lowering pipeline was refactored from 3 monolithic files (4,959 LOC combined) into 21 focused modules, with no file exceeding 400 lines of production code. The component wiring state machine protocol is now formally documented. All production `unwrap()`/`panic!()` calls either carry `// SAFETY:` justification or were replaced with proper error propagation.
 
 ---
 

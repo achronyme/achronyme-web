@@ -59,9 +59,11 @@ La instanciación de componentes (`component c = Template(args)`) inlinea el cue
 
 Los parámetros de template se clasifican como `StructureOnly` (bounds de loops, tamaños de arrays), `CircuitInput` (expresiones de restricción), o `Both`, permitiendo que ProveIR optimice cómo se resuelven los captures durante la instanciación.
 
-### Nuevo: pruebas Groth16 E2E para 32 templates de circomlib
+### Nuevo: pruebas Groth16 E2E para 33 templates de circomlib
 
-Pipeline completo verificado end-to-end para 32 circuitos reales de circomlib: Multiplier, compuertas lógicas (AND, OR, XOR, NOT, NAND, NOR), MultiAND, Num2Bits(8), Bits2Num(8), IsZero, IsEqual, Mux1, MultiMux1/2/4, Switcher, BinSum(4), LessThan(8), LessEqThan(8), GreaterThan(8), GreaterEqThan(8), ForceEqualIfEnabled, RangeProof(8), Min(8), AbsDiff(8), Decoder(4), DoubleMultiplier, MerkleProof(2), ParallelMul(3), FuncNbits, FuncSimple. Cada uno genera y verifica una prueba Groth16 sobre BN254.
+Pipeline completo verificado end-to-end para 33 circuitos reales de circomlib: Multiplier, compuertas lógicas (AND, OR, XOR, NOT, NAND, NOR), MultiAND, Num2Bits(8), Bits2Num(8), IsZero, IsEqual, Mux1, MultiMux1/2/4, Switcher, BinSum(4), LessThan(8), LessEqThan(8), GreaterThan(8), GreaterEqThan(8), ForceEqualIfEnabled, RangeProof(8), Min(8), AbsDiff(8), Decoder(4), DoubleMultiplier, MerkleProof(2), ParallelMul(3), FuncNbits, FuncSimple, **Poseidon(2)**. Cada uno genera y verifica una prueba Groth16 sobre BN254.
+
+Poseidon(2) compila la implementación real de circomlib a través de cadenas de includes (`poseidon.circom` → `poseidon_constants.circom` → funciones helper) usando evaluación de arrays en tiempo de compilación para las 960+ constantes de ronda.
 
 ### Nuevo: bounds dinámicos en loops de bloques `prove {}`
 
@@ -123,6 +125,68 @@ Las operaciones de shift (`x >> n`, `1 << n`) e indexación de arrays (`arr[n]`)
 ### Mejorado: evaluación lazy de Mux en witness hints
 
 El evaluador de testigos ahora cortocircuita expresiones ternarias (`cond ? a : b`), evaluando solo la rama tomada. Esto previene errores de división por cero en patrones como `in != 0 ? 1/in : 0` (usado por IsZero) cuando la condición es falsa.
+
+### Nuevo: resolución de includes con flag `-l`
+
+Compilación multi-archivo con directivas `include`:
+
+```bash
+ach circom circuit.circom -l ./node_modules/circomlib/circuits/
+```
+
+La API `compile_file()` resuelve directivas `include` buscando primero en el directorio del archivo, luego en los directorios de biblioteca `-l`. Los includes mutuos se deduplican por path canónico. Los includes circulares se detectan y reportan.
+
+### Nuevo: funciones que retornan arrays y variables de arrays en tiempo de compilación
+
+Funciones como `POSEIDON_C(t)` que retornan arrays via cadenas if-else se evalúan completamente en tiempo de compilación. `EvalValue` soporta tres formas: `Scalar(i64)`, `Array(Vec<EvalValue>)` y `Expr(Box<Expr>)` para constantes demasiado grandes para i64 (elementos de campo de 256 bits).
+
+```circom
+function POSEIDON_C(t) {
+    if (t == 2) { return [0x09c46e..., 0x0c19da..., ...]; }
+    // ... 960+ constantes por configuración
+}
+
+template Poseidon(nInputs) {
+    var t = nInputs + 1;
+    var C[t] = POSEIDON_C(t);   // evaluado en tiempo de compilación
+    var M[t][t] = POSEIDON_M(t); // arrays 2-D con linearización por strides
+    // C[i+r] se resuelve desde known_array_values durante lowering
+}
+```
+
+Los arrays 2-D se aplanan con indexación basada en strides: `M[i][j]` compila a `M[i*cols+j]`. Un paso unificado `precompute_all` procesa tanto variables escalares como de arrays en orden de declaración, permitiendo que vars posteriores referencien anteriores (ej. `var nRoundsP = N_ROUNDS_P[t - 2]`).
+
+### Nuevo: diagnósticos estructurados — reporte de errores estilo rustc
+
+Los errores de Circom ahora se renderizan con snippets de código fuente, spans subrayados, códigos de error y colores ANSI — idénticos a la salida diagnóstica nativa de `.ach`:
+
+```
+error[E200]: undefined variable `amout` in circuit context
+  --> circuit.circom:6:16
+  |
+6 |     result <== amout * 2;
+  |                ^^^^^
+  |
+  = help: a similar name exists in scope: `amount`
+```
+
+Todos los tipos de error producen objetos `Diagnostic` estructurados:
+- **E100–E102, W101–W103**: Análisis de restricciones (existentes)
+- **E200**: Variable/señal indefinida (con "did you mean?" via distancia Levenshtein)
+- **E201**: Función indefinida (con sugerencia)
+- **E202**: Template indefinido (con sugerencia)
+- **E203–E204**: Errores de include (I/O, no encontrado, circular)
+- **E205**: Features no soportados (tipos bus, custom templates)
+- **E206**: Mismatch de aridad
+- **E208**: Violaciones de restricciones de loops
+- **E209**: Fallos de evaluación en tiempo de compilación
+- **E210–E211**: Componente main faltante o indefinido
+
+Tres formatos de salida via `--error-format`: `human` (default, estilo rustc), `json` (JSON Lines para tooling), `short` (`file:line:col: severity: message`).
+
+### Mejorado: arquitectura del lowering
+
+El pipeline de lowering se refactorizó de 3 archivos monolíticos (4,959 LOC combinados) a 21 módulos enfocados, sin ningún archivo excediendo 400 líneas de código de producción. El protocolo de la máquina de estados de component wiring está formalmente documentado. Todas las llamadas `unwrap()`/`panic!()` de producción llevan justificación `// SAFETY:` o fueron reemplazadas con propagación de errores.
 
 ---
 
