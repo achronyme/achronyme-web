@@ -188,6 +188,52 @@ Tres formatos de salida via `--error-format`: `human` (default, estilo rustc), `
 
 El pipeline de lowering se refactorizó de 3 archivos monolíticos (4,959 LOC combinados) a 21 módulos enfocados, sin ningún archivo excediendo 400 líneas de código de producción. El protocolo de la máquina de estados de component wiring está formalmente documentado. Todas las llamadas `unwrap()`/`panic!()` de producción llevan justificación `// SAFETY:` o fueron reemplazadas con propagación de errores.
 
+### Nuevo: evaluador BigVal de 256 bits
+
+La evaluación de variables en compile-time migró de `i64` a `BigVal([u64; 4])` — un tipo de 256 bits en complemento a dos con aritmética completa (add, sub, mul, div, mod, shifts, operaciones bitwise, comparaciones). Los mapas de parámetros se actualizaron de `u64` a `FieldConst`. Esto desbloquea circuitos como CompConstant cuyas variables computan `(1 << 128) - 1`, que desbordaba con i64.
+
+### Nuevo: desenrollado de loops mixtos señal+var
+
+Los loops cuyo cuerpo tanto escribe señales como muta variables (ej., el `for` de CompConstant que actualiza `b`, `a`, `e` cada iteración mientras restringe señales) ahora se detectan y desenrollan completamente. Esto asegura que los valores de las variables son constantes concretas cuando se usan como coeficientes en expresiones de señales — requerido para R1CS válido.
+
+### Nuevo: soporte de array literals 2D en el lowering
+
+Los array literals anidados como `var BASE[10][2] = [[...], ...]` (los 10 puntos base BabyJubjub de Pedersen, cada uno un par (x, y) de 254 bits) ahora se manejan correctamente. El paso de precompute los evalúa en compile-time; el lowering omite el re-procesamiento y resuelve valores desde `known_array_values` durante el inlining de componentes.
+
+### Fix: auto-materialización R1CS — previene OOM en circuitos grandes
+
+El Poseidon compilado desde Circom tiene 57 rondas parciales donde los elementos de estado solo reciben operaciones lineales (MDS con coeficientes constantes). Sin materialización, los términos de `LinearCombination` crecen exponencialmente — f(n) ≈ 2^n — causando >12 GB de uso de memoria y OOM kills.
+
+Tres fixes:
+1. Auto-materializar resultados de `Add`/`Sub` que excedan 8 términos en el compilador R1CS
+2. Materializar LCs fuente antes de loops de descomposición de bits (evita clonar LCs grandes 252+ veces en WitnessOps)
+3. Mismo tratamiento para instrucciones `Decompose`
+
+Esto replica la optimización ya presente en el circuito nativo de Poseidon (`constraints/src/poseidon/circuit.rs`) pero aplicada genéricamente a todas las restricciones generadas desde IR.
+
+### Expandido: cobertura E2E R1CS de circomlib — 13 circuitos verificados
+
+La verificación completa del sistema de restricciones (compilar → instanciar → R1CS → testigo → verificar) ahora cubre 13 circuitos reales de circomlib:
+
+| Circuito | Restricciones | Patrón |
+|---|---|---|
+| Num2Bits(8) | 17 | Descomposición de bits |
+| IsZero | 4 | Gadget inverso |
+| LessThan(8) | ~20 | Composición de componentes |
+| Poseidon(2) | ~361 | Permutación + MDS |
+| MiMCSponge(2,220,1) | ~3,000 | Feistel, 220 rondas |
+| BabyJubjub (Add+Dbl+Check) | 48 | Curva Edwards |
+| EscalarMulFix(3) | — | Montgomery + Mux3 |
+| EscalarMulAny(254) | 10,224 | Scalar mul completo (Groth16 verificado) |
+| **EdDSAPoseidon** | **>10,000** | **Verificación de firma completa** |
+| **Switcher** | — | Swap condicional |
+| **Mux3 / Mux4** | — | Selector 8-way / 16-way |
+| **AliasCheck** | 201,267 | Detección de alias del módulo del campo |
+| **Sign** | 1,181 | Signo de elemento de campo |
+| **Pedersen(8)** | **394** | **Hash EC (Window4 + Montgomery)** |
+
+EdDSAPoseidon (el "boss final" — verificación completa de firma EdDSA sobre BabyJubjub con hash Poseidon) y Pedersen (hash basado en curva elíptica, construcción completamente diferente a los hashes algebraicos) representan los dos circuitos más complejos de circomlib verificados exitosamente.
+
 ---
 
 ## 0.1.0-beta.19 — 2026-04-02
