@@ -232,7 +232,37 @@ Full constraint system verification (compile → instantiate → R1CS → witnes
 | **Sign** | 1,181 | Field element sign |
 | **Pedersen(8)** | **394** | **EC hash (Window4 + Montgomery)** |
 
-EdDSAPoseidon (the "boss final" — full EdDSA signature verification over BabyJubjub with Poseidon hash) and Pedersen (elliptic-curve-based hash, completely different construction from algebraic hashes) represent the two most complex circomlib circuits successfully verified.
+EdDSaPoseidon (the "boss final" — full EdDSA signature verification over BabyJubjub with Poseidon hash) and Pedersen (elliptic-curve-based hash, completely different construction from algebraic hashes) represent the two most complex circomlib circuits successfully verified.
+
+### New: R1CS linear constraint optimizer
+
+Multi-pass R1CS optimizer that reduces constraint count after compilation:
+
+1. **Linear elimination**: substitutes wires defined by linear constraints (`k * LC = LC`), removing the constraint entirely
+2. **Frequency heuristic**: selects the most-referenced wire for substitution to maximize cascading simplifications
+3. **Deduplication**: removes identical constraints produced by variable substitution
+4. **Tautological removal**: drops zero-product constraints (`0 = 0`) that arise after substitution
+
+EdDSaPoseidon: 8,514 → 7,752 constraints (0.96× vs circom `--O1` at 8,086).
+
+### New: Bool propagation and bit-pattern inference
+
+Two new IR optimization passes:
+
+- **Bool propagation**: detects `v * (v - 1) = 0` constraints (boolean checks) and propagates bit-proven status. Enables `Decompose(v, N)` to skip redundant boolean constraints on bits already proven.
+- **Bit-pattern bound inference**: recognizes Num2Bits-style patterns (bit decomposition + linear recombination) and marks decomposed bits as proven boolean — avoids double-constraining in circuits that compose Num2Bits internally.
+
+### Fix: `signal output` mapped to public R1CS wires
+
+Previously, `signal output` declarations were discarded during ProveIR assembly — output signals had no public R1CS wires. DCE then eliminated all constraints in circuits whose only observable behavior was through outputs (Multiplier, AND, OR, NOT, Switcher, Bits2Num, etc. → 0 constraints).
+
+The fix adds outputs to `ProveIR.public_inputs` and introduces `instantiate_with_outputs()` which allocates public wires for each output signal. Body nodes (`WitnessHint`, `Let`) that assign to output signals reuse the public wire instead of creating duplicate witness wires, ensuring exactly one wire per signal with correct R1CS semantics.
+
+### Improved: Constant folding in instantiation
+
+- `ShiftL`/`ShiftR` with constant operands are folded at instantiation time (47× instruction reduction on EscalarMulAny)
+- `Decompose(Const(k), N)` is expanded to N bit constants directly
+- Tautological `AssertEq(x, x)` instructions eliminated during DCE
 
 ---
 

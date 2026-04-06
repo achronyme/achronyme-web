@@ -232,7 +232,37 @@ La verificación completa del sistema de restricciones (compilar → instanciar 
 | **Sign** | 1,181 | Signo de elemento de campo |
 | **Pedersen(8)** | **394** | **Hash EC (Window4 + Montgomery)** |
 
-EdDSAPoseidon (el "boss final" — verificación completa de firma EdDSA sobre BabyJubjub con hash Poseidon) y Pedersen (hash basado en curva elíptica, construcción completamente diferente a los hashes algebraicos) representan los dos circuitos más complejos de circomlib verificados exitosamente.
+EdDSaPoseidon (el "boss final" — verificación completa de firma EdDSA sobre BabyJubjub con hash Poseidon) y Pedersen (hash basado en curva elíptica, construcción completamente diferente a los hashes algebraicos) representan los dos circuitos más complejos de circomlib verificados exitosamente.
+
+### Nuevo: optimizador de restricciones lineales R1CS
+
+Optimizador R1CS multi-paso que reduce el conteo de restricciones después de la compilación:
+
+1. **Eliminación lineal**: sustituye wires definidos por restricciones lineales (`k * LC = LC`), eliminando la restricción por completo
+2. **Heurística de frecuencia**: selecciona el wire más referenciado para sustitución, maximizando simplificaciones en cascada
+3. **Deduplicación**: remueve restricciones idénticas producidas por sustitución de variables
+4. **Eliminación tautológica**: descarta restricciones de producto-cero (`0 = 0`) que surgen después de la sustitución
+
+EdDSaPoseidon: 8,514 → 7,752 restricciones (0.96× vs circom `--O1` con 8,086).
+
+### Nuevo: propagación Bool e inferencia de patrones de bits
+
+Dos nuevos pases de optimización IR:
+
+- **Propagación Bool**: detecta restricciones `v * (v - 1) = 0` (verificaciones booleanas) y propaga el estado de bit probado. Permite que `Decompose(v, N)` omita restricciones booleanas redundantes en bits ya probados.
+- **Inferencia de patrones de bits**: reconoce patrones estilo Num2Bits (descomposición de bits + recombinación lineal) y marca los bits descompuestos como booleanos probados — evita doble restricción en circuitos que componen Num2Bits internamente.
+
+### Fix: `signal output` mapeado a wires públicos R1CS
+
+Anteriormente, las declaraciones `signal output` se descartaban durante el ensamblaje del ProveIR — las señales de salida no tenían wires públicos en R1CS. DCE luego eliminaba todas las restricciones en circuitos cuyo único comportamiento observable era a través de outputs (Multiplier, AND, OR, NOT, Switcher, Bits2Num, etc. → 0 restricciones).
+
+El fix agrega outputs a `ProveIR.public_inputs` e introduce `instantiate_with_outputs()` que asigna wires públicos para cada señal de salida. Los nodos del cuerpo (`WitnessHint`, `Let`) que asignan a señales de salida reutilizan el wire público en vez de crear wires de testigo duplicados, asegurando exactamente un wire por señal con semántica R1CS correcta.
+
+### Mejorado: constant folding en instanciación
+
+- `ShiftL`/`ShiftR` con operandos constantes se pliegan en tiempo de instanciación (reducción de 47× instrucciones en EscalarMulAny)
+- `Decompose(Const(k), N)` se expande directamente a N constantes de bits
+- Instrucciones tautológicas `AssertEq(x, x)` eliminadas durante DCE
 
 ---
 
