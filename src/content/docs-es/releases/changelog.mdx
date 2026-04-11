@@ -211,39 +211,53 @@ Tres fixes:
 
 Esto replica la optimización ya presente en el circuito nativo de Poseidon (`constraints/src/poseidon/circuit.rs`) pero aplicada genéricamente a todas las restricciones generadas desde IR.
 
-### Expandido: cobertura E2E R1CS de circomlib — 13 circuitos verificados
+### Expandido: cobertura E2E R1CS de circomlib — 21 circuitos verificados
 
-La verificación completa del sistema de restricciones (compilar → instanciar → R1CS → testigo → verificar) ahora cubre 13 circuitos reales de circomlib:
+La verificación completa del sistema de restricciones (compilar → instanciar → R1CS → testigo → verificar) ahora cubre 21 circuitos reales de circomlib. Conteos post-optimizador (O1); referencia circom es `--O1` salvo indicación.
 
-| Circuito | Restricciones | Patrón |
-|---|---|---|
-| Num2Bits(8) | 17 | Descomposición de bits |
-| IsZero | 4 | Gadget inverso |
-| LessThan(8) | ~20 | Composición de componentes |
-| Poseidon(2) | ~361 | Permutación + MDS |
-| MiMCSponge(2,220,1) | ~3,000 | Feistel, 220 rondas |
-| BabyJubjub (Add+Dbl+Check) | 48 | Curva Edwards |
-| EscalarMulFix(3) | — | Montgomery + Mux3 |
-| EscalarMulAny(254) | 10,224 | Scalar mul completo (Groth16 verificado) |
-| **EdDSAPoseidon** | **>10,000** | **Verificación de firma completa** |
-| **Switcher** | — | Swap condicional |
-| **Mux3 / Mux4** | — | Selector 8-way / 16-way |
-| **AliasCheck** | 201,267 | Detección de alias del módulo del campo |
-| **Sign** | 1,181 | Signo de elemento de campo |
-| **Pedersen(8)** | **394** | **Hash EC (Window4 + Montgomery)** |
+| Circuito | Nuestro O1 | circom | Patrón |
+|---|---|---|---|
+| Num2Bits(8) | **9** | 17 | Descomposición de bits |
+| IsZero | 4 | 4 | Gadget inverso |
+| LessThan(8) | **10** | 20 | Composición de componentes |
+| Poseidon(2) | **240** | 243 | Permutación + MDS |
+| MiMCSponge(2,220,1) | **1,317** | 1,320 | Feistel, 220 rondas |
+| BabyJubjub (Add+Dbl+Check) | **30** | 48 | Curva Edwards |
+| EscalarMulFix(253) | **11** | 57 (O2: 11) | Scalar mul base fija |
+| EscalarMulAny(254) | **2,310** | 2,310 | Scalar mul base variable |
+| EdDSAPoseidon | **3,965** | 8,086 | Verificación de firma completa |
+| Pedersen(8) | **13** | 89 (O2: 13) | Hash EC, Window4 + Montgomery |
+| Mux3 / Mux4 | 16 / 37 | — | Selector 8-way / 16-way |
+| Switcher | — | — | Swap condicional |
 
-EdDSaPoseidon (el "boss final" — verificación completa de firma EdDSA sobre BabyJubjub con hash Poseidon) y Pedersen (hash basado en curva elíptica, construcción completamente diferente a los hashes algebraicos) representan los dos circuitos más complejos de circomlib verificados exitosamente.
+EdDSAPoseidon (verificación completa de firma EdDSA sobre BabyJubjub con hash Poseidon) se verifica end-to-end con 3,965 restricciones post-optimizador — 2.04× menos que el output `--O1` de circom con 8,086. Pedersen y EscalarMulFix igualan el output `--O2` de circom sin un pase O2 equivalente.
 
-### Nuevo: optimizador de restricciones lineales R1CS
+### Nuevo: optimizador de restricciones R1CS (O1 + O2)
 
-Optimizador R1CS multi-paso que reduce el conteo de restricciones después de la compilación:
+Optimizador en dos niveles que reduce el conteo de restricciones después de la compilación:
 
-1. **Eliminación lineal**: sustituye wires definidos por restricciones lineales (`k * LC = LC`), eliminando la restricción por completo
-2. **Heurística de frecuencia**: selecciona el wire más referenciado para sustitución, maximizando simplificaciones en cascada
+**O1 — Eliminación lineal** (un solo pase):
+1. **Heurística de frecuencia**: selecciona el wire más referenciado para sustitución, maximizando simplificaciones en cascada
+2. **Eliminación lineal**: sustituye wires definidos por `k * LC = LC`, eliminando la restricción por completo
 3. **Deduplicación**: remueve restricciones idénticas producidas por sustitución de variables
 4. **Eliminación tautológica**: descarta restricciones de producto-cero (`0 = 0`) que surgen después de la sustitución
 
-EdDSaPoseidon: 8,514 → 7,752 restricciones (0.96× vs circom `--O1` con 8,086).
+**O2 — Deducción algebraica** (pase opcional con rollback):
+5. **DEDUCE**: eliminación gaussiana sobre la matriz de monomios cuadráticos. Encuentra combinaciones lineales de restricciones cuadráticas que producen ecuaciones puramente lineales, introduciendo nuevas ecuaciones de wire sin agregar restricciones. Se aplica iterativamente hasta convergencia.
+6. **Propagación de constantes**: sustituye wires probados iguales a constantes de campo, colapsando sub-expresiones enteras. Las constantes cableadas desde inlining de componentes se propagan a través de aritmética Montgomery/Edwards — toda la cadena se reduce a cero restricciones por operación de punto base.
+7. **Rollback**: si DEDUCE + propagación constante no reduce el conteo, el pase O2 se descarta y se usa el output de O1.
+
+Resultados en circuitos representativos (pre-opt → O1 → O2):
+
+| Circuito | pre-opt | O1 | O2 | circom O1 |
+|---|---|---|---|---|
+| Num2Bits(8) | 25 | **9** | — | 17 |
+| Pedersen(8) | 30 | 13 | **13** | 89 |
+| EscalarMulFix(253) | 27 | 11 | **11** | 57 |
+| EscalarMulAny(254) | 5,325 | **2,310** | — | 2,310 |
+| Poseidon(2) | 491 | **240** | — | 243 |
+| MiMCSponge(2,220,1) | 2,581 | **1,317** | — | 1,320 |
+| EdDSAPoseidon | 9,719 | **3,965** | — | 8,086 |
 
 ### Nuevo: propagación Bool e inferencia de patrones de bits
 
@@ -263,6 +277,36 @@ El fix agrega outputs a `ProveIR.public_inputs` e introduce `instantiate_with_ou
 - `ShiftL`/`ShiftR` con operandos constantes se pliegan en tiempo de instanciación (reducción de 47× instrucciones en EscalarMulAny)
 - `Decompose(Const(k), N)` se expande directamente a N constantes de bits
 - Instrucciones tautológicas `AssertEq(x, x)` eliminadas durante DCE
+
+### Fix: emisión duplicada de restricciones en lowering de `<==`
+
+`<==` emitía incorrectamente tanto un nodo `Let` como un `AssertEq`, con la expresión RHS **clonada** en ambos. Cada multiplicación en el RHS producía dos restricciones R1CS — una real, una duplicada. Los circuitos con muchos `<==` (esencialmente todo circomlib) producían aproximadamente 2× el conteo correcto de restricciones.
+
+El fix: `<==` ahora emite solo `Let`. El backend R1CS deriva la restricción de las instrucciones `Mul` de la expresión del `Let`.
+
+### Mejorado: propagación de constantes a través de inlining de componentes
+
+Cuando una entrada de componente se cablea a una constante en tiempo de compilación (`S.in <== BASE_POINT_X`), esa constante se inyecta en `known_constants` del sub-template antes de compilar su cuerpo. Las expresiones que dependen solo de constantes se pliegan usando aritmética modular BN254 exacta (`try_fold_const`).
+
+Impacto en Pedersen(8): los 8 selectores Window4 con cableado de punto base → 2 operaciones Montgomery + 1 conversión M2E, todo plegado a constantes. Conteo de restricciones: **88 → 13** (equivalente al output `--O2` de circom).
+
+### Perf: caché de cuerpos de template — 1.7× speedup en EscalarMulAny
+
+Los sub-templates instanciados múltiples veces con los mismos parámetros ahora se compilan una sola vez y se cachean. Las instanciaciones subsecuentes reutilizan el cuerpo sin mangling, aplicando solo un pase rápido de renombrado.
+
+EscalarMulAny(254) instancia `SegmentMulAny(1)` 254 veces. Con el caché, las 254 re-instanciaciones cuestan ~10 µs cada una. Tiempo de lowering end-to-end de EscalarMulAny: **1,500 ms → 880 ms** (1.7×).
+
+### Fix: solidez de MiMCSponge — contaminación de la variable de loop
+
+En loops `has_mixed_signal_var` (cuyo cuerpo tanto restringe señales *como* muta vars — ej. el loop de rondas de MiMCFeistel), las declaraciones var-only se evalúan en compile-time via `try_eval_stmt_in_place`. Si la evaluación tiene éxito, todos los `eval_vars` se escriben de vuelta a `ctx.param_values`.
+
+**El bug**: la propia variable de loop (`i`) se incluía en este write-back. Para la iteración `i = 0`, `ctx.param_values["i"] = 0` se escribía. Para `i = 1`, la rama else `c = c_partial[i-1]` fallaba en evaluación compile-time (porque `c_partial` es un array, no un escalar en `eval_vars`), por lo que el write-back no ejecutaba — y `ctx.param_values["i"]` permanecía en `0` de la iteración anterior.
+
+`all_constants()` combina `param_values` y `env.known_constants` con `or_insert` (param_values gana). El `env.known_constants["i"] = 1` correctamente configurado siempre era eclipsado por el `param_values["i"] = 0` obsoleto. Cada ternario `(i == 0) ? ... : ...` evaluaba la rama `i = 0` para las 220 iteraciones, colapsando todo el hash MiMC a una sola computación.
+
+**El fix**: excluir la variable de loop del write-back a `param_values`. La variable de loop es gestionada exclusivamente por `env.known_constants` al inicio de cada iteración.
+
+**Impacto**: MiMCSponge(2, 220, 1) — **19 restricciones (inseguro) → 2,581 pre-opt → 1,317 post-O1** — igualando las 1,320 de circom.
 
 ---
 
