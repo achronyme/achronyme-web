@@ -52,6 +52,18 @@ export const sidebarConfig: SidebarConfig = [
     ],
   },
   {
+    label: 'Circom Interop',
+    translations: { es: 'Interoperabilidad con Circom' },
+    items: [
+      { label: 'Overview', slug: 'circom/overview', translations: { es: 'Descripcion General' } },
+      { label: 'Importing Templates', slug: 'circom/importing', translations: { es: 'Importando Templates' } },
+      { label: 'Circuit Mode', slug: 'circom/circuit-mode', translations: { es: 'Modo Circuito' } },
+      { label: 'VM Mode', slug: 'circom/vm-mode', translations: { es: 'Modo VM' } },
+      { label: 'Diagnostics', slug: 'circom/diagnostics', translations: { es: 'Diagnosticos' } },
+      { label: 'Limitations & Roadmap', slug: 'circom/limitations', translations: { es: 'Limitaciones y Roadmap' } },
+    ],
+  },
+  {
     label: 'Zero-Knowledge Concepts',
     translations: { es: 'Conceptos de Conocimiento Cero' },
     items: [

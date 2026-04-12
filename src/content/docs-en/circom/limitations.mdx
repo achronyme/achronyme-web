@@ -1,0 +1,132 @@
+---
+title: Limitations and Roadmap
+description: What the Circom frontend supports today, and what is coming next.
+---
+
+The Circom frontend landed in beta.20 and is still growing. This page is the single source of truth for what works now and what is scoped for upcoming releases.
+
+## Supported Today
+
+**Imports**
+
+- `import circuit "file.circom" as Name` — full-circuit absorption.
+- `import { T1, T2 } from "file.circom"` — selective template imports with optional `as` aliases.
+- `import "file.circom" as P` — namespaced library imports.
+- Transitive `include` resolution with cycle detection and canonical-path deduplication.
+- `-l/--lib` library search flag on `ach circom`.
+
+**Circom language features**
+
+- `pragma circom 2.0.x` and 2.1.x.
+- `signal input`, `signal output`, and intermediate signals.
+- `<==`, `===`, and `<--` (with full E100/W101/W102/W103 analysis).
+- `template` with parameters and signal arrays.
+- `component` instantiation, including component arrays (`component muls[n]`).
+- `function` declarations evaluated at compile time (imperative: `var`, `while`, `for`, `if/else`, `return`, `++`, `*=`, nested calls).
+- `for` loops with constant, parametric, and expression bounds.
+- `if`/`else` branching — both branches lowered, branch selection via mux when needed.
+- Compile-time `var` with 256-bit two's-complement arithmetic (`BigVal`), so templates like `CompConstant` that compute `1 << 128` work correctly.
+- 1-D and 2-D compile-time array variables, with row-major flattening and multi-dimensional index resolution.
+- Array template parameters (`Template(t, C, 0)` where `C` is a precomputed array).
+- Ternary constant-folding so dead-branch array indices like `xL[-1]` never reach lowering.
+- Compile-time-known ternaries select their branch at lowering, avoiding dead-branch references.
+
+**Backend output**
+
+- R1CS (Groth16) and Plonkish (halo2 KZG PSE fork).
+- Constraint counts that match or beat reference Circom 2.x after the O2 optimizer runs.
+- `.r1cs` + `.wtns` binary exports that remain `snarkjs`-compatible.
+- Solidity verifier generation for Groth16.
+
+**Call sites**
+
+- `prove {}` blocks calling selective or namespaced templates.
+- `circuit name(...) { ... }` declarations calling templates.
+- VM-mode calls from top-level `.ach` code (see [VM Mode](/docs/circom/vm-mode/) for restrictions).
+
+## Circomlib Coverage
+
+The following circomlib primitives have been compiled end-to-end, run through R1CS generation, and verified against reference implementations. Constraint counts compared to circom 2.x O1 output as of 2026-04-11:
+
+| Template | Achronyme O1 | circom O1 | Status |
+|----------|--------------|-----------|--------|
+| `Num2Bits(8)` | 9 | 17 | ✓ Achronyme -8 |
+| `Bits2Num(8)` | 1 | — | ✓ R1CS verified |
+| `IsZero()` | 2 | 2 | ✓ Tied |
+| `LessThan(8)` | 10 | ~20 | ✓ Achronyme -10 |
+| `CompConstant(n)` | ✓ | ✓ | ✓ R1CS verified |
+| `Poseidon(2)` | 240 | 243 | ✓ Achronyme -3 |
+| `Pedersen(8)` | 13 | 89 | ✓ Achronyme -76 (equals circom O2) |
+| `MiMC(n, nRounds)` | ✓ | ✓ | ✓ R1CS verified |
+| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | ✓ Achronyme -3 |
+| `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combined) | — | ✓ R1CS verified |
+| `EscalarMulFix(...)` | ✓ | ✓ | ✓ R1CS verified |
+| `EscalarMulAny(254)` | 2310 | 2312 | ✓ Achronyme -2 |
+| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (41,136 IR nodes, 263,709 VM instructions); R1CS E2E pending test run |
+| Mux, gates, bitify, comparators | — | — | ✓ Used transitively by the above |
+
+End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` and `EscalarMulAny(254)`.
+
+## Unsupported Circom Features
+
+These are rejected at parse or lowering time with clear errors:
+
+- **`bus` declarations** — not yet supported.
+- **`tag` declarations** — not yet supported.
+- **`custom_templates`** — custom gate extensions from Circom 2.1+.
+- **Recursive `function` bodies** — functions are evaluated imperatively at compile time, which rules out non-terminating recursion and any recursion whose depth the lowerer cannot prove bounded.
+- **Non-constant array dimensions** outside of `for`-loop unrolling contexts.
+- **Runtime-variable array indices** in circuit mode (the IR is fully unrolled, so array indices must be compile-time known).
+
+If you hit one of these, the error will tell you exactly which feature was rejected and point at the offending line.
+
+## VM Mode Limitations
+
+VM mode (calling templates from non-`prove` code under `ach run`) is narrower than circuit mode. Phase 4 restrictions:
+
+- **Template arguments must be integer literals.** `let N = 8; Num2Bits(N)(x)` is rejected — use `Num2Bits(8)(x)` directly until the VM-mode compile-time constant folder lands.
+- **Scalar signal inputs only.** Templates with `signal input in[n]` cannot be called from VM mode.
+- **No cross-process `.achb` persistence.** Circom handles and libraries are not yet serialized into the bytecode file, so `ach run file.ach` works but `ach compile file.ach && ach run file.achb` does not carry the circom state across processes.
+- **No runtime library loading.** The circom registry is frozen at compile time. `ach run` cannot ingest a new `.circom` file at runtime.
+
+See [VM Mode](/docs/circom/vm-mode/) for the call semantics and why these restrictions exist.
+
+## Roadmap
+
+Planned work, in rough priority order:
+
+### Phase 5 — Manifest integration
+
+Add a `[circom]` section to `achronyme.toml`:
+
+```toml
+[circom]
+libs = ["vendor/circomlib/circuits"]
+```
+
+Once shipped, `ach run`, `ach circuit`, and `ach circom` will all consume `[circom].libs` automatically, ending the "I have to pass `-l` every time I run circom" paper cut for non-circom-entry commands.
+
+### Phase 6 — Docs and examples
+
+- Worked tutorials in the main docs (Merkle inclusion with imported Poseidon, EdDSA signature verification with imported `EdDSAPoseidonVerifier`).
+- Cross-tool benchmarks comparing Achronyme + imported circomlib vs plain circom.
+- Migration guide for teams moving existing circom projects.
+
+### Phase 4 follow-ups (VM mode)
+
+- **Compile-time constant folding** so VM-mode template args can be variables as long as they fold.
+- **Array signal inputs** by extending the `CallCircomTemplate` opcode to accept input arrays.
+- **Cross-process `.achb`** by serializing `CircomHandle` and the library registry into the bytecode file.
+
+### Open research
+
+- **`bus` and `tag` support** — mostly a parser + lowering problem; the backend should not need changes.
+- **`custom_templates`** — these compile to halo2 custom gates in reference circom; Achronyme's Plonkish backend already supports custom gates, so this is mostly a lowering mapping.
+- **Broader O2/DEDUCE coverage** so templates that currently match circom O1 can drop further when DEDUCE's Gaussian elimination finds additional linear constraints to fold.
+
+### Long-term
+
+- **Noir frontend.** The same dual-frontend approach (parse → lower → ProveIR) that makes Circom interop work would let Achronyme absorb Noir programs as well. No commitment yet — tracked as research.
+- **STARK backend for Goldilocks.** Not Circom-specific, but relevant since some circomlib templates (MiMC variants, Poseidon with `α=7`) are a natural fit for Goldilocks once a STARK backend exists.
+
+The project roadmap page tracks the same items at a higher level; [project manifest integration](/docs/cli/project-config/) will be updated once the `[circom]` section lands.

@@ -1,0 +1,148 @@
+---
+title: Importando Templates de Circom
+description: Sintaxis y reglas de resolucion para traer codigo .circom a Achronyme.
+---
+
+Achronyme parsea archivos `.circom` en tiempo de compilacion. Los imports se resuelven relativos al archivo `.ach` que los importa, y cada template (mas cada template `include`-do transitivamente) se materializa en el registro circom del compilador antes de que corra cualquier bloque prove.
+
+## Tres Formas de Import
+
+| Statement | Efecto |
+|-----------|--------|
+| `import circuit "./file.circom" as Nombre` | Baja el componente `main` del archivo Circom a un circuito ProveIR completo, lo enlaza a `Nombre` como global de runtime. |
+| `import { Template1, Template2 } from "./lib.circom"` | Registra los templates nombrados como invocables en el scope actual. |
+| `import "./lib.circom" as P` | Registra cada template exportado bajo el namespace `P`, accesible como `P.Template(...)`. |
+
+Solo la primera forma produce estado de runtime (un binding global). Las otras dos son puramente de tiempo de compilacion — pueblan las tablas de templates del compilador para que bloques `prove` posteriores, declaraciones `circuit` y llamadas en modo VM puedan resolver nombres de template.
+
+## Absorcion Completa de Circuito
+
+Usa `import circuit` cuando ya tienes un archivo `.circom` completo con componente `main` y quieres que Achronyme lo pruebe directamente — sin codigo pegamento, sin logica del lado Achronyme.
+
+```ach
+import circuit "./poseidon_hash.circom" as Hasher
+
+let secret = 0p42
+let expected = 0p17159...
+
+let proof = prove(expected: Public) {
+    // Hasher es invocable; absorbe el componente main completo.
+    let h = Hasher(secret)
+    assert_eq(h, expected)
+}
+```
+
+Detras de escenas el archivo Circom pasa por lex → parse → analyze → lower → ProveIR, y el ProveIR resultante se serializa como bytes en el pool de constantes del bytecode de Achronyme. En runtime la VM lo deserializa e instancia como cualquier otro bloque `prove {}`.
+
+Tambien puedes correr `ach circom file.circom` directamente desde el CLI si no necesitas pegamento Achronyme — es equivalente a un `import circuit` anonimo, pero salta el wrapper `.ach` por completo.
+
+## Imports Selectivos de Template
+
+Cuando quieres reutilizar templates individuales de una libreria Circom — `Poseidon`, `Num2Bits`, `LessThan` — usa la forma selectiva:
+
+```ach
+import { Poseidon, Num2Bits } from "./circomlib/circuits/poseidon.circom"
+
+let inputs = [0p1, 0p2]
+
+let proof = prove() {
+    let h = Poseidon(2)(inputs)
+    // ...
+}
+```
+
+Cada nombre importado se vuelve invocable en el scope actual. Llamar un template usa la misma sintaxis de currying atomico que usarias dentro de un archivo `.circom`:
+
+```text
+NombreTemplate(template_args)(signal_inputs)
+```
+
+Ve [Modo Circuito](/docs/circom/circuit-mode/) y [Modo VM](/docs/circom/vm-mode/) para la semantica completa de llamada.
+
+Importar el mismo nombre desde dos librerias diferentes es rechazado en tiempo de compilacion. Cuando necesites desambiguar, usa la forma con namespace.
+
+## Imports de Libreria con Namespace
+
+```ach
+import "./circomlib/circuits/poseidon.circom" as P
+import "./circomlib/circuits/mimc.circom" as M
+
+let proof = prove() {
+    let h1 = P.Poseidon(2)([0p1, 0p2])
+    let h2 = M.MiMCSponge(2, 220, 1)([0p1, 0p2])
+    assert_eq(h1, h2)  // no van a coincidir — es solo ilustrativo
+}
+```
+
+Cada template definido en el archivo importado se registra bajo el namespace, incluyendo templates traidos a traves de cadenas `include` dentro de la libreria. Llamar `P.Poseidon(2)([...])` resuelve al template `Poseidon` dentro de `poseidon.circom` en tiempo de lowering.
+
+El namespace es puramente de tiempo de compilacion. No hay un objeto `P` en runtime — el dispatch se resuelve completamente durante el lowering a ProveIR.
+
+## Aliases
+
+Los imports selectivos pueden renombrar templates al entrar:
+
+```ach
+import { Num2Bits as Bits, LessThan as Lt } from "./bitify.circom"
+
+let proof = prove() {
+    let bits = Bits(8)(0p42)
+    let cmp = Lt(8)([0p10, 0p20])
+}
+```
+
+Esto es util cuando los nombres de template sombrearian identificadores nativos de Achronyme, o cuando quieres un nombre local mas corto.
+
+## Resolucion de Paths y el Flag `-l`
+
+Los paths dentro de un statement de import se resuelven **relativos al archivo `.ach` que importa**. Esto es consistente con la semantica propia de `include` de Circom:
+
+```
+project/
+├── main.ach
+├── gadgets/
+│   └── my_gadget.circom
+└── vendor/
+    └── circomlib/
+        └── circuits/
+            └── poseidon.circom
+```
+
+```ach
+// main.ach
+import { Poseidon } from "./vendor/circomlib/circuits/poseidon.circom"
+import { MyGadget } from "./gadgets/my_gadget.circom"
+```
+
+Para el comando standalone `ach circom`, un flag adicional `-l/--lib` te deja registrar directorios de busqueda de libreria igual que el compilador Circom de referencia:
+
+```bash
+ach circom main.circom -l vendor/circomlib/circuits --inputs "x=42"
+```
+
+El flag toma uno o mas directorios. Cuando un archivo Circom usa `include "file.circom";` (sin prefijo `./`), el compilador recorre cada directorio `-l` en orden hasta encontrar el archivo. Esta es la forma recomendada de vendorizar circomlib.
+
+:::note
+El flag `-l` actualmente solo aplica a `ach circom`. Para `ach run` y `ach circuit`, los imports se resuelven **estrictamente relativos al fuente `.ach`**, ya que esos comandos aun no aceptan `-l`. Una futura [integracion con el manifest del proyecto](/docs/circom/limitations/) te dejara declarar directorios de libreria en `achronyme.toml` para que todos los comandos los recojan automaticamente.
+:::
+
+## Cadenas de Include y Deduplicacion
+
+Los archivos Circom rutinariamente hacen `include` de otros archivos, que a su vez hacen `include` de mas archivos. El frontend Circom de Achronyme resuelve cada cadena transitivamente y deduplica visitas:
+
+- **Seguro ante ciclos** — `a.circom` incluyendo `b.circom` que re-incluye `a.circom` esta bien; cada archivo se parsea una vez.
+- **Canonicalizacion de path** — dos imports que resuelven al mismo path absoluto comparten la misma instancia interna de `CircomLibrary`.
+- **Todos los templates transitivos visibles** — cuando haces `import "./poseidon.circom" as P`, los templates definidos en `poseidon_constants.circom` (incluido por `poseidon.circom`) tambien aparecen bajo `P`.
+
+La deduplicacion usa source paths canonicos, asi que diferentes escrituras del mismo archivo (`./foo.circom` vs `foo.circom` vs `../project/foo.circom`) colapsan a un solo registro de libreria.
+
+## Configuracion del Proyecto
+
+La Phase 5 agregara una seccion `[circom]` a `achronyme.toml`:
+
+```toml
+[circom]
+libs = ["vendor/circomlib/circuits"]
+```
+
+Una vez que aterrice, `ach run`, `ach circuit` y `ach circom` consumiran `[circom].libs` automaticamente, igualando la ergonomia de `[project].entry` y los otros defaults manejados por el manifest. Ve [Limitaciones y Roadmap](/docs/circom/limitations/) para el estado actual.

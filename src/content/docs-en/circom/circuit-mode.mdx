@@ -1,0 +1,165 @@
+---
+title: Circuit Mode
+description: Calling imported Circom templates from prove blocks and circuit declarations.
+---
+
+Circuit mode is the primary use case for Circom interop: calling imported Circom templates from inside `prove {}` blocks or `circuit` declarations to build Achronyme circuits that reuse existing Circom gadgets.
+
+## When Circuit Mode Runs
+
+Circuit mode dispatches whenever a Circom template is called from a context that emits ProveIR:
+
+- inside a `prove {}` block,
+- inside a `circuit name(...) { ... }` declaration,
+- inside an Achronyme function that is later inlined into one of the above.
+
+At compile time, the ProveIR compiler detects the call, looks up the template in the circom registry, and instantiates its body as regular circuit nodes in the surrounding ProveIR. The Circom code and the Achronyme code become indistinguishable by the time the backend runs.
+
+## Template Call Syntax
+
+Template calls use the same atomic currying syntax as Circom itself:
+
+```ach
+TemplateName(template_args)(signal_inputs)
+```
+
+The first parenthesized group is the **template parameter list** (compile-time constants). The second is the **signal input list** (any field expression visible in the current scope).
+
+```ach
+import { Square, Num2Bits } from "./lib.circom"
+
+prove() {
+    let y = Square()(x_val)            // 0 template args, 1 signal input
+    let bits = Num2Bits(8)(x_val)      // 1 template arg, 1 signal input
+}
+```
+
+For namespaced imports the template name is prefixed with the namespace:
+
+```ach
+import "./lib.circom" as P
+
+prove() {
+    let h = P.Poseidon(2)([a, b])
+}
+```
+
+## Template Arguments Must Be Compile-Time Constants
+
+Circom templates are parameterized at compile time — the parameters decide the shape of the circuit (loop bounds, signal array sizes, lookup table sizes). Achronyme enforces this: template arguments must be integer literals or expressions that fold to constants.
+
+```ach
+// ✓ Literal constant
+let bits = Num2Bits(8)(x_val)
+
+// ✓ Constant from an outer let
+let N = 8
+let bits = Num2Bits(N)(x_val)   // resolved at compile time
+
+// ✗ Captured runtime variable
+let n_val = 0p8
+let bits = Num2Bits(n_val)(x_val)
+// Error: template argument must be a compile-time constant
+```
+
+The diagnostic points at the non-constant expression and explains why. See [Diagnostics](/docs/circom/diagnostics/) for the full message format.
+
+## Signal Inputs
+
+Signal inputs are ordinary field expressions. They can be captured from the outer scope, computed inside the prove block, or passed as literals. Each input is coerced to the circuit field at the call site — Achronyme's compile-time constant folding will simplify what it can before handing control to the Circom instantiator.
+
+```ach
+let secret = 0p42
+
+prove() {
+    // Captured scalar → signal input
+    let h = Poseidon(1)([secret])
+
+    // Expression → signal input
+    let h2 = Poseidon(2)([secret + 0p1, secret * 0p3])
+}
+```
+
+Input arity must match the template's declared signal inputs exactly — a mismatch produces a dispatch error at compile time.
+
+## Scalar Outputs
+
+When a template declares a single scalar signal output, the `let` binding captures that output directly:
+
+```ach
+// template Square() { signal input x; signal output y; y <== x * x; }
+
+let y = Square()(x_val)
+assert_eq(y, expected)
+```
+
+`y` is the Square output signal. You can use it in any subsequent expression just like a regular field variable.
+
+## Array and Multi-Signal Outputs
+
+For templates with array-valued or multiple output signals, bind the call to a name and access each output via a dotted path:
+
+```ach
+// template Num2Bits(n) { signal input in; signal output out[n]; ... }
+
+let r = Num2Bits(4)(x_val)
+assert_eq(r.out_0, 0p1)   // bit 0
+assert_eq(r.out_1, 0p0)   // bit 1
+assert_eq(r.out_2, 0p1)   // bit 2
+assert_eq(r.out_3, 0p0)   // bit 3
+```
+
+The suffix on each output is the **flat (row-major) index** of the array element:
+
+- 1-D array `out[n]` → `r.out_0`, `r.out_1`, ..., `r.out_{n-1}`.
+- 2-D array `out[m][n]` → `r.out_0_0`, `r.out_0_1`, ..., `r.out_{m-1}_{n-1}`.
+- Multi-output template with distinct signals → `r.out1`, `r.out2`, etc.
+
+Array indexing with runtime indices (`r.out[i]` where `i` is a variable) is not supported in circuit mode — the IR is fully unrolled at compile time, so indices must themselves be compile-time constants. If you need a variable index, restructure the loop so the iteration variable is compile-time constant (`for i in 0..N`) and let Achronyme unroll it.
+
+## End-to-End Example: Proof of Membership
+
+This example combines `Poseidon` (hash) and `Num2Bits` (bit decomposition) imported from circomlib to prove that a leaf hashes into a publicly committed root:
+
+```ach
+import { Poseidon } from "./vendor/circomlib/circuits/poseidon.circom"
+import { Num2Bits } from "./vendor/circomlib/circuits/bitify.circom"
+
+let leaf = 0p42
+let sibling = 0p17
+let path_bit = 0p1
+let expected_root = 0p...
+
+let proof = prove(expected_root: Public) {
+    // Decompose path bit to enforce it is actually boolean.
+    let bits = Num2Bits(1)(path_bit)
+    assert_eq(bits.out_0, path_bit)
+
+    // Hash left/right ordering chosen by the path bit.
+    let left = path_bit * sibling + (0p1 - path_bit) * leaf
+    let right = path_bit * leaf + (0p1 - path_bit) * sibling
+    let root = Poseidon(2)([left, right])
+
+    assert_eq(root, expected_root)
+}
+```
+
+At compile time, the Poseidon and Num2Bits bodies are lowered into ProveIR circuit nodes inline — there is no runtime Circom VM, no external call, and no linker step. The final R1CS or Plonkish constraint system contains constraints from both sources merged into a single circuit.
+
+## Constraint Cost Notes
+
+The Achronyme IR optimizer (O1 pipeline plus compile-time constant propagation through component inlining) **matches or beats circom 2.x O1 output** on every circomlib template benchmarked so far. Numbers as of 2026-04-11:
+
+| Template | Achronyme O1 | circom O1 | Notes |
+|----------|--------------|-----------|-------|
+| `Num2Bits(8)` | 9 | 17 | Achronyme -8 |
+| `IsZero()` | 2 | 2 | Tied |
+| `LessThan(8)` | 10 | ~20 | Achronyme -10 |
+| `Poseidon(2)` | 240 | 243 | Achronyme -3 |
+| `Pedersen(8)` | 13 | 89 | Achronyme -76 (equals circom **O2**) |
+| `EscalarMulAny(254)` | 2310 | 2312 | Achronyme -2 |
+| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | Achronyme -3 |
+
+Most of these wins come from two passes: (1) the O1 linear-elimination pass closing constraints that circom leaves as trivial identities, and (2) a compile-time constant-propagation path that folds constant base points through Montgomery/Edwards operations before they reach R1CS. Pedersen is the most dramatic — Achronyme's O1 produces the same 13 constraints that circom only reaches at O2.
+
+See the [Pipeline Overview](/docs/architecture/pipeline/) for the full optimization passes and the [O2 optimizer notes](/docs/architecture/ir-and-optimization/) for the design.

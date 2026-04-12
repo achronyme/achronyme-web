@@ -1,0 +1,150 @@
+---
+title: Diagnosticos de Circom
+description: Codigos de error, warnings y sugerencias "did you mean?" emitidas por el frontend de Circom.
+---
+
+El frontend de Circom reusa el renderer de diagnosticos estilo rustc de Achronyme: cada error y warning lleva un codigo estable, un source span con un caret que apunta, y una o mas notas explicando el problema subyacente. Los diagnosticos estan organizados en rangos numerados por etapa del pipeline, lo que los hace faciles de buscar cuando aparece uno en tu terminal.
+
+## Rangos de Codigos de Error
+
+| Rango | Etapa | Ejemplos |
+|-------|-------|----------|
+| **E100 - E199** | Analisis de constraints (chequeos semanticos en `===`, `<==`, `<--`) | `E100` signal bajo-constrenido |
+| **W101 - W199** | Warnings de analisis de constraints | `W101` signal I/O no usado, `W102` `<--` inseguro, `W103` doble asignacion |
+| **E200 - E299** | Lowering (AST de Circom → ProveIR) | `E201` funcion indefinida, `E202` template no encontrado |
+| **E300 - E399** | Parser de Circom (errores sintacticos) | `E300` token inesperado, `E304` falta semicolon |
+| (sin codigo) | Dispatch desde `.ach` (callsites de import selectivo/namespace) | template no en namespace, mismatch de cuenta de signal, template arg en runtime |
+
+Cada categoria se cubre abajo.
+
+## Analisis de Constraints (E100-E102, W101-W103)
+
+El pase de analisis de constraints corre sobre cada template importado antes del lowering. Captura la clase de bugs que son por lejos la fuente mas comun de vulnerabilidades ZK: signals que se asignan pero no se constrenien.
+
+### E100 — Signal bajo-constrenido
+
+Disparado cuando un signal se asigna con `<--` pero nunca aparece en un constraint `===`.
+
+```text
+error[E100]: signal `out` is assigned with `<--` but has no `===` constraint
+  ┌─ unconstrained.circom:5:9
+  │
+5 │         out <-- in + 1;
+  │         ^^^^^^^^^^^^^^
+  │
+  = note: under-constrained signals are the #1 source of ZK vulnerabilities
+  = note: use `<==` for automatic constraint, or add an explicit `===`
+```
+
+Este es un **error duro** — el template no compilara. `<--` es solo para asignaciones que no pueden constreniirse directamente (por ejemplo divisiones, extracciones de bits via loops), y cada `<--` debe emparejarse con un `===` que fuerce la relacion.
+
+### E102 — Constraint no cuadratico
+
+Los constraints R1CS deben ser cuadraticos (grado ≤ 2). Una expresion `===` de grado mayor produce E102 con una sugerencia de dividirla en signals intermedios.
+
+### W101 — Signal I/O no referenciado
+
+Un `signal input` o `signal output` que nunca aparece en ningun constraint. El template compila, pero el signal no puede verificarse — un prover malicioso puede ponerle cualquier valor.
+
+### W102 — `<--` inseguro con expresion cuadratico-segura
+
+El operador `<--` computa un valor de testigo sin agregar un constraint. Cuando el RHS es cuadratico-seguro (es decir, el `<==` de Circom podria haberlo manejado), W102 sugiere cambiar a `<==`. Esto replica el comportamiento de Circom 2.0.8+ y captura los patrones bajo-constrenidos mas comunes antes de que se vuelvan E100.
+
+### W103 — Signal asignado mas de una vez
+
+Un signal asignado en dos lineas diferentes. Esto es legal si las asignaciones estan en ramas diferentes de un if-else (Circom lo permite), asi que se envia como warning en lugar de error duro, con una nota apuntando a la primera asignacion.
+
+## Errores de Lowering (E200-E211)
+
+El lowering es donde el AST de Circom se vuelve ProveIR. Los errores en esta etapa vienen de referencias que el lowerer no puede resolver, dimensiones que no puede determinar, o caracteristicas de Circom que aun no soporta.
+
+| Codigo | Significado |
+|--------|-------------|
+| `E200` | Identificador indefinido en un contexto de expresion de circuito |
+| `E201` | Funcion indefinida en un contexto de expresion de circuito |
+| `E202` | Template no encontrado (nombre de template desconocido) |
+| `E203` | Archivo `include` no encontrado, fallo al parsear, o no soportado |
+| `E204` | Ciclo de `include` detectado |
+| `E205` | Instanciacion o sustitucion de componente invalida |
+| `E206` | Funcion llamada con el numero de argumentos equivocado |
+| `E208` | Loop `for` mal formado (limite no constante, piezas faltantes) |
+| `E209` | Patron de loop no soportado para unrolling |
+| `E210` | Error de parser surgido en la frontera `compile_file` |
+| `E211` | Template `main` no encontrado en un entry point `ach circom` |
+
+Todos los errores de lowering incluyen el nombre del template declarado, el nombre de la funcion, y un span apuntando al fuente Circom de origen. Cuando el simbolo desconocido esta cerca de uno conocido, el lowerer adjunta una sugerencia "did you mean?" (ve abajo).
+
+## Errores de Parser (E300-E306)
+
+Los errores de parser vienen de sintaxis Circom mal formada: semicolons faltantes, llaves sin match, tokens inesperados, declaraciones de signal invalidas. Son raros en Circom escrito a mano pero frecuentes al generar templates Circom por maquina o copiar-pegar de un tutorial desactualizado.
+
+| Codigo | Significado |
+|--------|-------------|
+| `E300` | Falla generica de parse (token inesperado, expresion invalida) |
+| `E304` | Semicolon faltante |
+| `E305` | Llave, parentesis o bracket sin cerrar |
+| `E306` | Forma de declaracion de signal invalida |
+
+Los errores de parser referencian el token ofensor exacto y, donde es posible, proponen el fix inline ("expected `;` here").
+
+## Errores de Dispatch (Modo Circuito y VM)
+
+Los errores de dispatch se disparan cuando un archivo `.ach` llama un template Circom a traves de un import. Son emitidos por el compilador de Achronyme en lugar del frontend de Circom, asi que no llevan un codigo `E1xx`/`E2xx`/`E3xx` — pero usan el mismo renderer y el mismo span.
+
+| Tipo | Cuando |
+|------|--------|
+| `namespace not found` | `P.Template(...)` donde `P` nunca fue importado. |
+| `template not found in namespace` | `P.Template(...)` donde `Template` no existe en la libreria aliaseada como `P`. |
+| `template not found` | Callsite de import selectivo donde el nombre del template es desconocido. |
+| `template argument count mismatch` | `T(a, b, c)(inputs)` donde `T` declara un numero diferente de parametros. |
+| `signal input count mismatch` | `T(args)(in1, in2, in3)` donde `T` declara un numero diferente de inputs. |
+| `template argument must be a compile-time constant` | Pasar una expresion no constante como parametro de template. |
+| `array signal input unsupported in VM mode` | Llamar un template con `signal input in[n]` desde modo VM. |
+| `template argument must be an integer literal` | Restriccion de Phase 4 en llamadas del modo VM. |
+
+Cada tipo lleva un source span en el callsite y, para lookups de template/namespace, una sugerencia "did you mean?" cuando existe un nombre similar.
+
+## Sugerencias "Did You Mean?"
+
+El frontend de Circom y la capa de dispatch corren un sugeridor basado en Levenshtein sobre simbolos desconocidos. Si la distancia de edicion a un nombre conocido es suficientemente pequenia, el diagnostico incluye una sugerencia:
+
+```text
+error: template `Num2bits` not found
+  ┌─ main.ach:4:13
+  │
+4 │     let r = Num2bits(4)(x_val)
+  │             ^^^^^^^^
+  │
+help: a template with a similar name exists
+  │
+4 │     let r = Num2Bits(4)(x_val)
+  │             ^^^^^^^^
+```
+
+Las sugerencias se adjuntan a:
+
+- Nombres de funcion desconocidos en contextos de funcion Circom (E201).
+- Nombres de template desconocidos tanto en Circom (E202) como en el dispatcher `.ach`.
+- Miembros desconocidos de un namespace (`P.Foo` donde `Foo` no existe bajo `P`).
+- Signals desconocidos de un output de template.
+
+Cuando no existe match cercano, el sugeridor se queda en silencio en lugar de proponer una adivinanza.
+
+## Leyendo Diagnosticos Renderizados
+
+Todos los diagnosticos de Achronyme comparten el mismo layout:
+
+```text
+<severity>[<code>]: <message>
+  ┌─ <file>:<line>:<column>
+  │
+<N> │         <source line>
+  │         ^^^^^^^^^^^^^^
+  │
+  = note: <note>
+  = help: <suggestion>
+```
+
+La severidad es uno de `error`, `warning` o `help`. El codigo es el identificador estable de las tablas de arriba. El underline marca el span exacto sobre el que el diagnostico reporta. Las notas agregan contexto (por que existe la regla, que deberia chequear el lector); los helps proponen fixes concretos.
+
+Para los flags del CLI que controlan el output de diagnosticos (formato JSON, control de color, supresion de warnings), ve la referencia de [Comandos del CLI](/docs/cli/commands/).

@@ -1,0 +1,71 @@
+---
+title: Descripcion General de Interop con Circom
+description: Reutiliza templates y circuitos completos de Circom dentro de programas y pruebas Achronyme.
+---
+
+import Mermaid from '../../../components/docs/Mermaid.astro';
+
+Achronyme compila archivos `.circom` a traves del mismo pipeline backend que sus propios circuitos `.ach`. Esto significa que puedes reutilizar gadgets probados de [circomlib](https://github.com/iden3/circomlib) — Poseidon, MiMC, EdDSA, BabyJubjub, Num2Bits, comparadores — sin reescribirlos en Achronyme.
+
+## Por Que Interop con Circom
+
+Circom tiene la libreria de gadgets ZK en produccion mas grande del ecosistema. Reescribir cada funcion hash, esquema de firma y descomposicion a bits en un lenguaje nuevo desperdiciaria anios de revision comunitaria. Achronyme en su lugar parsea el codigo fuente `.circom` directamente, baja los templates al mismo `ProveIR` que alimenta los bloques `prove {}`, y emite restricciones R1CS o Plonkish a traves de su backend nativo.
+
+El resultado practico: escribes la logica de alto nivel en Achronyme, llamas `Poseidon(2)` o `EdDSAPoseidonVerifier()` exactamente como lo harias en un archivo `.circom`, y el sistema de pruebas no sabe ni le importa de donde vino cada template.
+
+## Tres Formas de Llegar al Codigo Circom
+
+| Forma | Sintaxis | Cuando |
+|-------|----------|--------|
+| **Absorcion completa de circuito** | `import circuit "./file.circom"` | Ya tienes un circuito Circom completo (con un componente `main`) y quieres probarlo directamente. |
+| **Templates selectivos** | `import { Template } from "./lib.circom"` | Quieres llamar templates especificos de una libreria Circom dentro de un bloque `prove` de Achronyme o `circuit`. |
+| **Libreria con namespace** | `import "./lib.circom" as P` | Igual que selectivo pero con prefijo de namespace (`P.Template(...)`) — util cuando dos librerias exportan nombres que colisionan. |
+
+La primera forma reemplaza el circuito Achronyme completo con el de Circom. Las otras dos traen templates de Circom como primitivas invocables dentro del codigo Achronyme.
+
+## Arbol de Decision
+
+- **Ya tienes un archivo `.circom` funcional con componente `main` y solo quieres una prueba?** → `import circuit`, o corre `ach circom file.circom` directamente.
+- **Quieres reutilizar primitivas Circom (Poseidon, descomposicion a bits, firmas) dentro de logica Achronyme?** → import selectivo o con namespace.
+- **Estas escribiendo codigo de gadget nuevo desde cero?** → quedate en Achronyme; el frontend de Circom es para reutilizar, no para escribir Circom nuevo.
+
+## Pipeline de un Vistazo
+
+<Mermaid chart={`graph LR
+    CIRCOM[".circom source"]:::input
+    ACH[".ach source"]:::input
+
+    CIRCOM --> PARSER["Circom Parser<br/><small>circom/src/parser</small>"]
+    ACH --> APARSER["Achronyme Parser"]
+
+    PARSER --> ANALYSIS["Constraint Analysis<br/><small>E100-E102, W101-W103</small>"]
+    ANALYSIS --> LOWER["Lowering<br/><small>signals, expressions, statements</small>"]
+    LOWER --> PROVEIR["ProveIR"]
+
+    APARSER --> ACOMP["Achronyme Compiler"]
+    ACOMP -->|"prove { } block"| PROVEIR
+    ACOMP -->|"imported templates"| PROVEIR
+
+    PROVEIR --> INST["Instantiate<br/><small>capture scope values</small>"]
+    INST --> IR["SSA IR"]
+    IR --> OPT["Optimize"]
+    OPT --> R1CS["R1CS"]
+    OPT --> PLONK["Plonkish"]
+    R1CS --> GROTH["Groth16"]
+    PLONK --> HALO["PlonK (halo2)"]
+
+    classDef input fill:#1e293b,stroke:#64748b,color:#e2e8f0
+`} />
+
+Ambos lenguajes fuente convergen en `ProveIR` antes de que ocurra cualquier optimizacion o trabajo de backend. Los templates de Circom se convierten en nodos regulares de circuito que optimizan, deduplican y prueban junto al codigo Achronyme nativo.
+
+## Lo Que Obtienes
+
+- **Primitivas de circomlib al instante**: `Poseidon`, `MiMC`, `MiMCSponge`, `BabyAdd`, `BabyDbl`, `EscalarMulAny`, `EscalarMulFix`, `EdDSAPoseidonVerifier`, `Num2Bits`, `Bits2Num`, `LessThan`, `IsZero`, `CompConstant`, `Pedersen`, y la familia de mux/gates.
+- **Mismo backend prover**: R1CS + Groth16 o Plonkish + halo2. Los templates de Circom producen los mismos artefactos `.r1cs` y `.wtns` que los circuitos Achronyme nativos, y el generador de verificador Solidity funciona con ambos.
+- **Diagnosticos nativos**: el frontend de Circom reusa el renderer de diagnosticos estilo rustc de Achronyme, con codigos de error, source spans y sugerencias "did you mean?".
+- **Paridad de constraints (o mejor)**: despues del pase O1 de Achronyme mas propagacion de constantes en tiempo de compilacion, cada template de circomlib benchmarkeado (Num2Bits, LessThan, Poseidon, Pedersen, EscalarMulAny, MiMCSponge) iguala o supera el output O1 de circom 2.x. Ve [Modo Circuito](/docs/circom/circuit-mode/#notas-de-costo-de-constraints) para la tabla completa.
+
+## Lo Que Se Queda en Circom
+
+Algunas caracteristicas de Circom aun no estan soportadas y producen errores claros en tiempo de compilacion: `bus`, `tag`, `custom_templates` y ciertos cuerpos `function` recursivos. Ve [Limitaciones y Roadmap](/docs/circom/limitations/) para la lista completa y el trabajo planeado para cerrar cada brecha.

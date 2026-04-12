@@ -1,0 +1,149 @@
+---
+title: Modo VM
+description: Llamando templates Circom importados desde codigo Achronyme regular corriendo bajo ach run.
+---
+
+El modo VM es la segunda forma de alcanzar templates Circom importados: llamarlos desde **codigo Achronyme regular** que corre bajo `ach run`, no desde dentro de un bloque `prove {}`. Esto te deja precomputar valores, hacer sanity-check del testigo de un template, o cablear gadgets Circom en programas imperativos sin construir una prueba completa.
+
+El modo VM es nuevo en beta.20 e intencionalmente mas angosto en alcance que el [Modo Circuito](/docs/circom/circuit-mode/).
+
+## Por Que Modo VM
+
+El compilador y la VM de Achronyme son de doble proposito: el mismo fuente puede correr como un programa regular **o** compilar a un circuito. Cuando importas un template Circom, usualmente lo quieres en el circuito — pero a veces tambien quieres el valor del testigo en runtime:
+
+- **Sanity checks.** Corre un template con un input conocido, asegura que el output coincide, captura regresiones antes de correr el prover completo.
+- **Precomputando inputs publicos.** Computa un commitment, un hash Poseidon, o un valor con range-check en modo VM, luego pasalo a `prove {}` como input publico.
+- **Debugging.** Imprime valores intermedios del testigo mientras iteras sobre el diseno de un circuito.
+- **Ergonomia.** Evita malabarear dos lenguajes cuando el mismo template sirve doble proposito como utilidad de runtime.
+
+## Ejemplo
+
+Llamando `Square` desde codigo Achronyme top-level — sin bloque `prove` a la vista:
+
+```ach
+import { Square } from "./module.circom"
+
+let h = Square()(0p5)
+assert(h == 0p25)
+```
+
+Correr esto con `ach run main.ach` compila el fuente `.ach`, cablea el handler de testigo Circom default en la VM, y ejecuta el programa. La llamada `Square()(0p5)` despacha a un opcode dedicado de la VM (`CallCircomTemplate`), que pasa los inputs al handler, corre `evaluate_template_witness` sobre la libreria Circom, y devuelve el output escalar como un valor de campo regular de la VM.
+
+Los imports con namespace funcionan exactamente igual:
+
+```ach
+import "./module.circom" as P
+
+let h = P.Square()(0p7)
+assert(h == 0p49)
+```
+
+## Como Funciona
+
+En tiempo de compilacion, el compilador de bytecode de Achronyme detecta llamadas a templates circom de la misma forma que detecta cualquier otra llamada: chequea el nombre del template contra el registro circom poblado por el statement de import. Cuando la llamada resuelve, el compilador emite un opcode especializado `CallCircomTemplate` en lugar del dispatch normal de `Call`.
+
+El opcode lleva tres operandos:
+
+1. El **library id** — un indice estable en el registro de librerias circom del compilador, pasado al runtime via un nuevo valor de heap `CircomHandle`.
+2. El **nombre del template y los template args de tiempo de compilacion** — almacenados dentro del handle como una entrada taggeada del pool de constantes.
+3. Los **signal inputs** — asignados a registros VM contiguos en el callsite.
+
+En runtime, la VM lee el handle, empaqueta los registros de signal a field elements, llama `handler.invoke(handle, signals)`, y convierte el output del handler de vuelta a un valor VM. El handler es la misma funcion `evaluate_template_witness` que el instanciador de modo circuito usa para su propia generacion de testigo, asi que la semantica coincide bit por bit.
+
+## Reglas de Template Arguments
+
+Los template arguments siguen la misma regla que el modo circuito, con una restriccion adicional de la Phase 4:
+
+- **Deben ser constantes en tiempo de compilacion** (igual que modo circuito).
+- **Deben ser literales enteros** en el callsite (limitacion de Phase 4).
+
+```ach
+// ✓ Literal entero
+let bits = Num2Bits(4)(0p5)
+
+// ✗ Variable runtime — rechazado en tiempo de compilacion
+let n = 4
+let bits = Num2Bits(n)(0p5)
+// Error: template argument must be an integer literal
+```
+
+El path "constante en tiempo de compilacion via folding" (`let N = 8; Num2Bits(N)(x)`) que funciona en modo circuito aun no esta disponible en modo VM. Hasta que el compilador de bytecode gane un constant folder para template arguments, usa literales enteros directamente. Ve [Limitaciones](/docs/circom/limitations/) para el fix planeado.
+
+## Reglas de Signal Inputs
+
+Los signal inputs son cualquier expresion de campo evaluable en el scope actual:
+
+```ach
+let x = 0p5
+let k = 0p3
+
+let h1 = Square()(x)          // variable
+let h2 = Square()(x + k)      // expresion
+let h3 = Square()(0p42)       // literal
+```
+
+Una limitacion: **solo signal inputs escalares** se soportan en modo VM. Templates que declaran inputs de array (`signal input in[n]`) aun no pueden llamarse desde modo VM — el compilador rechaza la llamada con un error claro. El modo circuito soporta inputs de array completamente; esta es una restriccion solo del modo VM atada al layout de registros del opcode.
+
+## Manejo de Outputs
+
+El manejo de outputs difiere del modo circuito porque los outputs del modo VM son valores de runtime, no nodos SSA:
+
+| Forma del template | Valor de retorno |
+|--------------------|------------------|
+| Un solo output escalar | Un field element. `let h = Square()(x)` — `h` es el escalar. |
+| Un solo output de array | Una lista de field elements. `let bits = Num2Bits(4)(x)` — accede como `bits[0]`, `bits[1]`, ... |
+| Multiples outputs nombrados | Un mapa de nombre de signal a valor. `let r = Foo()(...)` — accede como `r["out1"]`, `r["out2"]`. |
+
+Ejemplo con output de array:
+
+```ach
+import { Num2Bits } from "./bitify.circom"
+
+// 5 = 0b0101 → bit0=1, bit1=0, bit2=1, bit3=0
+let bits = Num2Bits(4)(0p5)
+assert(bits[0] == 0p1)
+assert(bits[1] == 0p0)
+assert(bits[2] == 0p1)
+assert(bits[3] == 0p0)
+```
+
+La diferencia con el modo circuito (`r.out_0`) es intencional: los outputs del modo circuito son nombres SSA mangleados enlazados en tiempo de compilacion, mientras que los outputs del modo VM son valores de lista y mapa de runtime que usan la sintaxis normal de colecciones de Achronyme.
+
+## Cuando Usar Modo VM
+
+- **Usa modo VM** para sanity checks, precomputar inputs publicos, debugging, y pequenias utilidades donde quieres el testigo pero no la prueba.
+- **Usa modo circuito** cuando estas construyendo un circuito ZK real y necesitas que los constraints del template terminen en el prover.
+
+Los dos modos no son mutuamente excluyentes — puedes llamar el mismo template desde ambos modos en el mismo programa:
+
+```ach
+import { Poseidon } from "./poseidon.circom"
+
+// Modo VM: precomputar el commitment esperado.
+let secret = 0p42
+let commitment = Poseidon(1)([secret])
+
+// Modo circuito: probar que conoces una pre-imagen de ese commitment.
+let proof = prove(commitment: Public) {
+    let h = Poseidon(1)([secret])
+    assert_eq(h, commitment)
+}
+```
+
+## Limitaciones de Phase 4
+
+Cosas que funcionan hoy:
+
+- Signal inputs escalares.
+- Outputs escalares y de array.
+- Imports tanto selectivos como con namespace.
+- Evaluacion completa del testigo circom via `evaluate_template_witness`.
+
+Cosas fuera del alcance de Phase 4 que vienen despues:
+
+- **Constant folding para template arguments** — `let N = 8; Num2Bits(N)(x)` en modo VM.
+- **Signal inputs de array** — llamar un template que toma `signal input in[n]`.
+- **Persistencia cross-process de `.achb`** — el archivo de bytecode aun no serializa handles circom ni librerias; debes re-correr `ach run` contra el fuente `.ach`, no un `.achb` pre-compilado.
+- **Carga de libreria en runtime** — el registro circom esta fijo en tiempo de compilacion; no hay forma de cargar un nuevo archivo `.circom` en runtime.
+
+Todo esto esta trackeado en [Limitaciones y Roadmap](/docs/circom/limitations/). Ninguno de estos afecta el dispatch del modo circuito, que permanece como el path principal soportado.

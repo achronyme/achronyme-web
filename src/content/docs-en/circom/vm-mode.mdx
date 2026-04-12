@@ -1,0 +1,149 @@
+---
+title: VM Mode
+description: Calling imported Circom templates from regular Achronyme code running under ach run.
+---
+
+VM mode is the second way to reach imported Circom templates: calling them from **regular Achronyme code** that runs under `ach run`, not from inside a `prove {}` block. This lets you precompute values, sanity-check a template's witness, or wire Circom gadgets into imperative programs without constructing a full proof.
+
+VM mode is new in beta.20 and intentionally narrower in scope than [Circuit Mode](/docs/circom/circuit-mode/).
+
+## Why VM Mode
+
+The Achronyme compiler and VM are dual-purpose: the same source can run as a regular program **or** compile into a circuit. When you import a Circom template, you usually want it in the circuit — but sometimes you want the witness value at runtime too:
+
+- **Sanity checks.** Run a template with a known input, assert the output matches, catch regressions before you run the full prover.
+- **Precomputing public inputs.** Compute a commitment, a Poseidon hash, or a range-checked value in VM mode, then pass it to `prove {}` as a public input.
+- **Debugging.** Print intermediate witness values while iterating on a circuit design.
+- **Ergonomics.** Avoid juggling two languages when the same template does double duty as a runtime utility.
+
+## Example
+
+Calling `Square` from top-level Achronyme code — no `prove` block in sight:
+
+```ach
+import { Square } from "./module.circom"
+
+let h = Square()(0p5)
+assert(h == 0p25)
+```
+
+Running this with `ach run main.ach` compiles the `.ach` source, wires the default Circom witness handler into the VM, and executes the program. The `Square()(0p5)` call dispatches to a dedicated VM opcode (`CallCircomTemplate`), which hands the inputs to the handler, runs `evaluate_template_witness` on the Circom library, and returns the scalar output as a regular VM field value.
+
+Namespaced imports work exactly the same way:
+
+```ach
+import "./module.circom" as P
+
+let h = P.Square()(0p7)
+assert(h == 0p49)
+```
+
+## How It Works
+
+At compile time, the Achronyme bytecode compiler detects circom template calls the same way it detects any other call: it checks the template name against the circom registry populated by the import statement. When the call resolves, the compiler emits a specialized `CallCircomTemplate` opcode instead of the usual `Call` dispatch.
+
+The opcode carries three operands:
+
+1. The **library id** — a stable index into the compiler's circom library registry, passed through to runtime via a new `CircomHandle` heap value.
+2. The **template name and compile-time template arguments** — stored inside the handle as a tagged const-pool entry.
+3. The **signal inputs** — allocated in contiguous VM registers at the call site.
+
+At runtime, the VM reads the handle, marshals the signal registers into field elements, calls `handler.invoke(handle, signals)`, and converts the handler's output back into a VM value. The handler is the same `evaluate_template_witness` function the circuit-mode instantiator uses for its own witness generation, so the semantics match bit-for-bit.
+
+## Template Argument Rules
+
+Template arguments follow the same rule as circuit mode, with one additional Phase 4 restriction:
+
+- **Must be compile-time constants** (same as circuit mode).
+- **Must be integer literals** at the call site (Phase 4 limitation).
+
+```ach
+// ✓ Integer literal
+let bits = Num2Bits(4)(0p5)
+
+// ✗ Runtime variable — rejected at compile time
+let n = 4
+let bits = Num2Bits(n)(0p5)
+// Error: template argument must be an integer literal
+```
+
+The "compile-time constant via folding" path (`let N = 8; Num2Bits(N)(x)`) that works in circuit mode is not available yet in VM mode. Until the bytecode compiler gains a constant folder for template arguments, use integer literals directly. See [Limitations](/docs/circom/limitations/) for the planned fix.
+
+## Signal Input Rules
+
+Signal inputs are any field expression evaluable in the current scope:
+
+```ach
+let x = 0p5
+let k = 0p3
+
+let h1 = Square()(x)          // variable
+let h2 = Square()(x + k)      // expression
+let h3 = Square()(0p42)       // literal
+```
+
+One limitation: **only scalar signal inputs** are supported in VM mode. Templates that declare array-valued inputs (`signal input in[n]`) cannot be called from VM mode yet — the compiler rejects the call with a clear error. Circuit mode supports array inputs fully; this is a VM-mode-only restriction tied to the opcode's register layout.
+
+## Output Handling
+
+Output handling differs from circuit mode because VM-mode outputs are runtime values, not SSA nodes:
+
+| Template shape | Return value |
+|----------------|--------------|
+| Single scalar output | A field element. `let h = Square()(x)` — `h` is the scalar. |
+| Single array output | A list of field elements. `let bits = Num2Bits(4)(x)` — access as `bits[0]`, `bits[1]`, ... |
+| Multiple named outputs | A map from signal name to value. `let r = Foo()(...)` — access as `r["out1"]`, `r["out2"]`. |
+
+Example with an array output:
+
+```ach
+import { Num2Bits } from "./bitify.circom"
+
+// 5 = 0b0101 → bit0=1, bit1=0, bit2=1, bit3=0
+let bits = Num2Bits(4)(0p5)
+assert(bits[0] == 0p1)
+assert(bits[1] == 0p0)
+assert(bits[2] == 0p1)
+assert(bits[3] == 0p0)
+```
+
+The difference from circuit mode (`r.out_0`) is intentional: circuit-mode outputs are mangled SSA names bound at compile time, while VM-mode outputs are runtime list and map values that use Achronyme's normal collection syntax.
+
+## When to Use VM Mode
+
+- **Use VM mode** for sanity checks, precomputing public inputs, debugging, and small utilities where you want the witness but not the proof.
+- **Use circuit mode** when you are building a real ZK circuit and need the template's constraints to end up in the prover.
+
+The two modes are not mutually exclusive — you can call the same template from both modes in the same program:
+
+```ach
+import { Poseidon } from "./poseidon.circom"
+
+// VM mode: precompute the expected commitment.
+let secret = 0p42
+let commitment = Poseidon(1)([secret])
+
+// Circuit mode: prove you know a preimage of that commitment.
+let proof = prove(commitment: Public) {
+    let h = Poseidon(1)([secret])
+    assert_eq(h, commitment)
+}
+```
+
+## Phase 4 Limitations
+
+Things that work today:
+
+- Scalar signal inputs.
+- Scalar and array outputs.
+- Both selective and namespaced imports.
+- Full circom witness evaluation via `evaluate_template_witness`.
+
+Things that are scoped out of Phase 4 and coming later:
+
+- **Constant folding for template arguments** — `let N = 8; Num2Bits(N)(x)` in VM mode.
+- **Array signal inputs** — calling a template that takes `signal input in[n]`.
+- **Cross-process persistence of `.achb`** — the bytecode file does not yet serialize circom handles or libraries; you must re-run `ach run` against the source `.ach`, not a pre-compiled `.achb`.
+- **Runtime library loading** — the circom registry is fixed at compile time; there is no way to load a new `.circom` file at runtime.
+
+All of these are tracked in [Limitations and Roadmap](/docs/circom/limitations/). None of them affect circuit-mode dispatch, which remains the primary supported path.

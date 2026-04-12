@@ -1,0 +1,71 @@
+---
+title: Circom Interop Overview
+description: Reuse Circom templates and full circuits inside Achronyme programs and proofs.
+---
+
+import Mermaid from '../../../components/docs/Mermaid.astro';
+
+Achronyme compiles `.circom` files through the same backend pipeline as its own `.ach` circuits. This means you can reuse battle-tested gadgets from [circomlib](https://github.com/iden3/circomlib) — Poseidon, MiMC, EdDSA, BabyJubjub, Num2Bits, comparators — without rewriting them in Achronyme.
+
+## Why Circom Interop
+
+Circom has the largest production ZK gadget library in the ecosystem. Rewriting every hash function, signature scheme, and bit decomposition in a new language would waste years of community review. Achronyme instead parses `.circom` source directly, lowers templates into the same `ProveIR` that powers `prove {}` blocks, and emits R1CS or Plonkish constraints through its native backend.
+
+The practical outcome: you write high-level logic in Achronyme, call `Poseidon(2)` or `EdDSAPoseidonVerifier()` exactly the way you would in a `.circom` file, and the proof system does not know or care where each template came from.
+
+## Three Ways to Reach Circom Code
+
+| Form | Syntax | When |
+|------|--------|------|
+| **Full circuit absorption** | `import circuit "./file.circom"` | You have a complete Circom circuit (with a `main` component) and want to prove it directly. |
+| **Selective templates** | `import { Template } from "./lib.circom"` | You want to call specific templates from a Circom library inside an Achronyme `prove` block or `circuit`. |
+| **Namespaced library** | `import "./lib.circom" as P` | Same as selective, but with a namespace prefix (`P.Template(...)`) — useful when two libraries export colliding names. |
+
+The first form replaces the entire Achronyme circuit with the Circom one. The other two forms bring Circom templates in as callable primitives inside Achronyme code.
+
+## Decision Tree
+
+- **Do you already have a working `.circom` file with a `main` component and just want a proof?** → `import circuit`, or run `ach circom file.circom` directly.
+- **Do you want to reuse Circom primitives (Poseidon, bit decomposition, signatures) inside Achronyme logic?** → selective or namespaced import.
+- **Are you writing new gadget code from scratch?** → stay in Achronyme; the Circom frontend is for reuse, not for writing new Circom.
+
+## Pipeline at a Glance
+
+<Mermaid chart={`graph LR
+    CIRCOM[".circom source"]:::input
+    ACH[".ach source"]:::input
+
+    CIRCOM --> PARSER["Circom Parser<br/><small>circom/src/parser</small>"]
+    ACH --> APARSER["Achronyme Parser"]
+
+    PARSER --> ANALYSIS["Constraint Analysis<br/><small>E100-E102, W101-W103</small>"]
+    ANALYSIS --> LOWER["Lowering<br/><small>signals, expressions, statements</small>"]
+    LOWER --> PROVEIR["ProveIR"]
+
+    APARSER --> ACOMP["Achronyme Compiler"]
+    ACOMP -->|"prove { } block"| PROVEIR
+    ACOMP -->|"imported templates"| PROVEIR
+
+    PROVEIR --> INST["Instantiate<br/><small>capture scope values</small>"]
+    INST --> IR["SSA IR"]
+    IR --> OPT["Optimize"]
+    OPT --> R1CS["R1CS"]
+    OPT --> PLONK["Plonkish"]
+    R1CS --> GROTH["Groth16"]
+    PLONK --> HALO["PlonK (halo2)"]
+
+    classDef input fill:#1e293b,stroke:#64748b,color:#e2e8f0
+`} />
+
+Both source languages converge on `ProveIR` before any optimization or backend work happens. Circom templates become regular circuit nodes that optimize, deduplicate, and prove alongside Achronyme-native code.
+
+## What You Get
+
+- **Circomlib primitives on tap**: `Poseidon`, `MiMC`, `MiMCSponge`, `BabyAdd`, `BabyDbl`, `EscalarMulAny`, `EscalarMulFix`, `EdDSAPoseidonVerifier`, `Num2Bits`, `Bits2Num`, `LessThan`, `IsZero`, `CompConstant`, `Pedersen`, and the mux/gates family.
+- **Same prover backend**: R1CS + Groth16 or Plonkish + halo2. Circom templates produce the same `.r1cs` and `.wtns` artifacts as native Achronyme circuits, and the Solidity verifier generator works on both.
+- **Native diagnostics**: the Circom frontend reuses Achronyme's rustc-style diagnostic renderer, with error codes, source spans, and "did you mean?" suggestions.
+- **Constraint parity (or better)**: after Achronyme's O1 pass plus compile-time constant propagation, every benchmarked circomlib template (Num2Bits, LessThan, Poseidon, Pedersen, EscalarMulAny, MiMCSponge) matches or beats circom 2.x O1 output. See [Circuit Mode](/docs/circom/circuit-mode/#constraint-cost-notes) for the full table.
+
+## What Stays in Circom
+
+Some Circom features are not supported yet and produce clear compile-time errors: `bus`, `tag`, `custom_templates`, and certain recursive `function` bodies. See [Limitations and Roadmap](/docs/circom/limitations/) for the full list and the planned work to close each gap.

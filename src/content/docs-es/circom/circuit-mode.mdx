@@ -1,0 +1,165 @@
+---
+title: Modo Circuito
+description: Llamando templates Circom importados desde bloques prove y declaraciones circuit.
+---
+
+El modo circuito es el caso de uso principal de interop con Circom: llamar templates Circom importados desde bloques `prove {}` o declaraciones `circuit` para construir circuitos Achronyme que reutilizan gadgets existentes de Circom.
+
+## Cuando Corre el Modo Circuito
+
+El modo circuito despacha cada vez que un template Circom se llama desde un contexto que emite ProveIR:
+
+- dentro de un bloque `prove {}`,
+- dentro de una declaracion `circuit nombre(...) { ... }`,
+- dentro de una funcion Achronyme que luego se inlinea en uno de los anteriores.
+
+En tiempo de compilacion, el compilador ProveIR detecta la llamada, busca el template en el registro circom, e instancia su cuerpo como nodos regulares de circuito en el ProveIR circundante. El codigo Circom y el codigo Achronyme se vuelven indistinguibles para cuando corre el backend.
+
+## Sintaxis de Llamada a Template
+
+Las llamadas a template usan la misma sintaxis de currying atomico que Circom mismo:
+
+```ach
+NombreTemplate(template_args)(signal_inputs)
+```
+
+El primer grupo parentizado es la **lista de parametros de template** (constantes en tiempo de compilacion). El segundo es la **lista de signal inputs** (cualquier expresion de campo visible en el scope actual).
+
+```ach
+import { Square, Num2Bits } from "./lib.circom"
+
+prove() {
+    let y = Square()(x_val)            // 0 template args, 1 signal input
+    let bits = Num2Bits(8)(x_val)      // 1 template arg, 1 signal input
+}
+```
+
+Para imports con namespace el nombre del template se prefija con el namespace:
+
+```ach
+import "./lib.circom" as P
+
+prove() {
+    let h = P.Poseidon(2)([a, b])
+}
+```
+
+## Los Template Args Deben Ser Constantes en Tiempo de Compilacion
+
+Los templates de Circom estan parametrizados en tiempo de compilacion — los parametros deciden la forma del circuito (limites de loops, tamanios de arrays de signals, tamanios de tablas de lookup). Achronyme refuerza esto: los argumentos de template deben ser literales enteros o expresiones que plieguen a constantes.
+
+```ach
+// ✓ Constante literal
+let bits = Num2Bits(8)(x_val)
+
+// ✓ Constante desde un let externo
+let N = 8
+let bits = Num2Bits(N)(x_val)   // resuelto en tiempo de compilacion
+
+// ✗ Variable capturada en runtime
+let n_val = 0p8
+let bits = Num2Bits(n_val)(x_val)
+// Error: template argument must be a compile-time constant
+```
+
+El diagnostico apunta a la expresion no constante y explica por que. Ve [Diagnosticos](/docs/circom/diagnostics/) para el formato completo del mensaje.
+
+## Signal Inputs
+
+Los signal inputs son expresiones de campo ordinarias. Pueden capturarse desde el scope externo, computarse dentro del bloque prove, o pasarse como literales. Cada input se coacciona al campo del circuito en el callsite — el constant folding en tiempo de compilacion de Achronyme simplificara lo que pueda antes de pasar el control al instanciador de Circom.
+
+```ach
+let secret = 0p42
+
+prove() {
+    // Escalar capturado → signal input
+    let h = Poseidon(1)([secret])
+
+    // Expresion → signal input
+    let h2 = Poseidon(2)([secret + 0p1, secret * 0p3])
+}
+```
+
+La aridad del input debe coincidir exactamente con los signal inputs declarados del template — un mismatch produce un error de dispatch en tiempo de compilacion.
+
+## Outputs Escalares
+
+Cuando un template declara un solo signal output escalar, el binding `let` captura ese output directamente:
+
+```ach
+// template Square() { signal input x; signal output y; y <== x * x; }
+
+let y = Square()(x_val)
+assert_eq(y, expected)
+```
+
+`y` es la senal de output de Square. Puedes usarlo en cualquier expresion posterior como una variable de campo regular.
+
+## Outputs de Array y Multi-Signal
+
+Para templates con signal outputs de array o multiples, enlaza la llamada a un nombre y accede cada output via un path con puntos:
+
+```ach
+// template Num2Bits(n) { signal input in; signal output out[n]; ... }
+
+let r = Num2Bits(4)(x_val)
+assert_eq(r.out_0, 0p1)   // bit 0
+assert_eq(r.out_1, 0p0)   // bit 1
+assert_eq(r.out_2, 0p1)   // bit 2
+assert_eq(r.out_3, 0p0)   // bit 3
+```
+
+El sufijo en cada output es el **indice flat (row-major)** del elemento del array:
+
+- Array 1-D `out[n]` → `r.out_0`, `r.out_1`, ..., `r.out_{n-1}`.
+- Array 2-D `out[m][n]` → `r.out_0_0`, `r.out_0_1`, ..., `r.out_{m-1}_{n-1}`.
+- Template multi-output con senales distintas → `r.out1`, `r.out2`, etc.
+
+El acceso por indice con indices en runtime (`r.out[i]` donde `i` es una variable) no se soporta en modo circuito — el IR se desenrolla completamente en tiempo de compilacion, asi que los indices deben ser constantes en tiempo de compilacion. Si necesitas un indice variable, reestructura el loop para que la variable de iteracion sea constante en tiempo de compilacion (`for i in 0..N`) y deja que Achronyme lo desenrolle.
+
+## Ejemplo End-to-End: Prueba de Membresia
+
+Este ejemplo combina `Poseidon` (hash) y `Num2Bits` (descomposicion a bits) importados de circomlib para probar que una hoja hashea en una raiz comprometida publicamente:
+
+```ach
+import { Poseidon } from "./vendor/circomlib/circuits/poseidon.circom"
+import { Num2Bits } from "./vendor/circomlib/circuits/bitify.circom"
+
+let leaf = 0p42
+let sibling = 0p17
+let path_bit = 0p1
+let expected_root = 0p...
+
+let proof = prove(expected_root: Public) {
+    // Descomponer el bit de path para forzar que sea realmente booleano.
+    let bits = Num2Bits(1)(path_bit)
+    assert_eq(bits.out_0, path_bit)
+
+    // Hash left/right ordenado por el path bit.
+    let left = path_bit * sibling + (0p1 - path_bit) * leaf
+    let right = path_bit * leaf + (0p1 - path_bit) * sibling
+    let root = Poseidon(2)([left, right])
+
+    assert_eq(root, expected_root)
+}
+```
+
+En tiempo de compilacion, los cuerpos de Poseidon y Num2Bits se bajan a nodos de circuito ProveIR inline — no hay VM Circom en runtime, no hay llamada externa, y no hay paso de linker. El sistema de constraints final (R1CS o Plonkish) contiene constraints de ambas fuentes fusionados en un solo circuito.
+
+## Notas de Costo de Constraints
+
+El optimizador IR de Achronyme (pipeline O1 mas propagacion de constantes en tiempo de compilacion a traves del inlining de componentes) **iguala o supera el output O1 de circom 2.x** en cada template de circomlib benchmarkeado hasta ahora. Numeros al 2026-04-11:
+
+| Template | Achronyme O1 | circom O1 | Notas |
+|----------|--------------|-----------|-------|
+| `Num2Bits(8)` | 9 | 17 | Achronyme -8 |
+| `IsZero()` | 2 | 2 | Empate |
+| `LessThan(8)` | 10 | ~20 | Achronyme -10 |
+| `Poseidon(2)` | 240 | 243 | Achronyme -3 |
+| `Pedersen(8)` | 13 | 89 | Achronyme -76 (iguala circom **O2**) |
+| `EscalarMulAny(254)` | 2310 | 2312 | Achronyme -2 |
+| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | Achronyme -3 |
+
+La mayoria de estas victorias vienen de dos pases: (1) el pase O1 de eliminacion lineal cerrando constraints que circom deja como identidades triviales, y (2) un path de propagacion de constantes en tiempo de compilacion que pliega puntos base constantes a traves de operaciones Montgomery/Edwards antes de que lleguen a R1CS. Pedersen es el mas dramatico — el O1 de Achronyme produce los mismos 13 constraints que circom solo alcanza en O2.
+
+Ve la [Vision General del Pipeline](/docs/architecture/pipeline/) para los pases completos de optimizacion.

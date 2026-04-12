@@ -1,0 +1,150 @@
+---
+title: Circom Diagnostics
+description: Error codes, warnings, and did-you-mean suggestions emitted by the Circom frontend.
+---
+
+The Circom frontend reuses Achronyme's rustc-style diagnostic renderer: every error and warning carries a stable code, a source span with a pointed-at caret, and one or more notes explaining the underlying problem. Diagnostics are organized into numbered ranges by pipeline stage, which makes them easy to look up when one appears in your terminal.
+
+## Error Code Ranges
+
+| Range | Stage | Examples |
+|-------|-------|----------|
+| **E100 - E199** | Constraint analysis (semantic checks on `===`, `<==`, `<--`) | `E100` under-constrained signal |
+| **W101 - W199** | Constraint analysis warnings | `W101` unused I/O signal, `W102` unsafe `<--`, `W103` double assignment |
+| **E200 - E299** | Lowering (Circom AST → ProveIR) | `E201` undefined function, `E202` template not found |
+| **E300 - E399** | Circom parser (syntactic errors) | `E300` unexpected token, `E304` missing semicolon |
+| (no code) | Dispatch from `.ach` (selective/namespaced import call sites) | template not in namespace, signal count mismatch, runtime template arg |
+
+Each category is covered below.
+
+## Constraint Analysis (E100-E102, W101-W103)
+
+The constraint-analysis pass runs on every imported template before lowering. It catches the class of bugs that are by far the most common source of ZK vulnerabilities: signals that are assigned but not constrained.
+
+### E100 — Under-constrained signal
+
+Triggered when a signal is assigned with `<--` but never appears in a `===` constraint.
+
+```text
+error[E100]: signal `out` is assigned with `<--` but has no `===` constraint
+  ┌─ unconstrained.circom:5:9
+  │
+5 │         out <-- in + 1;
+  │         ^^^^^^^^^^^^^^
+  │
+  = note: under-constrained signals are the #1 source of ZK vulnerabilities
+  = note: use `<==` for automatic constraint, or add an explicit `===`
+```
+
+This is a **hard error** — the template will not compile. `<--` is only for assignments that cannot be directly constrained (e.g., divisions, bit extractions via loops), and every `<--` must be paired with a `===` that enforces the relation.
+
+### E102 — Non-quadratic constraint
+
+R1CS constraints must be quadratic (degree ≤ 2). A higher-degree `===` expression produces E102 with a suggestion to split it into intermediate signals.
+
+### W101 — Unreferenced I/O signal
+
+A `signal input` or `signal output` that never appears in any constraint. The template compiles, but the signal cannot be verified — a malicious prover can set it to any value.
+
+### W102 — Unsafe `<--` with quadratic-safe expression
+
+The `<--` operator computes a witness value without adding a constraint. When the RHS is quadratic-safe (i.e., Circom's `<==` could have handled it), W102 suggests switching to `<==`. This mirrors Circom 2.0.8+'s behavior and catches the most common under-constrained patterns before they become E100s.
+
+### W103 — Signal assigned more than once
+
+A signal assigned on two different lines. This is legal if the assignments are in different branches of an if-else (Circom allows this), so it ships as a warning rather than a hard error, with a note pointing at the first assignment.
+
+## Lowering Errors (E200-E211)
+
+Lowering is where the Circom AST becomes ProveIR. Errors in this stage come from references the lowerer cannot resolve, dimensions it cannot determine, or Circom features it does not support yet.
+
+| Code | Meaning |
+|------|---------|
+| `E200` | Undefined identifier in a circuit expression context |
+| `E201` | Undefined function in a circuit expression context |
+| `E202` | Template not found (unknown template name) |
+| `E203` | `include` file not found, failed to parse, or unsupported |
+| `E204` | `include` cycle detected |
+| `E205` | Invalid component instantiation or substitution |
+| `E206` | Function called with the wrong number of arguments |
+| `E208` | Malformed `for` loop (non-constant bound, missing pieces) |
+| `E209` | Unsupported loop pattern for unrolling |
+| `E210` | Parser error surfaced at the `compile_file` boundary |
+| `E211` | `main` template not found in an `ach circom` entry point |
+
+All lowering errors include the declared template name, the function name, and a pointed span into the originating Circom source. When the unknown symbol is close to a known one, the lowerer attaches a "did you mean?" suggestion (see below).
+
+## Parser Errors (E300-E306)
+
+Parser errors come from malformed Circom syntax: missing semicolons, mismatched braces, unexpected tokens, invalid signal declarations. They are rare in hand-written Circom but frequent when machine-generating Circom templates or copy-pasting from an outdated tutorial.
+
+| Code | Meaning |
+|------|---------|
+| `E300` | Generic parse failure (unexpected token, invalid expression) |
+| `E304` | Missing semicolon |
+| `E305` | Unclosed brace, paren, or bracket |
+| `E306` | Invalid signal declaration shape |
+
+Parser errors reference the exact offending token and, where possible, propose the fix inline ("expected `;` here").
+
+## Dispatch Errors (Circuit and VM Mode)
+
+Dispatch errors fire when an `.ach` file calls a Circom template through an import. They are emitted by the Achronyme compiler rather than by the Circom frontend, so they do not carry an `E1xx`/`E2xx`/`E3xx` code — but they use the same renderer and the same span pointing.
+
+| Kind | When |
+|------|------|
+| `namespace not found` | `P.Template(...)` where `P` was never imported. |
+| `template not found in namespace` | `P.Template(...)` where `Template` does not exist in the library aliased as `P`. |
+| `template not found` | Selective-import callsite where the template name is unknown. |
+| `template argument count mismatch` | `T(a, b, c)(inputs)` where `T` declares a different number of parameters. |
+| `signal input count mismatch` | `T(args)(in1, in2, in3)` where `T` declares a different number of inputs. |
+| `template argument must be a compile-time constant` | Passing a non-constant expression as a template parameter. |
+| `array signal input unsupported in VM mode` | Calling a template with `signal input in[n]` from VM mode. |
+| `template argument must be an integer literal` | Phase 4 restriction on VM-mode calls. |
+
+Each kind carries a source span at the callsite and, for template/namespace lookups, a did-you-mean suggestion when a similar name exists.
+
+## Did You Mean? Suggestions
+
+The Circom frontend and the dispatch layer both run a Levenshtein-based suggester on unknown symbols. If the edit distance to a known name is small enough, the diagnostic includes a suggestion:
+
+```text
+error: template `Num2bits` not found
+  ┌─ main.ach:4:13
+  │
+4 │     let r = Num2bits(4)(x_val)
+  │             ^^^^^^^^
+  │
+help: a template with a similar name exists
+  │
+4 │     let r = Num2Bits(4)(x_val)
+  │             ^^^^^^^^
+```
+
+Suggestions are attached to:
+
+- Unknown function names in Circom function contexts (E201).
+- Unknown template names in both Circom (E202) and the `.ach` dispatcher.
+- Unknown members of a namespace (`P.Foo` where `Foo` does not exist under `P`).
+- Unknown signals of a template output.
+
+When no close match exists, the suggester stays silent rather than proposing a guess.
+
+## Reading Rendered Diagnostics
+
+All Achronyme diagnostics share the same layout:
+
+```text
+<severity>[<code>]: <message>
+  ┌─ <file>:<line>:<column>
+  │
+<N> │         <source line>
+  │         ^^^^^^^^^^^^^^
+  │
+  = note: <note>
+  = help: <suggestion>
+```
+
+Severity is one of `error`, `warning`, or `help`. Code is the stable identifier from the tables above. The underline marks the exact span the diagnostic is reporting on. Notes add context (why the rule exists, what the reader should check); helps propose concrete fixes.
+
+For CLI flags that control diagnostic output (JSON format, color control, warning suppression), see the [CLI Commands](/docs/cli/commands/) reference.

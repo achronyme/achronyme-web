@@ -120,7 +120,7 @@ Compiles `.circom` files through the same ProveIR → IR → Backend pipeline. T
 | Analyze | `circom::analysis` | Constraint pairing check, include resolution with cycle detection |
 | Lower | `circom::lowering` | Signals → `ProveInputDecl`, expressions → `CircuitExpr`, statements → `CircuitNode` |
 
-The lowered ProveIR feeds into the same instantiation → optimization → backend pipeline as `prove {}` blocks and `ach circuit`.
+The lowered ProveIR feeds into the same instantiation → optimization → backend pipeline as `prove {}` blocks and `ach circuit`. Circom templates can also be imported and called from `.ach` files in both circuit and VM modes — see the [Circom Interop](/docs/circom/overview/) chapter for the user-facing syntax and semantics.
 
 ## Stage 3: Optimization
 

@@ -1,0 +1,132 @@
+---
+title: Limitaciones y Roadmap
+description: Que soporta el frontend de Circom hoy, y que viene despues.
+---
+
+El frontend de Circom aterrizo en beta.20 y aun esta creciendo. Esta pagina es la unica fuente de verdad sobre que funciona ahora y que esta planeado para releases proximos.
+
+## Soportado Hoy
+
+**Imports**
+
+- `import circuit "file.circom" as Nombre` — absorcion completa de circuito.
+- `import { T1, T2 } from "file.circom"` — imports selectivos de template con aliases opcionales `as`.
+- `import "file.circom" as P` — imports de libreria con namespace.
+- Resolucion transitiva de `include` con deteccion de ciclos y deduplicacion por path canonico.
+- Flag de busqueda de libreria `-l/--lib` en `ach circom`.
+
+**Caracteristicas del lenguaje Circom**
+
+- `pragma circom 2.0.x` y 2.1.x.
+- `signal input`, `signal output`, y signals intermedios.
+- `<==`, `===`, y `<--` (con analisis completo E100/W101/W102/W103).
+- `template` con parametros y arrays de signal.
+- Instanciacion de `component`, incluyendo arrays de componente (`component muls[n]`).
+- Declaraciones `function` evaluadas en tiempo de compilacion (imperativas: `var`, `while`, `for`, `if/else`, `return`, `++`, `*=`, llamadas anidadas).
+- Loops `for` con limites constantes, parametricos y con expresion.
+- Branching `if`/`else` — ambas ramas bajadas, seleccion de rama via mux cuando es necesario.
+- `var` de tiempo de compilacion con aritmetica de complemento a dos de 256 bits (`BigVal`), asi que templates como `CompConstant` que computan `1 << 128` funcionan correctamente.
+- Variables de array de tiempo de compilacion 1-D y 2-D, con flattening row-major y resolucion de indice multi-dimensional.
+- Parametros de template de array (`Template(t, C, 0)` donde `C` es un array precomputado).
+- Constant folding de ternarios para que indices de array de rama muerta como `xL[-1]` nunca lleguen al lowering.
+- Los ternarios conocidos en tiempo de compilacion seleccionan su rama en lowering, evitando referencias de rama muerta.
+
+**Output del backend**
+
+- R1CS (Groth16) y Plonkish (halo2 KZG fork de PSE).
+- Conteos de constraints que coinciden o superan al Circom 2.x de referencia despues de que corre el optimizador O2.
+- Exports binarios `.r1cs` + `.wtns` que permanecen compatibles con `snarkjs`.
+- Generacion de verificador Solidity para Groth16.
+
+**Call sites**
+
+- Bloques `prove {}` llamando templates selectivos o con namespace.
+- Declaraciones `circuit nombre(...) { ... }` llamando templates.
+- Llamadas en modo VM desde codigo `.ach` top-level (ve [Modo VM](/docs/circom/vm-mode/) para restricciones).
+
+## Cobertura de Circomlib
+
+Las siguientes primitivas de circomlib han sido compiladas end-to-end, pasadas por generacion R1CS, y verificadas contra implementaciones de referencia. Conteos de constraints comparados contra el output O1 de circom 2.x al 2026-04-11:
+
+| Template | Achronyme O1 | circom O1 | Estado |
+|----------|--------------|-----------|--------|
+| `Num2Bits(8)` | 9 | 17 | ✓ Achronyme -8 |
+| `Bits2Num(8)` | 1 | — | ✓ R1CS verificado |
+| `IsZero()` | 2 | 2 | ✓ Empate |
+| `LessThan(8)` | 10 | ~20 | ✓ Achronyme -10 |
+| `CompConstant(n)` | ✓ | ✓ | ✓ R1CS verificado |
+| `Poseidon(2)` | 240 | 243 | ✓ Achronyme -3 |
+| `Pedersen(8)` | 13 | 89 | ✓ Achronyme -76 (iguala circom O2) |
+| `MiMC(n, nRounds)` | ✓ | ✓ | ✓ R1CS verificado |
+| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | ✓ Achronyme -3 |
+| `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combinado) | — | ✓ R1CS verificado |
+| `EscalarMulFix(...)` | ✓ | ✓ | ✓ R1CS verificado |
+| `EscalarMulAny(254)` | 2310 | 2312 | ✓ Achronyme -2 |
+| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate verificados (41,136 nodos IR, 263,709 instrucciones VM); E2E R1CS pendiente de run de test |
+| Mux, gates, bitify, comparadores | — | — | ✓ Usados transitivamente por los anteriores |
+
+La verificacion end-to-end de pruebas Groth16 se ha hecho on-chain para `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` y `EscalarMulAny(254)`.
+
+## Caracteristicas Circom No Soportadas
+
+Estas son rechazadas en tiempo de parse o lowering con errores claros:
+
+- **Declaraciones `bus`** — aun no soportadas.
+- **Declaraciones `tag`** — aun no soportadas.
+- **`custom_templates`** — extensiones de custom gate de Circom 2.1+.
+- **Cuerpos `function` recursivos** — las funciones se evaluan imperativamente en tiempo de compilacion, lo que descarta recursion no terminante y cualquier recursion cuya profundidad el lowerer no pueda probar acotada.
+- **Dimensiones de array no constantes** fuera de contextos de unrolling de `for`-loop.
+- **Indices de array con variables de runtime** en modo circuito (el IR se desenrolla completamente, asi que los indices de array deben ser conocidos en tiempo de compilacion).
+
+Si topas con uno de estos, el error te dira exactamente que caracteristica fue rechazada y apuntara a la linea ofensora.
+
+## Limitaciones del Modo VM
+
+El modo VM (llamar templates desde codigo no-`prove` bajo `ach run`) es mas angosto que el modo circuito. Restricciones de Phase 4:
+
+- **Los template arguments deben ser literales enteros.** `let N = 8; Num2Bits(N)(x)` es rechazado — usa `Num2Bits(8)(x)` directamente hasta que aterrice el constant folder de tiempo de compilacion para el modo VM.
+- **Solo signal inputs escalares.** Templates con `signal input in[n]` no pueden llamarse desde modo VM.
+- **Sin persistencia cross-process de `.achb`.** Los handles y librerias de circom aun no se serializan al archivo de bytecode, asi que `ach run file.ach` funciona pero `ach compile file.ach && ach run file.achb` no carga el estado circom entre procesos.
+- **Sin carga de libreria en runtime.** El registro circom se congela en tiempo de compilacion. `ach run` no puede ingerir un nuevo archivo `.circom` en runtime.
+
+Ve [Modo VM](/docs/circom/vm-mode/) para la semantica de llamada y por que existen estas restricciones.
+
+## Roadmap
+
+Trabajo planeado, en orden de prioridad aproximado:
+
+### Phase 5 — Integracion con el manifest
+
+Agregar una seccion `[circom]` a `achronyme.toml`:
+
+```toml
+[circom]
+libs = ["vendor/circomlib/circuits"]
+```
+
+Una vez enviado, `ach run`, `ach circuit` y `ach circom` consumiran `[circom].libs` automaticamente, terminando con la molestia "tengo que pasar `-l` cada vez que corro circom" para comandos que no son entry point de circom.
+
+### Phase 6 — Docs y ejemplos
+
+- Tutoriales trabajados en la documentacion principal (inclusion Merkle con Poseidon importado, verificacion de firma EdDSA con `EdDSAPoseidonVerifier` importado).
+- Benchmarks cross-tool comparando Achronyme + circomlib importado vs circom plano.
+- Guia de migracion para equipos moviendo proyectos circom existentes.
+
+### Follow-ups de Phase 4 (modo VM)
+
+- **Constant folding de tiempo de compilacion** para que los template args del modo VM puedan ser variables mientras pleguen.
+- **Signal inputs de array** extendiendo el opcode `CallCircomTemplate` para aceptar arrays de input.
+- **`.achb` cross-process** serializando `CircomHandle` y el registro de librerias al archivo de bytecode.
+
+### Investigacion abierta
+
+- **Soporte de `bus` y `tag`** — mayormente un problema de parser + lowering; el backend no deberia necesitar cambios.
+- **`custom_templates`** — estos compilan a custom gates de halo2 en circom de referencia; el backend Plonkish de Achronyme ya soporta custom gates, asi que es mayormente un mapeo de lowering.
+- **Cobertura mas amplia de O2/DEDUCE** para que templates que actualmente igualan O1 de circom puedan bajar mas cuando la eliminacion gaussiana de DEDUCE encuentre constraints lineales adicionales para plegar.
+
+### Largo plazo
+
+- **Frontend Noir.** El mismo approach de dual-frontend (parse → lower → ProveIR) que hace que el interop con Circom funcione dejaria a Achronyme absorber programas Noir tambien. Sin compromiso aun — trackeado como investigacion.
+- **Backend STARK para Goldilocks.** No especifico de Circom, pero relevante ya que algunos templates de circomlib (variantes MiMC, Poseidon con `α=7`) calzan naturalmente en Goldilocks una vez exista un backend STARK.
+
+La pagina del roadmap del proyecto trackea los mismos items a nivel mas alto; [la integracion con el manifest del proyecto](/docs/cli/project-config/) sera actualizada una vez que aterrice la seccion `[circom]`.
