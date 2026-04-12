@@ -46,22 +46,22 @@ El frontend de Circom aterrizo en beta.20 y aun esta creciendo. Esta pagina es l
 
 ## Cobertura de Circomlib
 
-Las siguientes primitivas de circomlib han sido compiladas end-to-end, pasadas por generacion R1CS, y verificadas contra implementaciones de referencia. Conteos de constraints comparados contra el output O1 de circom 2.x al 2026-04-11:
+Las siguientes primitivas de circomlib han sido compiladas end-to-end, pasadas por generacion R1CS, y verificadas contra implementaciones de referencia. La comparacion completa de conteos de constraints vive en `r1cs_optimization_benchmark` en `circom/tests/e2e.rs`; la tabla condensada muestra el output O1 de Achronyme contra circom O2 (el mejor de circom):
 
-| Template | Achronyme O1 | circom O1 | Estado |
+| Template | Achronyme O1 | circom O2 | Estado |
 |----------|--------------|-----------|--------|
-| `Num2Bits(8)` | 9 | 17 | ✓ Achronyme -8 |
+| `Num2Bits(8)` | **9** | 17 | ✓ Achronyme supera circom O2 por 8 |
 | `Bits2Num(8)` | 1 | — | ✓ R1CS verificado |
-| `IsZero()` | 2 | 2 | ✓ Empate |
-| `LessThan(8)` | 10 | ~20 | ✓ Achronyme -10 |
+| `IsZero()` | 2 | 2 | ✓ Iguala circom O2 |
+| `LessThan(8)` | **10** | 20 | ✓ Achronyme supera circom O2 por 10 |
 | `CompConstant(n)` | ✓ | ✓ | ✓ R1CS verificado |
-| `Poseidon(2)` | 240 | 243 | ✓ Achronyme -3 |
-| `Pedersen(8)` | 13 | 89 | ✓ Achronyme -76 (iguala circom O2) |
+| `Poseidon(2)` | 240 | 240 | ✓ Iguala circom O2 |
+| `Pedersen(8)` | 13 | 13 | ✓ Iguala circom O2 |
 | `MiMC(n, nRounds)` | ✓ | ✓ | ✓ R1CS verificado |
-| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | ✓ Achronyme -3 |
+| `MiMCSponge(2, 220, 1)` | **1317** | 1320 | ✓ Achronyme supera circom O2 por 3 |
 | `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combinado) | — | ✓ R1CS verificado |
-| `EscalarMulFix(...)` | ✓ | ✓ | ✓ R1CS verificado |
-| `EscalarMulAny(254)` | 2310 | 2312 | ✓ Achronyme -2 |
+| `EscalarMulFix(253)` | 11 | 11 | ✓ Iguala circom O2 |
+| `EscalarMulAny(254)` | 2310 | 2310 | ✓ Iguala circom O2 |
 | `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate verificados (41,136 nodos IR, 263,709 instrucciones VM); E2E R1CS pendiente de run de test |
 | Mux, gates, bitify, comparadores | — | — | ✓ Usados transitivamente por los anteriores |
 

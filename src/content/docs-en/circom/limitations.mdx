@@ -46,22 +46,22 @@ The Circom frontend landed in beta.20 and is still growing. This page is the sin
 
 ## Circomlib Coverage
 
-The following circomlib primitives have been compiled end-to-end, run through R1CS generation, and verified against reference implementations. Constraint counts compared to circom 2.x O1 output as of 2026-04-11:
+The following circomlib primitives have been compiled end-to-end, run through R1CS generation, and verified against reference implementations. The full constraint-count comparison lives in `r1cs_optimization_benchmark` in `circom/tests/e2e.rs`; the condensed table shows Achronyme's O1 output against circom O2 (circom's best):
 
-| Template | Achronyme O1 | circom O1 | Status |
+| Template | Achronyme O1 | circom O2 | Status |
 |----------|--------------|-----------|--------|
-| `Num2Bits(8)` | 9 | 17 | ✓ Achronyme -8 |
+| `Num2Bits(8)` | **9** | 17 | ✓ Achronyme beats circom O2 by 8 |
 | `Bits2Num(8)` | 1 | — | ✓ R1CS verified |
-| `IsZero()` | 2 | 2 | ✓ Tied |
-| `LessThan(8)` | 10 | ~20 | ✓ Achronyme -10 |
+| `IsZero()` | 2 | 2 | ✓ Matches circom O2 |
+| `LessThan(8)` | **10** | 20 | ✓ Achronyme beats circom O2 by 10 |
 | `CompConstant(n)` | ✓ | ✓ | ✓ R1CS verified |
-| `Poseidon(2)` | 240 | 243 | ✓ Achronyme -3 |
-| `Pedersen(8)` | 13 | 89 | ✓ Achronyme -76 (equals circom O2) |
+| `Poseidon(2)` | 240 | 240 | ✓ Matches circom O2 |
+| `Pedersen(8)` | 13 | 13 | ✓ Matches circom O2 |
 | `MiMC(n, nRounds)` | ✓ | ✓ | ✓ R1CS verified |
-| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | ✓ Achronyme -3 |
+| `MiMCSponge(2, 220, 1)` | **1317** | 1320 | ✓ Achronyme beats circom O2 by 3 |
 | `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combined) | — | ✓ R1CS verified |
-| `EscalarMulFix(...)` | ✓ | ✓ | ✓ R1CS verified |
-| `EscalarMulAny(254)` | 2310 | 2312 | ✓ Achronyme -2 |
+| `EscalarMulFix(253)` | 11 | 11 | ✓ Matches circom O2 |
+| `EscalarMulAny(254)` | 2310 | 2310 | ✓ Matches circom O2 |
 | `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (41,136 IR nodes, 263,709 VM instructions); R1CS E2E pending test run |
 | Mux, gates, bitify, comparators | — | — | ✓ Used transitively by the above |
 

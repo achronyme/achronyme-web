@@ -64,7 +64,7 @@ Both source languages converge on `ProveIR` before any optimization or backend w
 - **Circomlib primitives on tap**: `Poseidon`, `MiMC`, `MiMCSponge`, `BabyAdd`, `BabyDbl`, `EscalarMulAny`, `EscalarMulFix`, `EdDSAPoseidonVerifier`, `Num2Bits`, `Bits2Num`, `LessThan`, `IsZero`, `CompConstant`, `Pedersen`, and the mux/gates family.
 - **Same prover backend**: R1CS + Groth16 or Plonkish + halo2. Circom templates produce the same `.r1cs` and `.wtns` artifacts as native Achronyme circuits, and the Solidity verifier generator works on both.
 - **Native diagnostics**: the Circom frontend reuses Achronyme's rustc-style diagnostic renderer, with error codes, source spans, and "did you mean?" suggestions.
-- **Constraint parity (or better)**: after Achronyme's O1 pass plus compile-time constant propagation, every benchmarked circomlib template (Num2Bits, LessThan, Poseidon, Pedersen, EscalarMulAny, MiMCSponge) matches or beats circom 2.x O1 output. See [Circuit Mode](/docs/circom/circuit-mode/#constraint-cost-notes) for the full table.
+- **Constraint parity (or better)**: Achronyme's O1 pass plus compile-time constant propagation matches or beats circom 2.x **O2** output — the most aggressive setting circom offers — on every benchmarked circomlib template. Num2Bits, LessThan, and MiMCSponge drop strictly below circom's best; the rest tie. See [Circuit Mode](/docs/circom/circuit-mode/#constraint-cost-notes) for the full table.
 
 ## What Stays in Circom
 

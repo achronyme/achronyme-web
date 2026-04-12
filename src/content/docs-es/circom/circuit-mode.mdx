@@ -148,18 +148,21 @@ En tiempo de compilacion, los cuerpos de Poseidon y Num2Bits se bajan a nodos de
 
 ## Notas de Costo de Constraints
 
-El optimizador IR de Achronyme (pipeline O1 mas propagacion de constantes en tiempo de compilacion a traves del inlining de componentes) **iguala o supera el output O1 de circom 2.x** en cada template de circomlib benchmarkeado hasta ahora. Numeros al 2026-04-11:
+El optimizador R1CS de Achronyme (eliminacion lineal O1 mas propagacion de constantes en tiempo de compilacion a traves del inlining de componentes) **iguala o supera el output O2 de circom 2.x** — lo mas agresivo que circom puede hacer — en cada template de circomlib del suite de benchmarks. Numeros capturados por `r1cs_optimization_benchmark` en `circom/tests/e2e.rs`:
 
-| Template | Achronyme O1 | circom O1 | Notas |
-|----------|--------------|-----------|-------|
-| `Num2Bits(8)` | 9 | 17 | Achronyme -8 |
-| `IsZero()` | 2 | 2 | Empate |
-| `LessThan(8)` | 10 | ~20 | Achronyme -10 |
-| `Poseidon(2)` | 240 | 243 | Achronyme -3 |
-| `Pedersen(8)` | 13 | 89 | Achronyme -76 (iguala circom **O2**) |
-| `EscalarMulAny(254)` | 2310 | 2312 | Achronyme -2 |
-| `MiMCSponge(2, 220, 1)` | 1317 | 1320 | Achronyme -3 |
+| Template | Achronyme O0 | Achronyme O1 | circom O0 | circom O1 | circom O2 |
+|----------|--------------|--------------|-----------|-----------|-----------|
+| `Num2Bits(8)` | 25 | **9** | 17 | 17 | 17 |
+| `IsZero()` | 4 | **2** | 3 | 2 | 2 |
+| `LessThan(8)` | 31 | **10** | 21 | 20 | 20 |
+| `Pedersen(8)` | 30 | **13** | 91 | 89 | 13 |
+| `EscalarMulFix(253)` | 27 | **11** | 59 | 57 | 11 |
+| `EscalarMulAny(254)` | 5325 | **2310** | 2310 | 2310 | 2310 |
+| `Poseidon(2)` | 491 | **240** | 243 | 243 | 240 |
+| `MiMCSponge(2, 220, 1)` | 2581 | **1317** | 1320 | 1320 | 1320 |
 
-La mayoria de estas victorias vienen de dos pases: (1) el pase O1 de eliminacion lineal cerrando constraints que circom deja como identidades triviales, y (2) un path de propagacion de constantes en tiempo de compilacion que pliega puntos base constantes a traves de operaciones Montgomery/Edwards antes de que lleguen a R1CS. Pedersen es el mas dramatico — el O1 de Achronyme produce los mismos 13 constraints que circom solo alcanza en O2.
+Las lineas llamativas son las que Achronyme supera a circom O2 directamente: `Num2Bits(8)` baja a 9 (circom no puede bajar de 17), `LessThan(8)` baja a 10 (circom se queda en 20), y `MiMCSponge(2, 220, 1)` aterriza en 1317 (tres abajo del mejor 1320 de circom). En todos los demas Achronyme empata con circom en su setting mas agresivo.
+
+Dos pases hacen la mayor parte del trabajo: (1) un pase O1 de eliminacion lineal cerrando constraints que circom deja como identidades triviales, y (2) un path de propagacion de constantes en tiempo de compilacion que pliega puntos base constantes a traves de operaciones Montgomery/Edwards antes de que lleguen a R1CS. Pedersen es el ejemplo mas dramatico — el O1 de Achronyme produce los mismos 13 constraints que circom solo alcanza en O2.
 
 Ve la [Vision General del Pipeline](/docs/architecture/pipeline/) para los pases completos de optimizacion.
