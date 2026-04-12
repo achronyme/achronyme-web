@@ -19,7 +19,7 @@ The practical outcome: you write high-level logic in Achronyme, call `Poseidon(2
 |------|--------|------|
 | **Full circuit absorption** | `import circuit "./file.circom"` | You have a complete Circom circuit (with a `main` component) and want to prove it directly. |
 | **Selective templates** | `import { Template } from "./lib.circom"` | You want to call specific templates from a Circom library inside an Achronyme `prove` block or `circuit`. |
-| **Namespaced library** | `import "./lib.circom" as P` | Same as selective, but with a namespace prefix (`P.Template(...)`) — useful when two libraries export colliding names. |
+| **Namespaced library** | `import "./lib.circom" as P` | Same as selective, but with a namespace prefix (`P::Template(...)`) — useful when two libraries export colliding names. |
 
 The first form replaces the entire Achronyme circuit with the Circom one. The other two forms bring Circom templates in as callable primitives inside Achronyme code.
 

@@ -95,7 +95,7 @@ import { add, _PI } from "./math.ach"
 print(add(1, 2))  // sin advertencia para _PI
 ```
 
-Esta advertencia solo aplica a imports selectivos (`import { ... } from`). Los imports de namespace (`import "..." as alias`) no se verifican porque el alias es un solo binding.
+Esta advertencia solo aplica a imports selectivos (`import { ... } from`). Los imports de namespace (`import "..." as alias`) no se verifican — cada acceso pasa por el operador de ruta `::` (`alias::nombre`), así que el uso se rastrea por miembro a través del lookup de dispatch en tiempo de compilación en lugar de un flag por-alias.
 
 ## Sugerencias "¿Quisiste Decir?"
 

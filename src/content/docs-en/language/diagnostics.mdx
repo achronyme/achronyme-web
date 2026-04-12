@@ -95,7 +95,7 @@ import { add, _PI } from "./math.ach"
 print(add(1, 2))  // no warning for _PI
 ```
 
-This warning only applies to selective imports (`import { ... } from`). Namespace imports (`import "..." as alias`) are not checked because the alias is a single binding.
+This warning only applies to selective imports (`import { ... } from`). Namespace imports (`import "..." as alias`) are not checked — every access goes through the `::` path operator (`alias::name`), so usage is tracked per-member by the compile-time dispatch lookup rather than by a per-alias flag.
 
 ## "Did You Mean?" Suggestions
 

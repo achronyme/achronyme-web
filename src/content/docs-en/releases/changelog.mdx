@@ -315,6 +315,24 @@ In `has_mixed_signal_var` loops (loops whose body both constrains signals *and* 
 
 **Impact**: MiMCSponge(2, 220, 1) — **19 constraints (unsound) → 2,581 pre-opt → 1,317 post-O1** — matching circom's 1,320.
 
+### Breaking: `::` path operator for module and circom namespace imports
+
+Module-qualified access now uses the `::` path operator instead of dot notation:
+
+```ach
+import "./math.ach" as math
+import "./circomlib/poseidon.circom" as P
+
+print(math::add(1, 2))          // was: math.add(1, 2)
+let h = P::Poseidon(2)([a, b])  // was: P.Poseidon(2)([a, b])
+```
+
+The lookup is fully resolved at compile time — the compiler rewrites `alias::name` to the mangled global `alias::name`, reusing the same dispatch path that already handles built-in statics like `Int::MAX`, `Field::ZERO`, and `BigInt::from_bits`. There is no runtime alias object, no HashMap lookup per call, and the same syntax works inside VM code, `circuit` declarations, and `prove {}` blocks — closing the gap where dot-based dispatch used to break inside prove blocks.
+
+The old `alias.name` / `alias.func(...)` forms produce a migration error that points at the correct spelling with a did-you-mean hint. Applies to both `.ach` module aliases and `.circom` library aliases.
+
+See [Modules](/docs/language/modules/) and [Importing Circom Templates](/docs/circom/importing/) for the full syntax reference.
+
 ---
 
 ## 0.1.0-beta.19 — 2026-04-02

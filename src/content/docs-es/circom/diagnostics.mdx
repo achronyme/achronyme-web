@@ -93,8 +93,9 @@ Los errores de dispatch se disparan cuando un archivo `.ach` llama un template C
 
 | Tipo | Cuando |
 |------|--------|
-| `namespace not found` | `P.Template(...)` donde `P` nunca fue importado. |
-| `template not found in namespace` | `P.Template(...)` donde `Template` no existe en la libreria aliaseada como `P`. |
+| `namespace not found` | `P::Template(...)` donde `P` nunca fue importado. |
+| `template not found in namespace` | `P::Template(...)` donde `Template` no existe en la libreria aliaseada como `P`. |
+| `use P::Template instead of P.Template` | Error de migracion: la notacion con punto sobre un alias de modulo o circom ya no se acepta — usa el operador de ruta `::`. |
 | `template not found` | Callsite de import selectivo donde el nombre del template es desconocido. |
 | `template argument count mismatch` | `T(a, b, c)(inputs)` donde `T` declara un numero diferente de parametros. |
 | `signal input count mismatch` | `T(args)(in1, in2, in3)` donde `T` declara un numero diferente de inputs. |
@@ -125,7 +126,7 @@ Las sugerencias se adjuntan a:
 
 - Nombres de funcion desconocidos en contextos de funcion Circom (E201).
 - Nombres de template desconocidos tanto en Circom (E202) como en el dispatcher `.ach`.
-- Miembros desconocidos de un namespace (`P.Foo` donde `Foo` no existe bajo `P`).
+- Miembros desconocidos de un namespace (`P::Foo` donde `Foo` no existe bajo `P`).
 - Signals desconocidos de un output de template.
 
 Cuando no existe match cercano, el sugeridor se queda en silencio en lugar de proponer una adivinanza.

@@ -11,7 +11,7 @@ Achronyme parses `.circom` files at compile time. Imports are resolved relative 
 |-----------|--------|
 | `import circuit "./file.circom" as Name` | Lowers the Circom file's `main` component into a complete ProveIR circuit, binds it to `Name` as a runtime global. |
 | `import { Template1, Template2 } from "./lib.circom"` | Registers the named templates as callables in the current scope. |
-| `import "./lib.circom" as P` | Registers every exported template under the namespace `P`, accessed as `P.Template(...)`. |
+| `import "./lib.circom" as P` | Registers every exported template under the namespace `P`, accessed as `P::Template(...)`. |
 
 Only the first form produces runtime state (a global binding). The other two are purely compile-time — they populate the compiler's template tables so that later `prove` blocks, `circuit` declarations, and VM-mode calls can resolve template names.
 
@@ -68,15 +68,15 @@ import "./circomlib/circuits/poseidon.circom" as P
 import "./circomlib/circuits/mimc.circom" as M
 
 let proof = prove() {
-    let h1 = P.Poseidon(2)([0p1, 0p2])
-    let h2 = M.MiMCSponge(2, 220, 1)([0p1, 0p2])
+    let h1 = P::Poseidon(2)([0p1, 0p2])
+    let h2 = M::MiMCSponge(2, 220, 1)([0p1, 0p2])
     assert_eq(h1, h2)  // they won't match — just an illustration
 }
 ```
 
-Every template defined in the imported file is registered under the namespace, including templates brought in through `include` chains inside the library. Calling `P.Poseidon(2)([...])` resolves to the `Poseidon` template inside `poseidon.circom` at lowering time.
+Every template defined in the imported file is registered under the namespace, including templates brought in through `include` chains inside the library. Calling `P::Poseidon(2)([...])` resolves to the `Poseidon` template inside `poseidon.circom` at lowering time.
 
-The namespace is compile-time only. There is no runtime `P` object — the dispatch is fully resolved during ProveIR lowering.
+The namespace is compile-time only. There is no runtime `P` object — the dispatch is fully resolved during ProveIR lowering, through the same `::` path operator used for `.ach` module imports and built-in statics like `Int::MAX`.
 
 ## Aliases
 

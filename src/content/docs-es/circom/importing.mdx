@@ -11,7 +11,7 @@ Achronyme parsea archivos `.circom` en tiempo de compilacion. Los imports se res
 |-----------|--------|
 | `import circuit "./file.circom" as Nombre` | Baja el componente `main` del archivo Circom a un circuito ProveIR completo, lo enlaza a `Nombre` como global de runtime. |
 | `import { Template1, Template2 } from "./lib.circom"` | Registra los templates nombrados como invocables en el scope actual. |
-| `import "./lib.circom" as P` | Registra cada template exportado bajo el namespace `P`, accesible como `P.Template(...)`. |
+| `import "./lib.circom" as P` | Registra cada template exportado bajo el namespace `P`, accesible como `P::Template(...)`. |
 
 Solo la primera forma produce estado de runtime (un binding global). Las otras dos son puramente de tiempo de compilacion — pueblan las tablas de templates del compilador para que bloques `prove` posteriores, declaraciones `circuit` y llamadas en modo VM puedan resolver nombres de template.
 
@@ -68,15 +68,15 @@ import "./circomlib/circuits/poseidon.circom" as P
 import "./circomlib/circuits/mimc.circom" as M
 
 let proof = prove() {
-    let h1 = P.Poseidon(2)([0p1, 0p2])
-    let h2 = M.MiMCSponge(2, 220, 1)([0p1, 0p2])
+    let h1 = P::Poseidon(2)([0p1, 0p2])
+    let h2 = M::MiMCSponge(2, 220, 1)([0p1, 0p2])
     assert_eq(h1, h2)  // no van a coincidir — es solo ilustrativo
 }
 ```
 
-Cada template definido en el archivo importado se registra bajo el namespace, incluyendo templates traidos a traves de cadenas `include` dentro de la libreria. Llamar `P.Poseidon(2)([...])` resuelve al template `Poseidon` dentro de `poseidon.circom` en tiempo de lowering.
+Cada template definido en el archivo importado se registra bajo el namespace, incluyendo templates traidos a traves de cadenas `include` dentro de la libreria. Llamar `P::Poseidon(2)([...])` resuelve al template `Poseidon` dentro de `poseidon.circom` en tiempo de lowering.
 
-El namespace es puramente de tiempo de compilacion. No hay un objeto `P` en runtime — el dispatch se resuelve completamente durante el lowering a ProveIR.
+El namespace es puramente de tiempo de compilacion. No hay un objeto `P` en runtime — el dispatch se resuelve completamente durante el lowering a ProveIR, a traves del mismo operador de ruta `::` usado por los imports de modulos `.ach` y los statics nativos como `Int::MAX`.
 
 ## Aliases
 

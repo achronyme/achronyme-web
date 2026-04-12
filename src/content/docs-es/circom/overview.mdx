@@ -19,7 +19,7 @@ El resultado practico: escribes la logica de alto nivel en Achronyme, llamas `Po
 |-------|----------|--------|
 | **Absorcion completa de circuito** | `import circuit "./file.circom"` | Ya tienes un circuito Circom completo (con un componente `main`) y quieres probarlo directamente. |
 | **Templates selectivos** | `import { Template } from "./lib.circom"` | Quieres llamar templates especificos de una libreria Circom dentro de un bloque `prove` de Achronyme o `circuit`. |
-| **Libreria con namespace** | `import "./lib.circom" as P` | Igual que selectivo pero con prefijo de namespace (`P.Template(...)`) — util cuando dos librerias exportan nombres que colisionan. |
+| **Libreria con namespace** | `import "./lib.circom" as P` | Igual que selectivo pero con prefijo de namespace (`P::Template(...)`) — util cuando dos librerias exportan nombres que colisionan. |
 
 La primera forma reemplaza el circuito Achronyme completo con el de Circom. Las otras dos traen templates de Circom como primitivas invocables dentro del codigo Achronyme.
 

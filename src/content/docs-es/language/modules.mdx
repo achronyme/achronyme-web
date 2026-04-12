@@ -62,11 +62,15 @@ Usa `import "ruta" as alias` para cargar un módulo. El alias es obligatorio y s
 // main.ach
 import "./math.ach" as math
 
-print(math.add(1, 2))    // 3
-print(math.PI)            // 3
+print(math::add(1, 2))    // 3
+print(math::PI)           // 3
 ```
 
-Accede a los valores exportados usando notación de punto: `alias.nombre`.
+Accede a los valores exportados usando el operador de ruta `::`: `alias::nombre`. La resolución ocurre completamente en tiempo de compilación — no existe un objeto `alias` en runtime, y el global mangled `alias::nombre` se despacha por la misma tabla que los statics nativos como `Int::MAX` o `Field::ZERO`.
+
+:::note
+Las versiones anteriores usaban notación de punto (`alias.nombre`). Esa forma ahora produce un error de migración que apunta al spelling correcto `alias::nombre`. El cambio se hizo para que las llamadas calificadas por módulo resuelvan de forma idéntica dentro de código VM y dentro de bloques `prove {}`, donde el dispatch en HashMap del esquema antiguo no estaba disponible.
+:::
 
 ### Import Selectivo
 
@@ -93,8 +97,8 @@ Puedes combinar ambos estilos para el mismo módulo:
 import { add } from "./math.ach"
 import "./math.ach" as math
 
-print(add(1, 2))        // selectivo — sin prefijo
-print(math.mul(3, 4))   // namespace — con prefijo
+print(add(1, 2))         // selectivo — sin prefijo
+print(math::mul(3, 4))   // namespace — con `::`
 ```
 
 ## Rutas de Módulos
@@ -119,11 +123,11 @@ export fn fa() { 1 }
 
 // b.ach
 import "./a.ach" as a
-export fn fb() { a.fa() + 1 }
+export fn fb() { a::fa() + 1 }
 
 // c.ach
 import "./b.ach" as b
-print(b.fb())    // 2
+print(b::fb())    // 2
 ```
 
 ## Importaciones Circulares
@@ -150,7 +154,7 @@ export fn my_hash(a, b) { poseidon(a, b) }
 import "./hash_lib.ach" as h
 
 circuit hash_check(out: Public, a: Witness, b: Witness) {
-    assert_eq(h.my_hash(a, b), out)
+    assert_eq(h::my_hash(a, b), out)
 }
 ```
 
@@ -191,4 +195,4 @@ circuit hash_check(out: Public, a: Witness, b: Witness) {
 | `export { a, b, c }` | Exportar múltiples nombres (lista) |
 | `import "./file.ach" as alias` | Import de namespace |
 | `import { a, b } from "./file.ach"` | Import selectivo |
-| `alias.name` | Acceder a un binding de namespace |
+| `alias::name` | Acceder a un binding de namespace (resuelto en tiempo de compilación) |

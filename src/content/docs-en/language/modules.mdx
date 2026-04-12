@@ -62,11 +62,15 @@ Use `import "path" as alias` to load a module. The alias is mandatory and become
 // main.ach
 import "./math.ach" as math
 
-print(math.add(1, 2))    // 3
-print(math.PI)            // 3
+print(math::add(1, 2))    // 3
+print(math::PI)           // 3
 ```
 
-Access exported values using dot notation: `alias.name`.
+Access exported values using the `::` path operator: `alias::name`. The lookup is fully resolved at compile time — there is no runtime `alias` object, and the mangled global `alias::name` goes straight through the same dispatch table used by built-in statics like `Int::MAX` or `Field::ZERO`.
+
+:::note
+Previous releases used dot notation (`alias.name`). That form now produces a migration error pointing at the correct `alias::name` spelling. The change was made so module-qualified calls resolve identically inside VM code and inside `prove {}` blocks, where the old runtime-map dispatch was not available.
+:::
 
 ### Selective Import
 
@@ -93,8 +97,8 @@ You can combine both styles for the same module:
 import { add } from "./math.ach"
 import "./math.ach" as math
 
-print(add(1, 2))        // selective — no prefix
-print(math.mul(3, 4))   // namespace — with prefix
+print(add(1, 2))         // selective — no prefix
+print(math::mul(3, 4))   // namespace — with `::`
 ```
 
 ## Module Paths
@@ -119,11 +123,11 @@ export fn fa() { 1 }
 
 // b.ach
 import "./a.ach" as a
-export fn fb() { a.fa() + 1 }
+export fn fb() { a::fa() + 1 }
 
 // c.ach
 import "./b.ach" as b
-print(b.fb())    // 2
+print(b::fb())    // 2
 ```
 
 ## Circular Imports
@@ -150,7 +154,7 @@ export fn my_hash(a, b) { poseidon(a, b) }
 import "./hash_lib.ach" as h
 
 circuit hash_check(out: Public, a: Witness, b: Witness) {
-    assert_eq(h.my_hash(a, b), out)
+    assert_eq(h::my_hash(a, b), out)
 }
 ```
 
@@ -191,4 +195,4 @@ circuit hash_check(out: Public, a: Witness, b: Witness) {
 | `export { a, b, c }` | Export multiple names (list) |
 | `import "./file.ach" as alias` | Namespace import |
 | `import { a, b } from "./file.ach"` | Selective import |
-| `alias.name` | Access a namespace binding |
+| `alias::name` | Access a namespace binding (compile-time resolved) |

@@ -34,13 +34,13 @@ prove() {
 }
 ```
 
-For namespaced imports the template name is prefixed with the namespace:
+For namespaced imports the template name is prefixed with the namespace using the `::` path operator:
 
 ```ach
 import "./lib.circom" as P
 
 prove() {
-    let h = P.Poseidon(2)([a, b])
+    let h = P::Poseidon(2)([a, b])
 }
 ```
 

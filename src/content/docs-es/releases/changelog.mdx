@@ -308,6 +308,24 @@ En loops `has_mixed_signal_var` (cuyo cuerpo tanto restringe señales *como* mut
 
 **Impacto**: MiMCSponge(2, 220, 1) — **19 restricciones (inseguro) → 2,581 pre-opt → 1,317 post-O1** — igualando las 1,320 de circom.
 
+### Breaking: operador de ruta `::` para imports de módulos y namespaces de circom
+
+El acceso calificado por módulo ahora usa el operador de ruta `::` en lugar de notación de punto:
+
+```ach
+import "./math.ach" as math
+import "./circomlib/poseidon.circom" as P
+
+print(math::add(1, 2))          // antes: math.add(1, 2)
+let h = P::Poseidon(2)([a, b])  // antes: P.Poseidon(2)([a, b])
+```
+
+El lookup se resuelve completamente en tiempo de compilación — el compilador reescribe `alias::nombre` al global mangled `alias::nombre`, reutilizando la misma ruta de dispatch que ya maneja los statics nativos como `Int::MAX`, `Field::ZERO` y `BigInt::from_bits`. No hay objeto alias en runtime, no hay lookup de HashMap por llamada, y la misma sintaxis funciona dentro de código VM, declaraciones `circuit` y bloques `prove {}` — cerrando el gap donde el dispatch basado en punto se rompía dentro de bloques prove.
+
+Las formas antiguas `alias.nombre` / `alias.func(...)` producen un error de migración que apunta al spelling correcto con una sugerencia "did you mean". Aplica tanto a alias de módulos `.ach` como a alias de librerías `.circom`.
+
+Ve [Módulos](/docs/language/modules/) y [Importando Templates de Circom](/docs/circom/importing/) para la referencia completa de sintaxis.
+
 ---
 
 ## 0.1.0-beta.19 — 2026-04-02

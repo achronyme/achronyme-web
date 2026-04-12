@@ -29,12 +29,12 @@ assert(h == 0p25)
 
 Correr esto con `ach run main.ach` compila el fuente `.ach`, cablea el handler de testigo Circom default en la VM, y ejecuta el programa. La llamada `Square()(0p5)` despacha a un opcode dedicado de la VM (`CallCircomTemplate`), que pasa los inputs al handler, corre `evaluate_template_witness` sobre la libreria Circom, y devuelve el output escalar como un valor de campo regular de la VM.
 
-Los imports con namespace funcionan exactamente igual:
+Los imports con namespace funcionan exactamente igual, usando el operador de ruta `::` para el dispatch:
 
 ```ach
 import "./module.circom" as P
 
-let h = P.Square()(0p7)
+let h = P::Square()(0p7)
 assert(h == 0p49)
 ```
 

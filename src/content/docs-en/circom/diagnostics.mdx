@@ -93,8 +93,9 @@ Dispatch errors fire when an `.ach` file calls a Circom template through an impo
 
 | Kind | When |
 |------|------|
-| `namespace not found` | `P.Template(...)` where `P` was never imported. |
-| `template not found in namespace` | `P.Template(...)` where `Template` does not exist in the library aliased as `P`. |
+| `namespace not found` | `P::Template(...)` where `P` was never imported. |
+| `template not found in namespace` | `P::Template(...)` where `Template` does not exist in the library aliased as `P`. |
+| `use P::Template instead of P.Template` | Migration error: dot notation on a module or circom alias is no longer accepted — use the `::` path operator. |
 | `template not found` | Selective-import callsite where the template name is unknown. |
 | `template argument count mismatch` | `T(a, b, c)(inputs)` where `T` declares a different number of parameters. |
 | `signal input count mismatch` | `T(args)(in1, in2, in3)` where `T` declares a different number of inputs. |
@@ -125,7 +126,7 @@ Suggestions are attached to:
 
 - Unknown function names in Circom function contexts (E201).
 - Unknown template names in both Circom (E202) and the `.ach` dispatcher.
-- Unknown members of a namespace (`P.Foo` where `Foo` does not exist under `P`).
+- Unknown members of a namespace (`P::Foo` where `Foo` does not exist under `P`).
 - Unknown signals of a template output.
 
 When no close match exists, the suggester stays silent rather than proposing a guess.

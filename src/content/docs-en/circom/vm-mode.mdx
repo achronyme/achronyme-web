@@ -29,12 +29,12 @@ assert(h == 0p25)
 
 Running this with `ach run main.ach` compiles the `.ach` source, wires the default Circom witness handler into the VM, and executes the program. The `Square()(0p5)` call dispatches to a dedicated VM opcode (`CallCircomTemplate`), which hands the inputs to the handler, runs `evaluate_template_witness` on the Circom library, and returns the scalar output as a regular VM field value.
 
-Namespaced imports work exactly the same way:
+Namespaced imports work exactly the same way, using the `::` path operator for dispatch:
 
 ```ach
 import "./module.circom" as P
 
-let h = P.Square()(0p7)
+let h = P::Square()(0p7)
 assert(h == 0p49)
 ```
 
