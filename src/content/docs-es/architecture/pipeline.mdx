@@ -5,13 +5,19 @@ description: "El pipeline de compilación desde el código fuente hasta las prue
 
 import Mermaid from '../../../components/docs/Mermaid.astro';
 
-Achronyme compila el mismo lenguaje fuente a través de tres caminos distintos: **Modo VM** para ejecución general, **Modo circuito** para generación de restricciones vía `ach circuit`, y **Modo prove** para generación de pruebas en línea vía bloques `prove {}`.
+Achronyme compila código fuente a través de cuatro caminos distintos: **Modo VM** para ejecución general, **Modo circuito** para generación de restricciones vía `ach circuit`, **Modo prove** para generación de pruebas en línea vía bloques `prove {}`, y **Modo Circom** para compilar archivos `.circom` a través del mismo pipeline de backend.
 
 ## Diagrama del Pipeline
 
 <Mermaid chart={`graph TD
     SRC["Fuente (.ach)"] --> PARSER["Parser<br/><small>Pratt + descenso recursivo</small>"]
     PARSER --> AST["AST"]
+
+    CIRCOM_SRC["Fuente (.circom)"] --> CIRCOM_PARSER["Parser Circom<br/><small>Pratt escrito a mano</small>"]
+    CIRCOM_PARSER --> CIRCOM_AST["AST Circom"]
+    CIRCOM_AST --> ANALYSIS["Análisis de Constraints<br/><small>&lt;-- sin === = error</small>"]
+    ANALYSIS --> CIRCOM_LOWER["Lowering Circom<br/><small>signals · expresiones · statements</small>"]
+    CIRCOM_LOWER --> PROVEIR2["ProveIR"]
 
     AST --> BC["Compilador de Bytecode"]
     BC --> OPT_BC["Optimizador de Bytecode<br/><small>peephole · const fold · dead store</small>"]
@@ -23,6 +29,7 @@ Achronyme compila el mismo lenguaje fuente a través de tres caminos distintos: 
 
     VM -->|"bloque prove { }"| INST["ProveIR Instanciar<br/><small>capturar valores del scope</small>"]
     INST --> IR["SSA IR"]
+    PROVEIR2 -->|"ach circom"| INST
 
     AST -->|"ach circuit"| LOWER["Bajada a IR"]
     LOWER --> IR
@@ -99,6 +106,21 @@ Los bloques `prove {}` pasan por un pipeline de 8 fases:
 | H | Probar | Generar prueba criptográfica |
 
 Este diseño significa que los bloques prove se **pre-compilan en tiempo de compilación** — no hay re-parseo en runtime. El formato ProveIR lleva información de tipos, spans de código y referencias a funciones a través de la serialización.
+
+## Etapa 2d: Frontend Circom
+
+**Crate:** `circom` — **Punto de entrada:** `circom::parser::parse_circom(source)`
+
+Compila archivos `.circom` a través del mismo pipeline ProveIR → IR → Backend. El frontend Circom agrega seguridad estructural: `<--` (asignación de signal sin constraint) sin un `===` correspondiente produce un error duro en tiempo de compilación (E100), capturando signals sub-restringidos que son la fuente #1 de vulnerabilidades ZK.
+
+| Etapa | Módulo | Descripción |
+|-------|--------|-------------|
+| Lex | `circom::lexer` | Tokenizador de un solo pase, desambigua `<` vs `<=` vs `<==` vs `<--` |
+| Parse | `circom::parser` | Parser Pratt escrito a mano para Circom 2.x (templates, signals, componentes) |
+| Analizar | `circom::analysis` | Verificación de pares de constraints, resolución de includes con detección de ciclos |
+| Bajar | `circom::lowering` | Signals → `ProveInputDecl`, expresiones → `CircuitExpr`, statements → `CircuitNode` |
+
+El ProveIR resultante alimenta el mismo pipeline de instanciación → optimización → backend que los bloques `prove {}` y `ach circuit`. Los templates Circom también pueden importarse y llamarse desde archivos `.ach` tanto en modo circuito como en modo VM — ve el capítulo [Interoperabilidad con Circom](/es/docs/circom/overview/) para la sintaxis y semántica orientada al usuario.
 
 ## Etapa 3: Optimización
 
@@ -178,6 +200,10 @@ La selección de campo se resuelve una vez en el boundary de sesión; la monomor
 | Etapa | Archivo |
 |-------|---------|
 | Parser | `achronyme-parser/src/parser.rs` |
+| Lexer Circom | `circom/src/lexer.rs` |
+| Parser Circom | `circom/src/parser/` |
+| Análisis Circom | `circom/src/analysis/` |
+| Lowering Circom | `circom/src/lowering/` |
 | Compilador de Bytecode | `compiler/src/codegen.rs` |
 | Optimizador de Bytecode | `compiler/src/optimizer.rs` |
 | Compilador ProveIR | `ir/src/prove_ir/compiler.rs` |
