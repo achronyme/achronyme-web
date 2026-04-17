@@ -38,33 +38,34 @@ pub fn validate_path(workspace: &Path, user_path: &str) -> Result<PathBuf, Strin
     }
 
     let full = workspace.join(user_path);
-
-    // Ensure the resolved path is inside the workspace
     let canonical_ws = workspace
         .canonicalize()
         .map_err(|e| format!("workspace error: {e}"))?;
 
-    // For new files that don't exist yet, check the parent
+    // Single-shot flow that collapses the old exists/doesn't split and
+    // eliminates the TOCTOU window between `parent.exists()` and
+    // `create_dir_all`. `create_dir_all` is idempotent, so running it
+    // unconditionally before canonicalization means the parent is
+    // guaranteed to exist and its canonical form reflects whatever is
+    // on disk — if anything in the path is a symlink pointing outside
+    // the workspace, the prefix check below rejects it.
+    let parent = full.parent().ok_or("path has no parent".to_string())?;
+    std::fs::create_dir_all(parent).map_err(|e| format!("cannot create directory: {e}"))?;
+    let canonical_parent = parent
+        .canonicalize()
+        .map_err(|e| format!("parent error: {e}"))?;
+    if !canonical_parent.starts_with(&canonical_ws) {
+        return Err("path escapes workspace".into());
+    }
+
+    // If the file itself exists, re-check its canonical form too so a
+    // filename-level symlink swap can't slip past the parent check.
     if full.exists() {
         let canonical = full
             .canonicalize()
             .map_err(|e| format!("path error: {e}"))?;
         if !canonical.starts_with(&canonical_ws) {
             return Err("path escapes workspace".into());
-        }
-    } else {
-        // Ensure parent exists and is inside workspace
-        if let Some(parent) = full.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent)
-                    .map_err(|e| format!("cannot create directory: {e}"))?;
-            }
-            let canonical_parent = parent
-                .canonicalize()
-                .map_err(|e| format!("parent error: {e}"))?;
-            if !canonical_parent.starts_with(&canonical_ws) {
-                return Err("path escapes workspace".into());
-            }
         }
     }
 
@@ -161,8 +162,13 @@ impl SessionStore {
     }
 
     pub fn create(&self, template: Option<&str>) -> Result<(Uuid, PathBuf), String> {
+        // When the map hits MAX_SESSIONS we LRU-evict the least recently
+        // active session rather than refusing service. The TTL reaper
+        // eventually catches idle sessions but its 60s tick lets a
+        // burst of new clients spike past the limit; LRU keeps the door
+        // open for active users even under that pressure.
         if self.sessions.len() >= MAX_SESSIONS {
-            return Err("session limit reached (200)".into());
+            self.evict_least_recently_active();
         }
 
         let id = Uuid::new_v4();
@@ -184,6 +190,29 @@ impl SessionStore {
         };
         self.sessions.insert(id, session);
         Ok((id, workspace))
+    }
+
+    /// Drop the session whose `last_activity` is oldest.
+    ///
+    /// Used as a safety valve in [`Self::create`] when the store is at
+    /// capacity. Does nothing if the map is empty. The comparison walks
+    /// every entry — acceptable because `MAX_SESSIONS` is small (200)
+    /// and this only fires when already saturated.
+    fn evict_least_recently_active(&self) {
+        let mut oldest: Option<(Uuid, Instant)> = None;
+        for entry in self.sessions.iter() {
+            let activity = entry.last_activity;
+            match oldest {
+                Some((_, prev)) if activity >= prev => {}
+                _ => oldest = Some((*entry.key(), activity)),
+            }
+        }
+        if let Some((victim, _)) = oldest {
+            if let Some((_, session)) = self.sessions.remove(&victim) {
+                let _ = std::fs::remove_dir_all(&session.workspace);
+                tracing::info!("evicted LRU session {victim}");
+            }
+        }
     }
 
     pub fn get_workspace(&self, id: Uuid) -> Result<PathBuf, String> {
