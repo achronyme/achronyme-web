@@ -1,0 +1,75 @@
+---
+title: "beta.20 — Circom frontend"
+description: "The headline release: Achronyme compiles .circom files end-to-end with soundness diagnostics circom itself does not provide."
+---
+
+Achronyme **0.1.0-beta.20** ships the Circom frontend: `.circom` files flow through the same pipeline as native `.ach` circuits, with compile-time soundness checks the reference circom compiler does not perform. This page is the two-minute version — the full changelog entry lives in the [Changelog](/docs/releases/changelog/).
+
+## TL;DR
+
+- **`ach circom file.circom --prove`** compiles and proves a circom circuit end-to-end.
+- **Constraint counts match or beat circom's most aggressive optimizer (O2)** on every benchmarked circomlib template (Num2Bits, LessThan, MiMCSponge, Poseidon, Pedersen, EscalarMulAny, and more).
+- **E100 + W101 catch under-constrained signals** at compile time — the #1 source of ZK bugs, which the circom compiler does not detect.
+- **Three ways to reach Circom code**: full absorption (`import circuit`), selective templates (`import { T } from`), or namespaced library (`import ... as P`). See [Circom Interop Overview](/docs/circom/overview/).
+- **`[circom]` section** in `achronyme.toml` centralizes library search paths — no more `-l` on every invocation. See [Project Configuration](/docs/cli/project-config/#circom--circom-library-search-paths).
+
+## Why it matters
+
+The vast majority of production ZK applications today depend on circomlib — Poseidon, MiMC, EdDSA, BabyJubjub, Num2Bits, bit comparators. Until beta.20, using any of those from Achronyme meant rewriting them in `.ach`. Now you import the original `.circom` source and Achronyme's pipeline compiles it:
+
+```
+parse → constraint analysis → lower to ProveIR → optimize → R1CS / Plonkish → Groth16
+```
+
+The compiled output is snarkjs-compatible (`.r1cs` + `.wtns`) and the Solidity verifier generator works for circom-sourced circuits exactly as it does for native Achronyme.
+
+## The headline soundness checks
+
+Circom's own compiler does not flag unconstrained signals. Achronyme does:
+
+- **E100** — hard error when a signal assigned with `<--` has no `===` anywhere. This is the classic bug behind virtually every circomlib audit finding: a witness hint without a corresponding constraint lets a malicious prover write anything.
+- **W101** — warning when a `signal input` / `signal output` never participates in a constraint. Subtle and very common; often shipped to mainnet.
+- **W102 / W103** — warnings on weaker variants (signal assigned but not verified against an expression).
+
+The full list, with rendered examples, lives in [Diagnostics](/docs/circom/diagnostics/).
+
+## Constraint counts vs circom O2
+
+The benchmark is `r1cs_optimization_benchmark` in `circom/tests/e2e.rs`. Achronyme's O1 pass (constant propagation + linear-combination folding + DEDUCE Gaussian elimination) matches or beats circom's best setting on every template we have E2E-tested:
+
+| Template | Achronyme O1 | circom O2 | Result |
+|----------|--------------|-----------|--------|
+| `Num2Bits(8)` | **9** | 17 | **−8** |
+| `LessThan(8)` | **10** | 20 | **−10** |
+| `MiMCSponge(2, 220, 1)` | **1317** | 1320 | **−3** |
+| `IsZero()` | 2 | 2 | tie |
+| `Poseidon(2)` | 240 | 240 | tie |
+| `Pedersen(8)` | 13 | 13 | tie |
+| `EscalarMulFix(253)` | 11 | 11 | tie |
+| `EscalarMulAny(254)` | 2310 | 2310 | tie |
+
+End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)`, and `EscalarMulAny(254)`. The full compatibility list is in [Limitations and Roadmap](/docs/circom/limitations/#circomlib-coverage).
+
+## What changed under the hood
+
+- New 11th workspace crate: `circom/` — hand-written Pratt parser, constraint analyzer, lowering pipeline (21 modules), witness evaluator, Groth16 E2E.
+- New diagnostics codes: **E100-E102** (constraint soundness), **W101-W103** (warning on unverified signals), **E200-E211** (lowering), **E300-E306** (parser).
+- New opcodes / infrastructure: `CallCircomTemplate` (VM-mode calls), `TAG_CIRCOM_HANDLE`, `CircomWitnessHandler` trait, `CircomLibraryHandle` trait, `CircomCallable` dispatch.
+- Compile-time arithmetic migrated from `i64` to **BigVal** (256-bit two's complement), so templates that compute `1 << 128` (like `CompConstant`) work correctly.
+- Dynamic loop bounds (`for i in 0..n+1`), component arrays (`component muls[n]`), 2-D array variables (`var M[t][t]`), function-keyword compile-time evaluator.
+- R1CS optimizer v2: frequency heuristic, tautological linear removal, zero-product handling, plus **DEDUCE** Gaussian elimination with field-folding constant propagation.
+
+## Upgrading from beta.19
+
+No breaking changes for existing `.ach` code. `prove {}` blocks still work. Existing `.achb` bytecode compiled under beta.19 requires a recompile (ProveIR format bumped to v5).
+
+If you were using `ach circom` in a pre-release branch, `[circom].libs` now lives in `achronyme.toml` at the project root and takes relative paths.
+
+## Where to go next
+
+- [Circom Interop Overview](/docs/circom/overview/) — the why + how, three-minute read.
+- [Circuit Mode](/docs/circom/circuit-mode/) — full-circuit absorption workflow.
+- [Importing Templates](/docs/circom/importing/) — selective and namespaced imports.
+- [Diagnostics](/docs/circom/diagnostics/) — every error and warning with rendered output.
+- [Limitations and Roadmap](/docs/circom/limitations/) — what works today, what's next.
+- [Changelog](/docs/releases/changelog/) — the full, commit-level release notes.

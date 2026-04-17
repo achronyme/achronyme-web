@@ -1,0 +1,75 @@
+---
+title: "beta.20 — Frontend de Circom"
+description: "La release destacada: Achronyme compila archivos .circom de extremo a extremo con diagnosticos de soundness que circom mismo no provee."
+---
+
+Achronyme **0.1.0-beta.20** trae el frontend de Circom: los archivos `.circom` fluyen por la misma pipeline que los circuitos nativos `.ach`, con chequeos de soundness en tiempo de compilacion que el compilador oficial de circom no realiza. Esta pagina es la version de dos minutos — la entrada completa del changelog esta en el [Changelog](/es/docs/releases/changelog/).
+
+## Resumen rapido
+
+- **`ach circom archivo.circom --prove`** compila y prueba un circuito circom de extremo a extremo.
+- **El conteo de constraints iguala o supera al optimizador mas agresivo de circom (O2)** en todo template de circomlib ejecutado (Num2Bits, LessThan, MiMCSponge, Poseidon, Pedersen, EscalarMulAny, y mas).
+- **E100 + W101 detectan signals sin restringir** en tiempo de compilacion — la fuente #1 de bugs ZK, que el compilador de circom no detecta.
+- **Tres formas de alcanzar codigo Circom**: absorcion completa (`import circuit`), templates selectivos (`import { T } from`), o libreria con namespace (`import ... as P`). Ver [Resumen de Interop con Circom](/es/docs/circom/overview/).
+- **Seccion `[circom]`** en `achronyme.toml` centraliza las rutas de busqueda de librerias — se acabo el `-l` en cada invocacion. Ver [Configuracion del Proyecto](/es/docs/cli/project-config/#circom--rutas-de-busqueda-de-bibliotecas-circom).
+
+## Por que importa
+
+La gran mayoria de aplicaciones ZK en produccion hoy dependen de circomlib — Poseidon, MiMC, EdDSA, BabyJubjub, Num2Bits, comparadores de bits. Hasta beta.20, usar cualquiera de estos desde Achronyme implicaba reescribirlos en `.ach`. Ahora importas el `.circom` original y la pipeline de Achronyme lo compila:
+
+```
+parse → analisis de constraints → lower a ProveIR → optimizar → R1CS / Plonkish → Groth16
+```
+
+La salida compilada es compatible con snarkjs (`.r1cs` + `.wtns`) y el generador de verificadores Solidity funciona para circuitos provenientes de circom exactamente como lo hace para Achronyme nativo.
+
+## Los chequeos de soundness destacados
+
+El compilador oficial de circom no marca signals sin restringir. Achronyme si:
+
+- **E100** — error duro cuando un signal asignado con `<--` no tiene `===` en ningun lado. Este es el bug clasico detras de practicamente todo hallazgo de auditoria en circomlib: una hint de testigo sin constraint correspondiente permite a un prover malicioso escribir cualquier cosa.
+- **W101** — advertencia cuando un `signal input` / `signal output` nunca participa en un constraint. Sutil y muy comun; muchas veces llega a mainnet.
+- **W102 / W103** — advertencias en variantes mas debiles (signal asignado pero no verificado contra una expresion).
+
+La lista completa, con ejemplos renderizados, esta en [Diagnosticos](/es/docs/circom/diagnostics/).
+
+## Conteo de constraints vs circom O2
+
+El benchmark es `r1cs_optimization_benchmark` en `circom/tests/e2e.rs`. El pase O1 de Achronyme (constant propagation + linear-combination folding + DEDUCE Gaussian elimination) iguala o supera la mejor configuracion de circom en cada template que testeamos E2E:
+
+| Template | Achronyme O1 | circom O2 | Resultado |
+|----------|--------------|-----------|-----------|
+| `Num2Bits(8)` | **9** | 17 | **−8** |
+| `LessThan(8)` | **10** | 20 | **−10** |
+| `MiMCSponge(2, 220, 1)` | **1317** | 1320 | **−3** |
+| `IsZero()` | 2 | 2 | empate |
+| `Poseidon(2)` | 240 | 240 | empate |
+| `Pedersen(8)` | 13 | 13 | empate |
+| `EscalarMulFix(253)` | 11 | 11 | empate |
+| `EscalarMulAny(254)` | 2310 | 2310 | empate |
+
+La verificacion de prueba Groth16 de extremo a extremo se hizo on-chain para `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` y `EscalarMulAny(254)`. La lista completa de compatibilidad esta en [Limitaciones y Roadmap](/es/docs/circom/limitations/#cobertura-de-circomlib).
+
+## Lo que cambio por dentro
+
+- Nuevo crate 11 del workspace: `circom/` — parser Pratt hecho a mano, analizador de constraints, pipeline de lowering (21 modulos), evaluador de testigo, Groth16 E2E.
+- Nuevos codigos de diagnostico: **E100-E102** (soundness de constraints), **W101-W103** (advertencia sobre signals no verificados), **E200-E211** (lowering), **E300-E306** (parser).
+- Nuevos opcodes / infra: `CallCircomTemplate` (llamadas en modo VM), `TAG_CIRCOM_HANDLE`, trait `CircomWitnessHandler`, trait `CircomLibraryHandle`, dispatch `CircomCallable`.
+- La aritmetica en tiempo de compilacion migro de `i64` a **BigVal** (256-bit complemento a dos), asi que templates que computan `1 << 128` (como `CompConstant`) funcionan correctamente.
+- Bounds de loop dinamicos (`for i in 0..n+1`), arrays de componentes (`component muls[n]`), variables de array 2-D (`var M[t][t]`), evaluador en tiempo de compilacion con palabra clave `function`.
+- Optimizador R1CS v2: heuristica de frecuencia, remocion de lineales tautologicas, manejo de zero-product, mas **DEDUCE** Gaussian elimination con propagacion de constantes via field-folding.
+
+## Actualizando desde beta.19
+
+Sin cambios rompedores para codigo `.ach` existente. Los bloques `prove {}` siguen funcionando. El bytecode `.achb` existente compilado bajo beta.19 requiere recompilacion (el formato de ProveIR subio a v5).
+
+Si usabas `ach circom` en una rama pre-release, `[circom].libs` ahora vive en `achronyme.toml` en la raiz del proyecto y toma rutas relativas.
+
+## Adonde ir despues
+
+- [Resumen de Interop con Circom](/es/docs/circom/overview/) — el por que + como, lectura de tres minutos.
+- [Modo Circuito](/es/docs/circom/circuit-mode/) — flujo de absorcion de circuito completo.
+- [Importando Templates](/es/docs/circom/importing/) — imports selectivos y con namespace.
+- [Diagnosticos](/es/docs/circom/diagnostics/) — cada error y advertencia con salida renderizada.
+- [Limitaciones y Roadmap](/es/docs/circom/limitations/) — lo que funciona hoy, lo que sigue.
+- [Changelog](/es/docs/releases/changelog/) — las notas de release completas a nivel de commit.
