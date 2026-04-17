@@ -104,6 +104,25 @@ These are equivalent to `--public x,y --witness secret` on the command line. If 
 
 If both the CLI flags and TOML fields are empty, the compiler uses in-source `public` and `witness` declarations.
 
+### `[circom]` — Circom library search paths
+
+```toml
+[circom]
+libs = ["vendor/circomlib/circuits", "third_party/circuits"]
+```
+
+Paths are resolved **relative to the project root** (the directory holding `achronyme.toml`). Every subcommand that parses `.circom` sources — `ach circom`, `ach run`, `ach circuit` — will look in each `libs` entry when resolving `include "file.circom";` directives.
+
+CLI `-l/--lib` flags **append** to the TOML list rather than replacing it, so `ach circom -l extra/` extends `libs` for a one-off invocation without editing the manifest.
+
+```bash
+# With libs = ["vendor/circomlib/circuits"] in achronyme.toml:
+ach circom circuit.circom                      # only vendor/ searched
+ach circom circuit.circom -l extra/circuits    # vendor/ and extra/ both searched
+```
+
+Use this section to version-control where your circom dependencies live instead of scattering `-l` flags across scripts.
+
 ## Minimal example
 
 ```toml
@@ -150,4 +169,5 @@ The CLI validates the TOML file on load:
 - `vm.max_heap` must be a valid size string if non-empty
 - `circuit.public` / `circuit.witness` entries must be valid identifiers
 - `project.entry` must end in `.ach` or `.achb`
+- `circom.libs` entries must exist (resolved at load time, relative to project root)
 - Unknown fields are rejected (forward compatibility via explicit sections)
