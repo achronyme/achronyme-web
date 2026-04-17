@@ -96,9 +96,8 @@ fn compile_circuit(
     let has_inputs = !inputs.is_empty();
 
     // Compile circuit to ProveIR and instantiate
-    let prove_ir =
-        ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
-            .map_err(|e| format!("{e}"))?;
+    let prove_ir = ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
+        .map_err(|e| format!("{e}"))?;
 
     let n_public = prove_ir.public_inputs.len();
     let n_witness = prove_ir.witness_inputs.len();
@@ -149,7 +148,7 @@ fn compile_r1cs(
     let proven = ir::passes::bool_prop::compute_proven_boolean(program);
     r1cs.set_proven_boolean(proven);
 
-    let mut r1cs_b64 = None;
+    let r1cs_b64;
     let mut proof_json = None;
     let mut public_json = None;
     let mut vkey_json = None;
@@ -187,8 +186,7 @@ fn compile_r1cs(
         }
     } else {
         // Compile constraints only (no witness)
-        r1cs.compile_ir(program)
-            .map_err(|e| format!("{e}"))?;
+        r1cs.compile_ir(program).map_err(|e| format!("{e}"))?;
 
         let r1cs_data = write_r1cs(&r1cs.cs, PrimeId::Bn254);
         r1cs_b64 = Some(b64.encode(&r1cs_data));
@@ -231,7 +229,7 @@ fn compile_plonkish(
     let mut proof_json = None;
     let mut public_json = None;
     let mut vkey_json = None;
-    let mut n_constraints = 0;
+    let n_constraints;
 
     if let Some(input_map) = inputs {
         compiler
@@ -261,9 +259,7 @@ fn compile_plonkish(
             }
         }
     } else {
-        compiler
-            .compile_ir(program)
-            .map_err(|e| format!("{e}"))?;
+        compiler.compile_ir(program).map_err(|e| format!("{e}"))?;
 
         n_constraints = compiler.num_circuit_rows();
     }

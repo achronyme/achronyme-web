@@ -1,0 +1,13 @@
+# Robots rules for achrony.me
+# Docs and public pages are indexable; API endpoints are not.
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Playground generates ephemeral sessions and isn't useful to crawl as
+# search results. The content renders client-side and the session IDs
+# would pollute the index.
+Disallow: /playground
+
+Sitemap: https://achrony.me/sitemap-index.xml

@@ -49,9 +49,7 @@ pub async fn handler(
             .parse()
             .map_err(|_| ApiError::BadRequest("invalid session id".into()))?;
 
-        let workspace = store
-            .get_workspace(id)
-            .map_err(|e| ApiError::BadRequest(e))?;
+        let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
         let result = sandboxed(
             move || crate::workspace::run_workspace(&workspace, INSTRUCTION_BUDGET, MAX_HEAP_BYTES),
@@ -61,8 +59,8 @@ pub async fn handler(
 
         return Ok(Json(RunResponse {
             success: result.success,
-            output: result.output,
-            error: result.error,
+            output: crate::sanitize::scrub_paths(&result.output),
+            error: crate::sanitize::scrub_option(result.error),
             time_ms: start.elapsed().as_millis() as u64,
             proofs: result.proofs,
         }));
@@ -84,8 +82,8 @@ pub async fn handler(
 
     Ok(Json(RunResponse {
         success: result.success,
-        output: result.output,
-        error: result.error,
+        output: crate::sanitize::scrub_paths(&result.output),
+        error: crate::sanitize::scrub_option(result.error),
         time_ms: start.elapsed().as_millis() as u64,
         proofs: result.proofs,
     }))

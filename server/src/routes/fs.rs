@@ -27,16 +27,13 @@ pub async fn write(
     Json(req): Json<WriteRequest>,
 ) -> Result<Json<OkResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    let workspace = store
-        .get_workspace(id)
-        .map_err(|e| ApiError::BadRequest(e))?;
+    let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
-    let file_path =
-        session::validate_path(&workspace, &req.path).map_err(|e| ApiError::BadRequest(e))?;
+    let file_path = session::validate_path(&workspace, &req.path).map_err(ApiError::BadRequest)?;
 
     store
         .check_write_limits(&workspace, &file_path, &req.content)
-        .map_err(|e| ApiError::BadRequest(e))?;
+        .map_err(ApiError::BadRequest)?;
 
     std::fs::write(&file_path, &req.content)
         .map_err(|e| ApiError::Internal(format!("write: {e}")))?;
@@ -63,15 +60,15 @@ pub async fn read(
     Json(req): Json<ReadRequest>,
 ) -> Result<Json<ReadResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    let workspace = store
-        .get_workspace(id)
-        .map_err(|e| ApiError::BadRequest(e))?;
+    let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
-    let file_path =
-        session::validate_path(&workspace, &req.path).map_err(|e| ApiError::BadRequest(e))?;
+    let file_path = session::validate_path(&workspace, &req.path).map_err(ApiError::BadRequest)?;
 
     if !file_path.exists() {
-        return Err(ApiError::BadRequest(format!("file not found: {}", req.path)));
+        return Err(ApiError::BadRequest(format!(
+            "file not found: {}",
+            req.path
+        )));
     }
 
     let content = std::fs::read_to_string(&file_path)
@@ -96,14 +93,10 @@ pub async fn delete(
     Json(req): Json<DeleteRequest>,
 ) -> Result<Json<OkResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    let workspace = store
-        .get_workspace(id)
-        .map_err(|e| ApiError::BadRequest(e))?;
+    let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
     if req.path == "achronyme.toml" {
-        return Err(ApiError::BadRequest(
-            "cannot delete achronyme.toml".into(),
-        ));
+        return Err(ApiError::BadRequest("cannot delete achronyme.toml".into()));
     }
 
     // Try as file first, then as directory
@@ -140,15 +133,12 @@ pub async fn mkdir(
     Json(req): Json<MkdirRequest>,
 ) -> Result<Json<OkResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    let workspace = store
-        .get_workspace(id)
-        .map_err(|e| ApiError::BadRequest(e))?;
+    let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
     let dir_path =
-        session::validate_dir_path(&workspace, &req.path).map_err(|e| ApiError::BadRequest(e))?;
+        session::validate_dir_path(&workspace, &req.path).map_err(ApiError::BadRequest)?;
 
-    std::fs::create_dir_all(&dir_path)
-        .map_err(|e| ApiError::Internal(format!("mkdir: {e}")))?;
+    std::fs::create_dir_all(&dir_path).map_err(|e| ApiError::Internal(format!("mkdir: {e}")))?;
 
     Ok(Json(OkResponse { ok: true }))
 }
@@ -165,13 +155,9 @@ pub async fn list(
     headers: axum::http::HeaderMap,
 ) -> Result<Json<ListResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    let workspace = store
-        .get_workspace(id)
-        .map_err(|e| ApiError::BadRequest(e))?;
+    let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
-    let files = store
-        .list_files(&workspace)
-        .map_err(|e| ApiError::Internal(e))?;
+    let files = store.list_files(&workspace).map_err(ApiError::Internal)?;
 
     Ok(Json(ListResponse { files }))
 }
@@ -190,20 +176,14 @@ pub async fn rename(
     Json(req): Json<RenameRequest>,
 ) -> Result<Json<OkResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    let workspace = store
-        .get_workspace(id)
-        .map_err(|e| ApiError::BadRequest(e))?;
+    let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
     if req.from == "achronyme.toml" {
-        return Err(ApiError::BadRequest(
-            "cannot rename achronyme.toml".into(),
-        ));
+        return Err(ApiError::BadRequest("cannot rename achronyme.toml".into()));
     }
 
-    let from_path =
-        session::validate_path(&workspace, &req.from).map_err(|e| ApiError::BadRequest(e))?;
-    let to_path =
-        session::validate_path(&workspace, &req.to).map_err(|e| ApiError::BadRequest(e))?;
+    let from_path = session::validate_path(&workspace, &req.from).map_err(ApiError::BadRequest)?;
+    let to_path = session::validate_path(&workspace, &req.to).map_err(ApiError::BadRequest)?;
 
     if !from_path.exists() {
         return Err(ApiError::BadRequest(format!(

@@ -38,33 +38,34 @@ pub fn validate_path(workspace: &Path, user_path: &str) -> Result<PathBuf, Strin
     }
 
     let full = workspace.join(user_path);
-
-    // Ensure the resolved path is inside the workspace
     let canonical_ws = workspace
         .canonicalize()
         .map_err(|e| format!("workspace error: {e}"))?;
 
-    // For new files that don't exist yet, check the parent
+    // Single-shot flow that collapses the old exists/doesn't split and
+    // eliminates the TOCTOU window between `parent.exists()` and
+    // `create_dir_all`. `create_dir_all` is idempotent, so running it
+    // unconditionally before canonicalization means the parent is
+    // guaranteed to exist and its canonical form reflects whatever is
+    // on disk — if anything in the path is a symlink pointing outside
+    // the workspace, the prefix check below rejects it.
+    let parent = full.parent().ok_or("path has no parent".to_string())?;
+    std::fs::create_dir_all(parent).map_err(|e| format!("cannot create directory: {e}"))?;
+    let canonical_parent = parent
+        .canonicalize()
+        .map_err(|e| format!("parent error: {e}"))?;
+    if !canonical_parent.starts_with(&canonical_ws) {
+        return Err("path escapes workspace".into());
+    }
+
+    // If the file itself exists, re-check its canonical form too so a
+    // filename-level symlink swap can't slip past the parent check.
     if full.exists() {
         let canonical = full
             .canonicalize()
             .map_err(|e| format!("path error: {e}"))?;
         if !canonical.starts_with(&canonical_ws) {
             return Err("path escapes workspace".into());
-        }
-    } else {
-        // Ensure parent exists and is inside workspace
-        if let Some(parent) = full.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent)
-                    .map_err(|e| format!("cannot create directory: {e}"))?;
-            }
-            let canonical_parent = parent
-                .canonicalize()
-                .map_err(|e| format!("parent error: {e}"))?;
-            if !canonical_parent.starts_with(&canonical_ws) {
-                return Err("path escapes workspace".into());
-            }
         }
     }
 
@@ -122,8 +123,16 @@ pub fn validate_dir_path(workspace: &Path, user_path: &str) -> Result<PathBuf, S
 }
 
 pub struct Session {
+    // `id` and `created_at` are kept as observability hooks for future
+    // metrics / structured logging — the reaper currently identifies
+    // sessions through the `DashMap` key, and touch()/TTL tracking uses
+    // `last_activity` only. `#[allow(dead_code)]` here is intentional so
+    // the struct fields stay in-sync with what any introspection tool
+    // (ps, dashboards) would expect to find.
+    #[allow(dead_code)]
     pub id: Uuid,
     pub workspace: PathBuf,
+    #[allow(dead_code)]
     pub created_at: Instant,
     pub last_activity: Instant,
 }
@@ -139,6 +148,12 @@ pub struct SessionStore {
     sessions: Arc<DashMap<Uuid, Session>>,
 }
 
+impl Default for SessionStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SessionStore {
     pub fn new() -> Self {
         Self {
@@ -147,16 +162,20 @@ impl SessionStore {
     }
 
     pub fn create(&self, template: Option<&str>) -> Result<(Uuid, PathBuf), String> {
+        // When the map hits MAX_SESSIONS we LRU-evict the least recently
+        // active session rather than refusing service. The TTL reaper
+        // eventually catches idle sessions but its 60s tick lets a
+        // burst of new clients spike past the limit; LRU keeps the door
+        // open for active users even under that pressure.
         if self.sessions.len() >= MAX_SESSIONS {
-            return Err("session limit reached (200)".into());
+            self.evict_least_recently_active();
         }
 
         let id = Uuid::new_v4();
         let workspace = std::env::temp_dir()
             .join("ach-sessions")
             .join(id.to_string());
-        std::fs::create_dir_all(&workspace)
-            .map_err(|e| format!("cannot create workspace: {e}"))?;
+        std::fs::create_dir_all(&workspace).map_err(|e| format!("cannot create workspace: {e}"))?;
 
         // Populate template if requested
         if let Some(tpl) = template {
@@ -171,6 +190,29 @@ impl SessionStore {
         };
         self.sessions.insert(id, session);
         Ok((id, workspace))
+    }
+
+    /// Drop the session whose `last_activity` is oldest.
+    ///
+    /// Used as a safety valve in [`Self::create`] when the store is at
+    /// capacity. Does nothing if the map is empty. The comparison walks
+    /// every entry — acceptable because `MAX_SESSIONS` is small (200)
+    /// and this only fires when already saturated.
+    fn evict_least_recently_active(&self) {
+        let mut oldest: Option<(Uuid, Instant)> = None;
+        for entry in self.sessions.iter() {
+            let activity = entry.last_activity;
+            match oldest {
+                Some((_, prev)) if activity >= prev => {}
+                _ => oldest = Some((*entry.key(), activity)),
+            }
+        }
+        if let Some((victim, _)) = oldest {
+            if let Some((_, session)) = self.sessions.remove(&victim) {
+                let _ = std::fs::remove_dir_all(&session.workspace);
+                tracing::info!("evicted LRU session {victim}");
+            }
+        }
     }
 
     pub fn get_workspace(&self, id: Uuid) -> Result<PathBuf, String> {
@@ -281,19 +323,13 @@ pub struct FileEntry {
     pub entry_type: String,
 }
 
-fn collect_files(
-    base: &Path,
-    dir: &Path,
-    entries: &mut Vec<FileEntry>,
-) -> Result<(), String> {
+fn collect_files(base: &Path, dir: &Path, entries: &mut Vec<FileEntry>) -> Result<(), String> {
     let read_dir = std::fs::read_dir(dir).map_err(|e| format!("read_dir: {e}"))?;
     for item in read_dir {
         let item = item.map_err(|e| format!("dir entry: {e}"))?;
         let path = item.path();
         if path.is_dir() {
-            let child_count = std::fs::read_dir(&path)
-                .map(|rd| rd.count())
-                .unwrap_or(0);
+            let child_count = std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0);
             if child_count == 0 {
                 // Report empty directories so the client can show them
                 let rel = path
