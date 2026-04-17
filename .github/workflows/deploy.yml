@@ -29,9 +29,33 @@ jobs:
     steps:
       - name: Build and restart
         run: |
+          # Fail fast on any error; bare `git pull` could silently pick up a
+          # commit other than the one that triggered the workflow if another
+          # push lands between now and the checkout.
+          set -euo pipefail
+
           cd /opt/achronyme-web
-          git pull
+          git fetch --tags origin main
+          git checkout "${GITHUB_SHA}"
+
           source ~/.cargo/env
           cd server
-          cargo build --release
+          # --locked rejects Cargo.lock drift between the committed state
+          # and whatever the build host happens to have cached.
+          cargo build --release --locked
           sudo systemctl restart ach-server
+
+          # Health gate: if the new binary refuses to serve /health within
+          # 10 seconds, dump the journal and fail the workflow so we don't
+          # silently leave production broken.
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsS http://127.0.0.1:3100/health > /dev/null; then
+              echo "ach-server healthy (attempt $i)"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::ach-server did not report healthy within 10s"
+          systemctl status ach-server --no-pager || true
+          journalctl -u ach-server -n 50 --no-pager || true
+          exit 1
