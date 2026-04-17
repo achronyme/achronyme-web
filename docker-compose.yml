@@ -1,0 +1,45 @@
+# Container orchestration for ach-server.
+#
+# This file is additive to the current systemd-based deploy — it doesn't
+# replace it yet. When the VPS is ready to cut over, update deploy.yml to
+# run `docker compose pull && docker compose up -d` instead of
+# `cargo build --release && systemctl restart ach-server`.
+#
+# Local development:
+#   cp .env.example .env
+#   docker compose up --build
+#
+# Production (once cut over):
+#   docker compose pull && docker compose up -d
+
+services:
+  ach-server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: ach-server:${ACH_SERVER_TAG:-latest}
+    container_name: ach-server
+    restart: unless-stopped
+    ports:
+      # Bind to loopback only — nginx on the host fronts TLS + domain.
+      - "127.0.0.1:3100:3100"
+    environment:
+      ACH_PORT: "3100"
+      ACH_CORS_ORIGIN: "${ACH_CORS_ORIGIN:-http://localhost:4321}"
+      RUST_LOG: "${RUST_LOG:-ach_server=info}"
+    # Harden the runtime: no writable filesystem, no capabilities, no
+    # privilege escalation. tmpfs gives the process a scratch area for
+    # session workspaces (already in-memory in the code today).
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

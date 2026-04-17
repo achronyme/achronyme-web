@@ -1,0 +1,17 @@
+# Exclude build artifacts and editor cruft from the Docker build context.
+# The Cargo target directory can hit several GB after a debug build; shipping
+# it into the image layer would blow cache invalidation on every change.
+target/
+**/*.rs.bk
+**/.DS_Store
+.git/
+.gitignore
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# Local env overrides — the runtime reads env vars, never files.
+.env
+.env.*

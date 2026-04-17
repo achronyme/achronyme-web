@@ -1,0 +1,37 @@
+name: Docker Build (ach-server)
+
+# Build the Docker image on every server/ change so we find out
+# immediately if the Dockerfile drifts from the code, without
+# changing how production is deployed. No push, no deploy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/docker-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/docker-build.yml"
+
+jobs:
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: false
+          tags: ach-server:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
