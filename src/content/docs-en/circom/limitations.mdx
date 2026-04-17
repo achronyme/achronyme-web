@@ -95,20 +95,27 @@ See [VM Mode](/docs/circom/vm-mode/) for the call semantics and why these restri
 
 Planned work, in rough priority order:
 
-### Phase 5 — Manifest integration
+### Phase 5 — Manifest integration (shipped)
 
-Add a `[circom]` section to `achronyme.toml`:
+The `[circom]` section in `achronyme.toml` is live:
 
 ```toml
 [circom]
 libs = ["vendor/circomlib/circuits"]
 ```
 
-Once shipped, `ach run`, `ach circuit`, and `ach circom` will all consume `[circom].libs` automatically, ending the "I have to pass `-l` every time I run circom" paper cut for non-circom-entry commands.
+`ach run`, `ach circuit`, and `ach circom` all consume `[circom].libs` automatically, and CLI `-l/--lib` flags append to the list rather than replacing it. See [Project Configuration](/docs/cli/project-config/#circom--circom-library-search-paths).
 
-### Phase 6 — Docs and examples
+### Phase 6 — Docs and examples (in progress)
 
-- Worked tutorials in the main docs (Merkle inclusion with imported Poseidon, EdDSA signature verification with imported `EdDSAPoseidonVerifier`).
+Shipped:
+
+- Six-chapter Circom Interop guide in the main docs (you are reading it).
+- Full circomlib constraint-count benchmark table (see above).
+
+Pending:
+
+- Worked tutorials (Merkle inclusion with imported Poseidon, EdDSA signature verification).
 - Cross-tool benchmarks comparing Achronyme + imported circomlib vs plain circom.
 - Migration guide for teams moving existing circom projects.
 

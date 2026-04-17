@@ -95,20 +95,27 @@ Ve [Modo VM](/docs/circom/vm-mode/) para la semantica de llamada y por que exist
 
 Trabajo planeado, en orden de prioridad aproximado:
 
-### Phase 5 — Integracion con el manifest
+### Phase 5 — Integracion con el manifest (enviado)
 
-Agregar una seccion `[circom]` a `achronyme.toml`:
+La seccion `[circom]` en `achronyme.toml` ya esta en produccion:
 
 ```toml
 [circom]
 libs = ["vendor/circomlib/circuits"]
 ```
 
-Una vez enviado, `ach run`, `ach circuit` y `ach circom` consumiran `[circom].libs` automaticamente, terminando con la molestia "tengo que pasar `-l` cada vez que corro circom" para comandos que no son entry point de circom.
+`ach run`, `ach circuit` y `ach circom` consumen `[circom].libs` automaticamente, y las banderas CLI `-l/--lib` se suman a la lista en lugar de reemplazarla. Ver [Configuracion del Proyecto](/es/docs/cli/project-config/#circom--rutas-de-busqueda-de-bibliotecas-circom).
 
-### Phase 6 — Docs y ejemplos
+### Phase 6 — Docs y ejemplos (en progreso)
 
-- Tutoriales trabajados en la documentacion principal (inclusion Merkle con Poseidon importado, verificacion de firma EdDSA con `EdDSAPoseidonVerifier` importado).
+Enviado:
+
+- Guia de Interop con Circom de seis capitulos en la documentacion principal (lo que estas leyendo).
+- Tabla completa de benchmark de constraint-count de circomlib (ver arriba).
+
+Pendiente:
+
+- Tutoriales trabajados (inclusion Merkle con Poseidon importado, verificacion de firma EdDSA).
 - Benchmarks cross-tool comparando Achronyme + circomlib importado vs circom plano.
 - Guia de migracion para equipos moviendo proyectos circom existentes.
 
