@@ -147,6 +147,12 @@ pub struct SessionStore {
     sessions: Arc<DashMap<Uuid, Session>>,
 }
 
+impl Default for SessionStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SessionStore {
     pub fn new() -> Self {
         Self {

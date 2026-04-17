@@ -38,3 +38,8 @@ base64 = "0.22"
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+# Drive the axum Router from integration tests without a TCP listener.
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
