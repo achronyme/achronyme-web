@@ -36,8 +36,8 @@ impl vm::VerifyHandler for SharedHandler {
 // Thread-local buffer for capturing print() output.
 // Safe because each request runs in its own `spawn_blocking` thread.
 thread_local! {
-    static OUTPUT: RefCell<Vec<String>> = RefCell::new(Vec::new());
-    static OUTPUT_BYTES: RefCell<usize> = RefCell::new(0);
+    static OUTPUT: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    static OUTPUT_BYTES: RefCell<usize> = const { RefCell::new(0) };
 }
 
 /// Maximum output size (1 MB). Prevents memory exhaustion from print-heavy loops.

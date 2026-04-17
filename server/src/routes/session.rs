@@ -23,11 +23,9 @@ pub async fn create(
 ) -> Result<Json<CreateResponse>, ApiError> {
     let (id, workspace) = store
         .create(req.template.as_deref())
-        .map_err(|e| ApiError::BadRequest(e))?;
+        .map_err(ApiError::BadRequest)?;
 
-    let files = store
-        .list_files(&workspace)
-        .map_err(|e| ApiError::Internal(e))?;
+    let files = store.list_files(&workspace).map_err(ApiError::Internal)?;
 
     Ok(Json(CreateResponse {
         session_id: id.to_string(),
@@ -45,14 +43,12 @@ pub async fn delete(
     headers: axum::http::HeaderMap,
 ) -> Result<Json<DeleteResponse>, ApiError> {
     let id = extract_session_id(&headers)?;
-    store.delete(id).map_err(|e| ApiError::Internal(e))?;
+    store.delete(id).map_err(ApiError::Internal)?;
     Ok(Json(DeleteResponse { ok: true }))
 }
 
 /// Extract session UUID from X-Ach-Session header.
-pub fn extract_session_id(
-    headers: &axum::http::HeaderMap,
-) -> Result<uuid::Uuid, ApiError> {
+pub fn extract_session_id(headers: &axum::http::HeaderMap) -> Result<uuid::Uuid, ApiError> {
     let val = headers
         .get("X-Ach-Session")
         .ok_or_else(|| ApiError::BadRequest("missing X-Ach-Session header".into()))?

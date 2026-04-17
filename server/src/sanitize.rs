@@ -64,10 +64,7 @@ mod tests {
     #[test]
     fn scrubs_multiple_occurrences() {
         let m = "A=/tmp/ach-sessions/u1/a.ach B=/tmp/ach-sessions/u2/b.ach";
-        assert_eq!(
-            scrub_paths(m),
-            "A=<workspace>/a.ach B=<workspace>/b.ach"
-        );
+        assert_eq!(scrub_paths(m), "A=<workspace>/a.ach B=<workspace>/b.ach");
     }
 
     #[test]

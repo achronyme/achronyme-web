@@ -43,7 +43,9 @@ pub async fn handler(
     Json(req): Json<ProveRequest>,
 ) -> Result<Json<ProveResponse>, ApiError> {
     if req.inputs.is_empty() {
-        return Err(ApiError::BadRequest("inputs are required for proving".into()));
+        return Err(ApiError::BadRequest(
+            "inputs are required for proving".into(),
+        ));
     }
 
     let source = req.source;
@@ -77,9 +79,8 @@ fn prove_circuit(
     }
 
     // Compile circuit
-    let prove_ir =
-        ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
-            .map_err(|e| format!("{e}"))?;
+    let prove_ir = ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
+        .map_err(|e| format!("{e}"))?;
 
     let mut program = prove_ir
         .instantiate(&HashMap::new())
@@ -93,7 +94,9 @@ fn prove_circuit(
     match backend {
         "r1cs" => prove_r1cs(&program, &inputs, &cache_dir),
         "plonkish" => prove_plonkish(&program, &inputs, &cache_dir),
-        _ => Err(format!("unknown backend: {backend} (expected 'r1cs' or 'plonkish')")),
+        _ => Err(format!(
+            "unknown backend: {backend} (expected 'r1cs' or 'plonkish')"
+        )),
     }
 }
 

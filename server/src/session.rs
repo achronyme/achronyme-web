@@ -122,8 +122,16 @@ pub fn validate_dir_path(workspace: &Path, user_path: &str) -> Result<PathBuf, S
 }
 
 pub struct Session {
+    // `id` and `created_at` are kept as observability hooks for future
+    // metrics / structured logging — the reaper currently identifies
+    // sessions through the `DashMap` key, and touch()/TTL tracking uses
+    // `last_activity` only. `#[allow(dead_code)]` here is intentional so
+    // the struct fields stay in-sync with what any introspection tool
+    // (ps, dashboards) would expect to find.
+    #[allow(dead_code)]
     pub id: Uuid,
     pub workspace: PathBuf,
+    #[allow(dead_code)]
     pub created_at: Instant,
     pub last_activity: Instant,
 }
@@ -155,8 +163,7 @@ impl SessionStore {
         let workspace = std::env::temp_dir()
             .join("ach-sessions")
             .join(id.to_string());
-        std::fs::create_dir_all(&workspace)
-            .map_err(|e| format!("cannot create workspace: {e}"))?;
+        std::fs::create_dir_all(&workspace).map_err(|e| format!("cannot create workspace: {e}"))?;
 
         // Populate template if requested
         if let Some(tpl) = template {
@@ -281,19 +288,13 @@ pub struct FileEntry {
     pub entry_type: String,
 }
 
-fn collect_files(
-    base: &Path,
-    dir: &Path,
-    entries: &mut Vec<FileEntry>,
-) -> Result<(), String> {
+fn collect_files(base: &Path, dir: &Path, entries: &mut Vec<FileEntry>) -> Result<(), String> {
     let read_dir = std::fs::read_dir(dir).map_err(|e| format!("read_dir: {e}"))?;
     for item in read_dir {
         let item = item.map_err(|e| format!("dir entry: {e}"))?;
         let path = item.path();
         if path.is_dir() {
-            let child_count = std::fs::read_dir(&path)
-                .map(|rd| rd.count())
-                .unwrap_or(0);
+            let child_count = std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0);
             if child_count == 0 {
                 // Report empty directories so the client can show them
                 let rel = path

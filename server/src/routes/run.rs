@@ -49,9 +49,7 @@ pub async fn handler(
             .parse()
             .map_err(|_| ApiError::BadRequest("invalid session id".into()))?;
 
-        let workspace = store
-            .get_workspace(id)
-            .map_err(|e| ApiError::BadRequest(e))?;
+        let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
         let result = sandboxed(
             move || crate::workspace::run_workspace(&workspace, INSTRUCTION_BUDGET, MAX_HEAP_BYTES),

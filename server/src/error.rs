@@ -8,7 +8,6 @@ use crate::sanitize::scrub_paths;
 
 pub enum ApiError {
     CompileError(String),
-    RuntimeError(String),
     Timeout,
     BadRequest(String),
     Internal(String),
@@ -28,21 +27,14 @@ impl IntoResponse for ApiError {
                 "compile_error",
                 scrub_paths(&msg),
             ),
-            ApiError::RuntimeError(msg) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "runtime_error",
-                scrub_paths(&msg),
-            ),
             ApiError::Timeout => (
                 StatusCode::REQUEST_TIMEOUT,
                 "timeout",
                 "execution timed out".to_string(),
             ),
-            ApiError::BadRequest(msg) => (
-                StatusCode::BAD_REQUEST,
-                "bad_request",
-                scrub_paths(&msg),
-            ),
+            ApiError::BadRequest(msg) => {
+                (StatusCode::BAD_REQUEST, "bad_request", scrub_paths(&msg))
+            }
             ApiError::Internal(msg) => {
                 tracing::error!("internal error: {}", scrub_paths(&msg));
                 (

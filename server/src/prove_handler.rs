@@ -135,9 +135,8 @@ impl ServerProveHandler {
 
         let n_constraints = r1cs.cs.num_constraints();
 
-        let result =
-            proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
-                .map_err(ProveError::ProofGeneration)?;
+        let result = proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, &self.cache_dir)
+            .map_err(ProveError::ProofGeneration)?;
 
         // Capture proof artifacts
         if let ProveResult::Proof {

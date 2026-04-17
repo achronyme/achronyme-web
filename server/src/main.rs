@@ -58,8 +58,8 @@ async fn main() {
         .and_then(|s| s.parse().ok())
         .unwrap_or(3100);
 
-    let cors_origin = env::var("ACH_CORS_ORIGIN")
-        .unwrap_or_else(|_| "http://localhost:4321".to_string());
+    let cors_origin =
+        env::var("ACH_CORS_ORIGIN").unwrap_or_else(|_| "http://localhost:4321".to_string());
 
     let cors = CorsLayer::new()
         .allow_origin(

@@ -26,7 +26,11 @@ pub async fn handler(
 ) -> Result<Json<CompileResponse>, ApiError> {
     let source = req.source;
 
-    let result = sandboxed(move || pipeline::check_source(&source), COMPILE_TIMEOUT_SECS).await?;
+    let result = sandboxed(
+        move || pipeline::check_source(&source),
+        COMPILE_TIMEOUT_SECS,
+    )
+    .await?;
 
     Ok(Json(CompileResponse {
         success: result.success,
