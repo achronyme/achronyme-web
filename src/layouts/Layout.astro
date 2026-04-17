@@ -10,6 +10,20 @@ interface Props {
 }
 
 const { title, description, lang } = Astro.props;
+
+// Canonical URL for the current page. Pairs with the hreflang alternates
+// emitted by @astrojs/sitemap so search engines don't treat EN and ES
+// variants as duplicate content. Astro resolves `site` from the config.
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+
+// Localized hreflang alternate. For any `/es/*` page, the EN counterpart
+// drops the `/es` prefix (and vice versa). Strips a trailing slash on the
+// root so `/es/` maps back to `/`.
+const otherLocale = lang === 'es' ? 'en' : 'es';
+const otherPath = lang === 'es'
+  ? Astro.url.pathname.replace(/^\/es(\/|$)/, '/')
+  : `/es${Astro.url.pathname === '/' ? '' : Astro.url.pathname}`;
+const alternate = new URL(otherPath, Astro.site).href;
 ---
 
 <!doctype html>
@@ -18,15 +32,24 @@ const { title, description, lang } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b0c0f" />
+
+    <!-- Canonical + hreflang alternates (EN <-> ES) -->
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang={lang === 'es' ? 'es-MX' : 'en-US'} href={canonical} />
+    <link rel="alternate" hreflang={otherLocale === 'es' ? 'es-MX' : 'en-US'} href={alternate} />
+    <link rel="alternate" hreflang="x-default" href={lang === 'es' ? alternate : canonical} />
 
     <!-- Open Graph -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://achrony.me" />
+    <meta property="og:url" content={canonical} />
     <meta property="og:image" content="https://achrony.me/og.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content={lang === 'es' ? 'es_MX' : 'en_US'} />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -35,6 +58,7 @@ const { title, description, lang } = Astro.props;
     <meta name="twitter:image" content="https://achrony.me/og.png" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
 
     <script>
       import '@tailwindplus/elements'
