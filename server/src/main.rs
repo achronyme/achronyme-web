@@ -27,6 +27,7 @@ mod pipeline;
 mod prove_handler;
 mod routes;
 mod sandbox;
+mod sanitize;
 mod session;
 mod templates;
 mod workspace;

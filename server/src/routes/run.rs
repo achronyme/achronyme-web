@@ -61,8 +61,8 @@ pub async fn handler(
 
         return Ok(Json(RunResponse {
             success: result.success,
-            output: result.output,
-            error: result.error,
+            output: crate::sanitize::scrub_paths(&result.output),
+            error: crate::sanitize::scrub_option(result.error),
             time_ms: start.elapsed().as_millis() as u64,
             proofs: result.proofs,
         }));
@@ -84,8 +84,8 @@ pub async fn handler(
 
     Ok(Json(RunResponse {
         success: result.success,
-        output: result.output,
-        error: result.error,
+        output: crate::sanitize::scrub_paths(&result.output),
+        error: crate::sanitize::scrub_option(result.error),
         time_ms: start.elapsed().as_millis() as u64,
         proofs: result.proofs,
     }))
