@@ -1,0 +1,173 @@
+---
+title: "Configuración del Proyecto"
+description: "Referencia del manifiesto de proyecto achronyme.toml."
+---
+
+Cada proyecto de Achronyme puede tener un archivo `achronyme.toml` en su raíz. Este archivo configura valores por defecto para los comandos del CLI, eliminando la necesidad de pasar banderas repetidamente.
+
+## Inicio rápido
+
+```bash
+ach init mi-circuito
+cd mi-circuito
+ach run              # lee entry desde achronyme.toml
+```
+
+## Resolución de configuración
+
+El CLI busca `achronyme.toml` caminando hacia arriba desde el directorio del archivo de entrada (o el directorio de trabajo actual si no se especifica un archivo). Usa la primera coincidencia.
+
+Los valores se resuelven con esta precedencia:
+
+```
+Banderas CLI (explícitas)  >  achronyme.toml  >  valores por defecto
+```
+
+Usa `--no-config` para deshabilitar la carga de `achronyme.toml` por completo.
+
+## Esquema completo
+
+### `[project]` — Metadatos del proyecto
+
+```toml
+[project]
+name = "mi-circuito"          # Requerido. Debe coincidir con [a-zA-Z_][a-zA-Z0-9_-]*
+version = "0.1.0"             # Requerido. Versionado semántico (MAJOR.MINOR.PATCH)
+description = "Un circuito ZK"  # Opcional
+license = "MIT"               # Opcional. Identificador SPDX
+authors = ["Alice <a@b.com>"] # Opcional
+entry = "src/main.ach"        # Opcional. Archivo de entrada por defecto para run/compile/circuit/disassemble
+```
+
+Cuando `entry` está configurado, puedes omitir la ruta del archivo en los comandos del CLI:
+
+```bash
+# En lugar de:
+ach run src/main.ach
+
+# Simplemente:
+ach run
+```
+
+### `[build]` — Configuración de compilación
+
+```toml
+[build]
+backend = "r1cs"          # "r1cs" (por defecto) o "plonkish"
+optimize = true           # Habilitar pases de optimización del IR (por defecto: true)
+error_format = "human"    # "human" (por defecto), "json", o "short"
+```
+
+| Campo | Equivalente CLI | Por defecto |
+|-------|----------------|-------------|
+| `backend` | `--backend`, `--prove-backend` | `"r1cs"` |
+| `optimize` | `--no-optimize` (invertido) | `true` |
+| `error_format` | `--error-format` | `"human"` |
+
+### `[build.output]` — Rutas de salida
+
+```toml
+[build.output]
+r1cs = "build/circuit.r1cs"      # Ruta por defecto para .r1cs
+wtns = "build/witness.wtns"      # Ruta por defecto para .wtns
+binary = "build/{name}.achb"     # Ruta por defecto para .achb ({name} = project.name)
+solidity = ""                    # Si no vacío, genera el verificador Solidity
+plonkish_json = ""               # Si no vacío, exporta JSON Plonkish
+```
+
+La variable `{name}` se reemplaza con `project.name`.
+
+### `[vm]` — Configuración de la máquina virtual
+
+```toml
+[vm]
+max_heap = "256M"     # Tamaño máximo del heap (ej., "256M", "1G", "512K"). Vacío = ilimitado
+stress_gc = false     # Forzar GC en cada asignación (por defecto: false)
+gc_stats = false      # Imprimir estadísticas del GC tras la ejecución (por defecto: false)
+```
+
+| Campo | Equivalente CLI | Por defecto |
+|-------|----------------|-------------|
+| `max_heap` | `--max-heap` | ilimitado |
+| `stress_gc` | `--stress-gc` | `false` |
+| `gc_stats` | `--gc-stats` | `false` |
+
+### `[circuit]` — Declaraciones de entradas del circuito
+
+```toml
+[circuit]
+public = ["x", "y"]      # Nombres de variables de entrada públicas
+witness = ["secret"]      # Nombres de variables de entrada testigo
+```
+
+Equivalen a `--public x,y --witness secret` en la línea de comandos. Si `--public` o `--witness` se pasan explícitamente en el CLI, sobrescriben estos valores.
+
+Si tanto las banderas CLI como los campos TOML están vacíos, el compilador usa las declaraciones `public` y `witness` en el código fuente.
+
+### `[circom]` — Rutas de búsqueda de bibliotecas Circom
+
+```toml
+[circom]
+libs = ["vendor/circomlib/circuits", "third_party/circuits"]
+```
+
+Las rutas se resuelven **relativas a la raíz del proyecto** (el directorio que contiene `achronyme.toml`). Cada subcomando que parsea fuentes `.circom` — `ach circom`, `ach run`, `ach circuit` — buscará en cada entrada de `libs` al resolver directivas `include "file.circom";`.
+
+Las banderas CLI `-l/--lib` **se suman** a la lista TOML en lugar de reemplazarla, por lo que `ach circom -l extra/` extiende `libs` para una invocación puntual sin editar el manifiesto.
+
+```bash
+# Con libs = ["vendor/circomlib/circuits"] en achronyme.toml:
+ach circom circuit.circom                      # solo se busca en vendor/
+ach circom circuit.circom -l extra/circuits    # se busca en vendor/ y en extra/
+```
+
+Usa esta sección para versionar dónde viven tus dependencias de circom en lugar de dispersar banderas `-l` por scripts.
+
+## Ejemplo mínimo
+
+```toml
+[project]
+name = "multiplicar"
+version = "0.1.0"
+
+[build]
+backend = "r1cs"
+```
+
+## Ejemplo completo
+
+```toml
+[project]
+name = "merkle-prover"
+version = "0.2.0"
+description = "Circuito de prueba de membresía en árbol Merkle"
+license = "MIT"
+entry = "src/main.ach"
+
+[build]
+backend = "r1cs"
+optimize = true
+error_format = "human"
+
+[build.output]
+r1cs = "build/circuit.r1cs"
+wtns = "build/witness.wtns"
+solidity = "build/Verifier.sol"
+
+[vm]
+max_heap = "512M"
+```
+
+## Validación
+
+El CLI valida el archivo TOML al cargarlo:
+
+- `project.name` debe coincidir con `[a-zA-Z_][a-zA-Z0-9_-]*`
+- `project.version` debe ser semver válido (`MAJOR.MINOR.PATCH`)
+- `build.backend` debe ser `"r1cs"` o `"plonkish"`
+- `build.error_format` debe ser `"human"`, `"json"`, o `"short"`
+- `vm.max_heap` debe ser una cadena de tamaño válida si no está vacía
+- Las entradas `circuit.public` / `circuit.witness` deben ser identificadores válidos
+- `project.entry` debe terminar en `.ach` o `.achb`
+- Las entradas `circom.libs` deben existir (resueltas en tiempo de carga, relativas a la raíz del proyecto)
+- Los campos desconocidos son rechazados (compatibilidad futura vía secciones explícitas)
