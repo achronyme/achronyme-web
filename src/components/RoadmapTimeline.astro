@@ -90,27 +90,32 @@ const r = t(locale).roadmap;
         <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight">{r.phases.now.label}</h2>
       </header>
 
-      <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-3">
+      <!-- Bento asymmetric: featured (12) → 7/5 zig-zag → 12 footer.
+           Avoids the banned uniform 3-col grid. -->
+      <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-12">
         <!-- FEATURED: Generic FieldBackend -->
-        <article class="reveal lg:col-span-3 rounded-2xl bg-valid/[0.04] ring-1 ring-valid/15 shadow-[inset_0_1px_0_rgba(52,211,153,0.06)] p-1.5">
+        <article class="reveal lg:col-span-12 rounded-2xl bg-valid/[0.04] ring-1 ring-valid/15 shadow-[inset_0_1px_0_rgba(52,211,153,0.06)] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6 lg:p-8">
             <h3 class="text-lg sm:text-xl font-bold text-text-primary tracking-tight">{r.items.multiPrime}</h3>
             <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed max-w-3xl">{r.items.multiPrimeDesc}</p>
             <div class="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[12px] font-mono text-text-muted items-center">
               <span><span class="text-valid">→</span> {r.receipts.released} v0.1.0-beta.19</span>
               <span class="text-text-muted/60">·</span>
-              <span>+27 commits</span>
+              <span>+43 commits</span>
               <span class="text-text-muted/60">·</span>
-              <span>2026-04-12</span>
+              <span>2026-04-02</span>
               <span class="text-text-muted/60">·</span>
-              <a href="https://github.com/achronyme/achronyme/releases/tag/v0.1.0-beta.19" target="_blank" rel="noopener noreferrer" class="text-proof-light hover:text-proof transition-colors duration-300 inline-flex items-center gap-1">{r.receipts.viewRelease} ↗</a>
+              <a href="https://github.com/achronyme/achronyme/releases/tag/v0.1.0-beta.19" target="_blank" rel="noopener noreferrer" class="receipt-link group inline-flex items-center gap-1 text-proof-light hover:text-proof active:scale-[0.97]">
+                <span>{r.receipts.viewRelease}</span>
+                <span class="receipt-arrow inline-block">↗</span>
+              </a>
             </div>
           </div>
         </article>
 
-        <!-- Satellites -->
-        <article class="reveal rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 h-full flex flex-col">
+        <!-- Zig-zag satellites: 7/5 split -->
+        <article class="reveal lg:col-span-7 rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col">
             <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.proveIR}</h3>
             <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">{r.items.proveIRDesc}</p>
             <div class="mt-4 text-[11px] font-mono text-text-muted">
@@ -118,8 +123,8 @@ const r = t(locale).roadmap;
             </div>
           </div>
         </article>
-        <article class="reveal rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 h-full flex flex-col">
+        <article class="reveal lg:col-span-5 rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col">
             <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.solidity}</h3>
             <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">{r.items.solidityDesc}</p>
             <div class="mt-4 text-[11px] font-mono text-text-muted">
@@ -127,11 +132,15 @@ const r = t(locale).roadmap;
             </div>
           </div>
         </article>
-        <article class="reveal rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 h-full flex flex-col">
-            <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.r1csOptimizer}</h3>
-            <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">{r.items.r1csOptimizerDesc}</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
+
+        <!-- Wide footer card -->
+        <article class="reveal lg:col-span-12 rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col sm:flex-row sm:items-center sm:gap-6">
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.r1csOptimizer}</h3>
+              <p class="mt-2 text-[13px] text-text-secondary leading-relaxed">{r.items.r1csOptimizerDesc}</p>
+            </div>
+            <div class="mt-4 sm:mt-0 shrink-0 text-[11px] font-mono text-text-muted">
               <span class="text-valid">→</span> 3.6x perf gain
             </div>
           </div>
@@ -157,9 +166,9 @@ const r = t(locale).roadmap;
         <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight">{r.phases.wip.label}</h2>
       </header>
 
-      <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-2">
-        <!-- FEATURED: Circom Frontend with split text/code -->
-        <article class="reveal lg:col-span-2 rounded-2xl bg-proof/[0.06] ring-1 ring-proof/25 shadow-[inset_0_1px_0_rgba(168,85,247,0.08)] p-1.5">
+      <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-12">
+        <!-- FEATURED: Circom Frontend with split text/code (full row) -->
+        <article class="reveal lg:col-span-12 rounded-2xl bg-proof/[0.06] ring-1 ring-proof/25 shadow-[inset_0_1px_0_rgba(168,85,247,0.08)] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden grid lg:grid-cols-5">
             <div class="lg:col-span-3 p-6 lg:p-8">
               <h3 class="text-lg sm:text-xl font-bold text-text-primary tracking-tight">{r.items.circomFrontend}</h3>
@@ -172,11 +181,14 @@ const r = t(locale).roadmap;
                 <span class="rounded-md bg-warn/10 ring-1 ring-warn/20 px-2 py-0.5 text-[10px] font-mono text-warn">EdDSA · pending</span>
               </div>
               <div class="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] font-mono text-text-muted items-center">
-                <span><span class="text-proof-light">⚡</span> {r.receipts.branch}: feature/circom-frontend</span>
+                <span><span class="text-proof-light">⚡</span> {r.receipts.branch}: main</span>
                 <span class="text-text-muted/60">·</span>
-                <span>~50 commits</span>
+                <span>180+ circom commits</span>
                 <span class="text-text-muted/60">·</span>
-                <a href="https://github.com/achronyme/achronyme/tree/feature/circom-frontend" target="_blank" rel="noopener noreferrer" class="text-proof-light hover:text-proof transition-colors duration-300 inline-flex items-center gap-1">{r.receipts.viewBranch} ↗</a>
+                <a href="https://github.com/achronyme/achronyme/commits/main?path=circom" target="_blank" rel="noopener noreferrer" class="receipt-link group inline-flex items-center gap-1 text-proof-light hover:text-proof active:scale-[0.97]">
+                  <span>{r.receipts.viewBranch}</span>
+                  <span class="receipt-arrow inline-block">↗</span>
+                </a>
               </div>
             </div>
             <div class="lg:col-span-2 relative bg-[#08080D] border-t lg:border-t-0 lg:border-l border-white/[0.06] p-5 lg:p-6 flex items-center">
@@ -198,22 +210,15 @@ const r = t(locale).roadmap;
           </div>
         </article>
 
-        <!-- Satellite -->
-        <article class="reveal rounded-2xl bg-proof/[0.03] ring-1 ring-proof/15 p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/10 p-5 h-full flex flex-col">
-            <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.adversarialTests}</h3>
-            <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">{r.items.adversarialTestsDesc}</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
-              <span class="text-proof-light">⚡</span> 4 forge-attempt tests
+        <!-- Wide satellite (full row) -->
+        <article class="reveal lg:col-span-12 rounded-2xl bg-proof/[0.03] ring-1 ring-proof/15 p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/10 p-5 lg:p-6 h-full flex flex-col sm:flex-row sm:items-center sm:gap-6">
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.adversarialTests}</h3>
+              <p class="mt-2 text-[13px] text-text-secondary leading-relaxed">{r.items.adversarialTestsDesc}</p>
             </div>
-          </div>
-        </article>
-        <article class="reveal rounded-2xl bg-proof/[0.03] ring-1 ring-proof/15 p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/10 p-5 h-full flex flex-col">
-            <h3 class="text-sm font-semibold text-text-primary tracking-tight">Pre-release hardening</h3>
-            <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">15 audit gaps closed across web/server/editor: rate-limits, session LRU, ARIA landmarks, panic cleanup, SEO sitemap.</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
-              <span class="text-proof-light">⚡</span> Tier 3 Fase 3 done
+            <div class="mt-4 sm:mt-0 shrink-0 text-[11px] font-mono text-text-muted">
+              <span class="text-proof-light">⚡</span> 4 forge-attempt tests
             </div>
           </div>
         </article>
@@ -272,21 +277,24 @@ const r = t(locale).roadmap;
         <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight text-text-secondary">{r.phases.later.label}</h2>
       </header>
 
-      <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-3">
-        <article class="reveal rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
+      <!-- Bento 7/5 + full footer. STARK is the strategic anchor for Goldilocks. -->
+      <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-12">
+        <article class="reveal lg:col-span-7 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
           <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.starkBackend}</h3>
           <p class="mt-2 text-[13px] text-text-muted leading-relaxed flex-1">{r.items.starkBackendDesc}</p>
           <div class="mt-4 text-[11px] font-mono text-text-muted/70">○ research scoped · Plonky3</div>
         </article>
-        <article class="reveal rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
+        <article class="reveal lg:col-span-5 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
           <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.noirFrontend}</h3>
           <p class="mt-2 text-[13px] text-text-muted leading-relaxed flex-1">{r.items.noirFrontendDesc}</p>
           <div class="mt-4 text-[11px] font-mono text-text-muted/70">○ post-Circom</div>
         </article>
-        <article class="reveal rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
-          <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.rustSDK}</h3>
-          <p class="mt-2 text-[13px] text-text-muted leading-relaxed flex-1">{r.items.rustSDKDesc}</p>
-          <div class="mt-4 text-[11px] font-mono text-text-muted/70">○ 3-phase plan</div>
+        <article class="reveal lg:col-span-12 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col sm:flex-row sm:items-center sm:gap-6">
+          <div class="flex-1">
+            <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.rustSDK}</h3>
+            <p class="mt-2 text-[13px] text-text-muted leading-relaxed">{r.items.rustSDKDesc}</p>
+          </div>
+          <div class="mt-4 sm:mt-0 shrink-0 text-[11px] font-mono text-text-muted/70">○ 3-phase plan</div>
         </article>
       </div>
     </section>

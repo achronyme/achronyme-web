@@ -99,6 +99,20 @@
   will-change: transform;
 }
 
+/* Roadmap inline receipt links — tactile spring with arrow micro-physics */
+.receipt-link {
+  transition:
+    color 400ms var(--ease-haptic),
+    transform 220ms var(--ease-haptic);
+}
+.receipt-arrow {
+  transition: transform 500ms var(--ease-haptic);
+  will-change: transform;
+}
+.receipt-link:hover .receipt-arrow {
+  transform: translate(2px, -2px);
+}
+
 /* Roadmap WIP marker — pulsing ring to signal active branch work */
 @keyframes wip-pulse-ring {
   0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
