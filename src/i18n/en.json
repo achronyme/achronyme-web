@@ -58,34 +58,84 @@
   },
   "roadmap": {
     "title": "Roadmap",
-    "subtitle": "What we're building, and what's coming next.",
-    "now": "Now",
-    "nowDesc": "Actively shipping",
-    "next": "Next",
-    "nextDesc": "In development",
-    "later": "Later",
-    "laterDesc": "Planned",
-    "future": "Future",
-    "futureDesc": "Exploring",
+    "subtitle": "Real receipts, not promises. Versioned milestones, shipped commits, and what comes next.",
+    "livingPill": "Living roadmap · updated Apr 2026",
+    "metrics": {
+      "started": "Started",
+      "startedValue": "Jan 2026",
+      "version": "Current",
+      "crates": "crates",
+      "tests": "tests",
+      "deps": "JS deps"
+    },
+    "status": {
+      "shipped": "Shipped",
+      "inProgress": "In Progress",
+      "planned": "Planned",
+      "exploratory": "Exploratory",
+      "target": "Target"
+    },
+    "receipts": {
+      "released": "Released",
+      "branch": "Branch",
+      "commits": "commits",
+      "verified": "Verified",
+      "viewRelease": "View release",
+      "viewBranch": "View branch"
+    },
+    "phases": {
+      "now": {
+        "label": "Now shipping",
+        "anchor": "v0.1.0-beta.19",
+        "desc": "Latest stable release."
+      },
+      "wip": {
+        "label": "Active development",
+        "anchor": "v0.1.0-beta.20",
+        "desc": "Branch: feature/circom-frontend"
+      },
+      "next": {
+        "label": "Next milestone",
+        "anchor": "v0.3.0",
+        "desc": "Browser playground."
+      },
+      "later": {
+        "label": "On the horizon",
+        "anchor": "v0.x",
+        "desc": "Researched, scoped, not yet started."
+      },
+      "target": {
+        "label": "Stable target",
+        "anchor": "v1.0.0",
+        "desc": "API freeze + backwards-compat guarantees."
+      }
+    },
     "items": {
-      "multiPrime": "Multi-prime field support",
-      "multiPrimeDesc": "Generic FieldBackend across the full pipeline. BN254, BLS12-381, and Goldilocks compile natively.",
+      "multiPrime": "Generic FieldBackend",
+      "multiPrimeDesc": "Monomorphized constraint pipeline over F: FieldBackend. BN254, BLS12-381, and Goldilocks compile natively. 162 E2E cross-prime tests.",
       "proveIR": "ProveIR pipeline",
       "proveIRDesc": "Pre-compiled circuit templates serialized in bytecode. prove {} blocks are first-class values.",
       "solidity": "Solidity verifier generation",
       "solidityDesc": "Export Groth16 verifier contracts for on-chain proof verification on Ethereum.",
+      "circomFrontend": "Circom Frontend",
+      "circomFrontendDesc": "Import .circom templates and circomlib (Poseidon, MiMCSponge, EdDSA, BabyJubjub) directly. Constraint counts match circom O2 or beat it — Num2Bits 9 vs 17, LessThan 10 vs 20.",
+      "r1csOptimizer": "R1CS optimizer v2",
+      "r1csOptimizerDesc": "Frequency heuristic, tautological linear removal, Gaussian elimination, BN254 constant folding. EscalarMulAny 3.6x faster.",
+      "adversarialTests": "Adversarial soundness suite",
+      "adversarialTestsDesc": "Tests that try to forge proofs prove constraint deltas are real LC folding wins, not under-constrained bugs.",
       "playground": "Web Playground",
-      "playgroundDesc": "WASM-compiled compiler + VM running in the browser. Write, run, and prove circuits online.",
-      "starkBackend": "STARK backend (Goldilocks)",
-      "starkBackendDesc": "AIR constraint backend using Plonky3 for transparent STARK proofs over the Goldilocks field.",
+      "playgroundDesc": "WASM-compiled compiler + VM running in the browser. Write, run, and prove circuits online — no install. WASM feasibility verified beta.16.",
       "multiFieldVM": "Multi-field VM",
       "multiFieldVMDesc": "VM runtime parameterized over FieldBackend. prove {} blocks use native field arithmetic for any curve.",
-      "frontendParsers": "Circom / Noir frontends",
-      "frontendParsersDesc": "Import Circom templates and Noir programs as ProveIR modules. Use existing circuits inside Achronyme.",
+      "starkBackend": "STARK backend (Goldilocks)",
+      "starkBackendDesc": "AIR constraint backend using Plonky3 for transparent STARK proofs over the Goldilocks field — no trusted setup.",
+      "noirFrontend": "Noir frontend",
+      "noirFrontendDesc": "Import Noir programs as ProveIR modules. Use existing Noir circuits inside Achronyme alongside Circom.",
+      "rustSDK": "Rust SDK (cargo add)",
+      "rustSDKDesc": "Embed the Achronyme runtime in Rust apps via crate. Proc-macros, full interop. Targets Rust devs, not just ZK engineers.",
       "apiFreeze": "1.0 stable API",
       "apiFreezeDesc": "Language specification freeze, backward compatibility guarantees, and stable bytecode format."
-    },
-    "shipped": "Shipped"
+    }
   },
   "docs": {
     "onThisPage": "On this page",

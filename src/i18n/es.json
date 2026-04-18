@@ -58,34 +58,84 @@
   },
   "roadmap": {
     "title": "Roadmap",
-    "subtitle": "Lo que estamos construyendo y lo que viene despues.",
-    "now": "Ahora",
-    "nowDesc": "En produccion",
-    "next": "Siguiente",
-    "nextDesc": "En desarrollo",
-    "later": "Despues",
-    "laterDesc": "Planeado",
-    "future": "Futuro",
-    "futureDesc": "Explorando",
+    "subtitle": "Recibos reales, no promesas. Hitos versionados, commits enviados, y lo que sigue.",
+    "livingPill": "Roadmap vivo · actualizado abr 2026",
+    "metrics": {
+      "started": "Inicio",
+      "startedValue": "Ene 2026",
+      "version": "Actual",
+      "crates": "crates",
+      "tests": "tests",
+      "deps": "deps JS"
+    },
+    "status": {
+      "shipped": "Lanzado",
+      "inProgress": "En progreso",
+      "planned": "Planeado",
+      "exploratory": "Exploratorio",
+      "target": "Objetivo"
+    },
+    "receipts": {
+      "released": "Lanzado",
+      "branch": "Rama",
+      "commits": "commits",
+      "verified": "Verificado",
+      "viewRelease": "Ver release",
+      "viewBranch": "Ver rama"
+    },
+    "phases": {
+      "now": {
+        "label": "Ahora en produccion",
+        "anchor": "v0.1.0-beta.19",
+        "desc": "Ultimo release estable."
+      },
+      "wip": {
+        "label": "Desarrollo activo",
+        "anchor": "v0.1.0-beta.20",
+        "desc": "Rama: feature/circom-frontend"
+      },
+      "next": {
+        "label": "Siguiente hito",
+        "anchor": "v0.3.0",
+        "desc": "Playground en el navegador."
+      },
+      "later": {
+        "label": "En el horizonte",
+        "anchor": "v0.x",
+        "desc": "Investigado, dimensionado, sin iniciar."
+      },
+      "target": {
+        "label": "Objetivo estable",
+        "anchor": "v1.0.0",
+        "desc": "Congelamiento del API + garantias de compatibilidad."
+      }
+    },
     "items": {
-      "multiPrime": "Soporte multi-curva",
-      "multiPrimeDesc": "FieldBackend generico en todo el pipeline. BN254, BLS12-381 y Goldilocks compilan nativamente.",
+      "multiPrime": "FieldBackend generico",
+      "multiPrimeDesc": "Pipeline de restricciones monomorfizado sobre F: FieldBackend. BN254, BLS12-381 y Goldilocks compilan nativamente. 162 tests E2E cross-curva.",
       "proveIR": "Pipeline ProveIR",
       "proveIRDesc": "Plantillas de circuito pre-compiladas serializadas en bytecode. Los bloques prove {} son valores first-class.",
       "solidity": "Generacion de verificadores Solidity",
       "solidityDesc": "Exporta contratos verificadores Groth16 para verificacion on-chain en Ethereum.",
+      "circomFrontend": "Frontend Circom",
+      "circomFrontendDesc": "Importa templates .circom y circomlib (Poseidon, MiMCSponge, EdDSA, BabyJubjub) directamente. Conteos de restricciones igualan circom O2 o lo superan — Num2Bits 9 vs 17, LessThan 10 vs 20.",
+      "r1csOptimizer": "Optimizador R1CS v2",
+      "r1csOptimizerDesc": "Heuristica de frecuencia, eliminacion de lineales tautologicas, eliminacion gaussiana, plegado de constantes BN254. EscalarMulAny 3.6x mas rapido.",
+      "adversarialTests": "Suite adversarial de soundness",
+      "adversarialTestsDesc": "Tests que intentan forjar pruebas demuestran que las reducciones de restricciones son ganancias reales de plegado LC, no bugs de under-constraining.",
       "playground": "Playground Web",
-      "playgroundDesc": "Compilador + VM compilados a WASM corriendo en el navegador. Escribe, ejecuta y prueba circuitos online.",
-      "starkBackend": "Backend STARK (Goldilocks)",
-      "starkBackendDesc": "Backend de restricciones AIR usando Plonky3 para pruebas STARK transparentes sobre el campo Goldilocks.",
+      "playgroundDesc": "Compilador + VM compilados a WASM corriendo en el navegador. Escribe, ejecuta y prueba circuitos online — sin instalar. Viabilidad WASM verificada en beta.16.",
       "multiFieldVM": "VM multi-campo",
       "multiFieldVMDesc": "Runtime de la VM parametrizado sobre FieldBackend. Los bloques prove {} usan aritmetica nativa del campo para cualquier curva.",
-      "frontendParsers": "Frontends Circom / Noir",
-      "frontendParsersDesc": "Importa templates de Circom y programas Noir como modulos ProveIR. Usa circuitos existentes dentro de Achronyme.",
+      "starkBackend": "Backend STARK (Goldilocks)",
+      "starkBackendDesc": "Backend de restricciones AIR usando Plonky3 para pruebas STARK transparentes sobre el campo Goldilocks — sin trusted setup.",
+      "noirFrontend": "Frontend Noir",
+      "noirFrontendDesc": "Importa programas Noir como modulos ProveIR. Usa circuitos Noir existentes dentro de Achronyme junto con Circom.",
+      "rustSDK": "SDK Rust (cargo add)",
+      "rustSDKDesc": "Embebe el runtime de Achronyme en apps Rust via crate. Proc-macros, interop completa. Apunta a devs Rust, no solo a ingenieros ZK.",
       "apiFreeze": "API estable 1.0",
       "apiFreezeDesc": "Congelamiento de especificacion del lenguaje, garantias de compatibilidad hacia atras y formato de bytecode estable."
-    },
-    "shipped": "Lanzado"
+    }
   },
   "docs": {
     "onThisPage": "En esta pagina",
