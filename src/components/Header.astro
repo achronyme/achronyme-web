@@ -20,54 +20,62 @@ const isOnPlayground = currentPath.startsWith('/playground');
 const isOnRoadmap = currentPath.startsWith('/roadmap') || currentPath.startsWith('/es/roadmap');
 ---
 
+<!--
+  Sticky-glued shell — kept for layout integrity (feature-nav, doc sidebar/TOC
+  all dock at top-[92px] = banner 36px + header 56px). The premium feel comes
+  from material (backdrop-blur, hairline ring, inset highlight), not from
+  detaching the bar.
+-->
 <div class="sticky top-0 z-50">
-  <!-- Announcement banner -->
+  <!-- Announcement banner: gradient strip at the very top -->
   <a
     href={blogUrl}
     target="_blank"
     rel="noopener noreferrer"
-    class="block w-full bg-gradient-to-r from-proof-dim via-proof to-proof-dim py-2 text-center text-xs sm:text-sm font-medium text-white hover:brightness-110 transition-all"
+    class="block w-full bg-gradient-to-r from-proof-dim via-proof to-proof-dim py-2 text-center text-xs sm:text-sm font-medium text-white hover:brightness-110 transition-[filter] duration-300"
   >
     {s.header.banner}
     <span class="ml-1.5 inline-block">→</span>
   </a>
 
-<header class="bg-void">
-  <div class="mx-auto max-w-[1400px] border-x border-b border-subtle/50 flex items-center justify-between px-8 lg:px-10 h-14">
-    <!-- Left: logo + nav -->
-    <div class="flex items-center gap-8">
-      <a href={getLocalizedPath('/', locale)} class="text-sm font-bold tracking-tight text-text-primary hover:text-proof-light transition-colors">
-        achronyme
-      </a>
-      <nav class="flex items-center gap-4 sm:gap-6">
-        <a href={getLocalizedPath('/docs/getting-started/introduction', locale)} class:list={['text-sm transition-colors', isOnDocs ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
-          {s.header.docs}
+  <header class="bg-void/75 backdrop-blur-xl">
+    <div
+      class="mx-auto max-w-[1400px] border-x border-b border-white/[0.06] flex items-center justify-between px-8 lg:px-10 h-14 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+    >
+      <!-- Left: logo + nav -->
+      <div class="flex items-center gap-8">
+        <a href={getLocalizedPath('/', locale)} class="text-sm font-bold tracking-tight text-text-primary hover:text-proof-light transition-colors duration-300">
+          achronyme
         </a>
-        <a href="/playground" class:list={['text-sm transition-colors', isOnPlayground ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
-          {s.header.playground}
-        </a>
-        <a href={getLocalizedPath('/roadmap', locale)} class:list={['text-sm transition-colors', isOnRoadmap ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
-          Roadmap
-        </a>
-      </nav>
-    </div>
+        <nav class="flex items-center gap-4 sm:gap-6">
+          <a href={getLocalizedPath('/docs/getting-started/introduction', locale)} class:list={['text-sm transition-colors duration-300', isOnDocs ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
+            {s.header.docs}
+          </a>
+          <a href="/playground" class:list={['text-sm transition-colors duration-300', isOnPlayground ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
+            {s.header.playground}
+          </a>
+          <a href={getLocalizedPath('/roadmap', locale)} class:list={['text-sm transition-colors duration-300', isOnRoadmap ? 'text-text-primary font-medium' : 'text-text-muted hover:text-text-primary']}>
+            Roadmap
+          </a>
+        </nav>
+      </div>
 
-    <!-- Right: version + lang + github -->
-    <div class="flex items-center gap-4">
-      <span class="hidden sm:inline text-xs font-mono text-text-muted">v0.1.0-beta.19</span>
-      <a href={altPath} class="text-xs text-text-muted hover:text-text-primary transition-colors uppercase font-medium">
-        {altLocale}
-      </a>
-      <a
-        href="https://github.com/achronyme/achronyme"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-text-muted hover:text-text-primary transition-colors"
-        aria-label="GitHub"
-      >
-        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
+      <!-- Right: version + lang + github (icon now in a hairline circular shell) -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        <span class="hidden sm:inline text-xs font-mono text-text-muted">v0.1.0-beta.19</span>
+        <a href={altPath} class="text-xs text-text-muted hover:text-text-primary transition-colors duration-300 uppercase font-medium tracking-wider">
+          {altLocale}
+        </a>
+        <a
+          href="https://github.com/achronyme/achronyme"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="grid place-items-center w-8 h-8 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] text-text-muted hover:text-text-primary hover:bg-white/[0.08] hover:ring-white/[0.15] transition-all duration-300"
+          aria-label="GitHub"
+        >
+          <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 </div>

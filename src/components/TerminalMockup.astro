@@ -17,21 +17,31 @@ const bgMap: Record<string, string> = {
 const badgeBg = bgMap[badgeColor] || bgMap['text-proof'];
 ---
 
-<div class="rounded-xl border border-subtle bg-[#0C0C12] shadow-2xl shadow-black/20 overflow-hidden">
-  <div class="flex items-center justify-between border-b border-subtle/60 px-4 py-3">
-    <div class="flex items-center gap-2">
-      <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
-      <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
-      <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
-      <span class="ml-3 text-xs text-text-muted">{filename}</span>
+<!--
+  Double-Bezel architecture:
+    - Outer shell: hairline ring + soft inset, large radius (1.25rem)
+    - Inner core: actual terminal chrome, concentric radius
+      = calc(1.25rem - 0.375rem) so the curves are mathematically nested.
+-->
+<div class="rounded-[1.25rem] bg-white/[0.025] ring-1 ring-white/5 p-1.5 shadow-[0_30px_60px_-25px_rgba(0,0,0,0.5)]">
+  <div
+    class="rounded-[calc(1.25rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden"
+  >
+    <div class="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+      <div class="flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+        <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+        <span class="h-2.5 w-2.5 rounded-full bg-text-muted/20"></span>
+        <span class="ml-3 text-xs text-text-muted">{filename}</span>
+      </div>
+      {badge && (
+        <span class:list={['rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-white/5', badgeColor]} style={`background: ${badgeBg}`}>
+          {badge}
+        </span>
+      )}
     </div>
-    {badge && (
-      <span class:list={['rounded-full px-2 py-0.5 text-[10px] font-medium', badgeColor]} style={`background: ${badgeBg}`}>
-        {badge}
-      </span>
-    )}
-  </div>
-  <div class="p-5 text-[13px] leading-relaxed font-mono overflow-x-auto">
-    <slot />
+    <div class="p-5 text-[13px] leading-relaxed font-mono overflow-x-auto">
+      <slot />
+    </div>
   </div>
 </div>

@@ -28,8 +28,10 @@ const s = t(locale);
     <!-- Left: text -->
     <div class="p-8 lg:p-10">
       <div class="reveal mb-10">
-        <span class="text-xs tracking-widest uppercase text-text-muted">BY</span>
-        <a href="https://eddn.dev" target="_blank" rel="noopener noreferrer" class="ml-2 text-xs tracking-widest uppercase font-semibold text-text-primary hover:text-proof-light transition-colors">eddndev</a>
+        <span class="inline-flex items-center gap-2 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium">
+          <span class="text-text-muted">By</span>
+          <a href="https://eddn.dev" target="_blank" rel="noopener noreferrer" class="text-text-primary hover:text-proof-light transition-colors duration-300">eddndev</a>
+        </span>
       </div>
 
       <h1 class="reveal text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-[1.08] text-text-primary">
@@ -46,31 +48,37 @@ const s = t(locale);
           href="https://github.com/achronyme/achronyme/releases"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-lg bg-proof px-6 py-3 text-sm font-medium text-white transition-all hover:bg-proof-dim hover:shadow-[0_0_24px_rgba(168,85,247,0.25)]"
+          class="cta-primary group inline-flex items-center gap-3 rounded-full bg-proof pl-6 pr-1.5 py-1.5 text-sm font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] hover:bg-proof-dim hover:shadow-[0_0_32px_rgba(168,85,247,0.35)] active:scale-[0.98]"
         >
-          {s.hero.cta}
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          <span>{s.hero.cta}</span>
+          <span class="cta-icon-shell grid place-items-center w-9 h-9 rounded-full bg-black/25 ring-1 ring-white/15 group-hover:translate-x-0.5 group-hover:-translate-y-[1px] group-hover:scale-105">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </span>
         </a>
         <a
           href="https://github.com/achronyme/achronyme"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 rounded-lg border border-subtle px-6 py-3 text-sm font-medium text-text-secondary transition-all hover:text-text-primary hover:border-proof/30"
+          class="cta-ghost group inline-flex items-center gap-3 rounded-full bg-white/[0.03] ring-1 ring-white/10 pl-6 pr-1.5 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-white/[0.06] hover:ring-proof/30 active:scale-[0.98]"
         >
-          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-          {s.hero.github}
+          <span>{s.hero.github}</span>
+          <span class="cta-icon-shell grid place-items-center w-9 h-9 rounded-full bg-white/[0.06] ring-1 ring-white/10 group-hover:scale-105">
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          </span>
         </a>
       </div>
 
-      <!-- Install command -->
+      <!-- Install command — Double-Bezel architecture -->
       <div class="reveal mt-14 max-w-md">
-        <div class="rounded-lg border border-subtle/60 bg-[#0C0C12] px-5 py-3.5 font-mono text-sm flex items-center gap-2">
-          <span class="text-text-muted select-none">$</span>
-          <el-copyable id="install-cmd" class="text-text-secondary min-w-0 truncate">curl -fsSL https://achrony.me/install.sh | sh</el-copyable>
-          <button command="--copy" commandfor="install-cmd" type="button" class="group ml-auto shrink-0 rounded p-1.5 text-text-muted transition-colors hover:text-text-secondary hover:bg-subtle/30" aria-label="Copy install command">
-            <svg class="h-4 w-4 group-data-[copied]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-            <svg class="hidden h-4 w-4 text-valid group-data-[copied]:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-          </button>
+        <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-5 py-3.5 font-mono text-sm flex items-center gap-2">
+            <span class="text-text-muted select-none">$</span>
+            <el-copyable id="install-cmd" class="text-text-secondary min-w-0 truncate">curl -fsSL https://achrony.me/install.sh | sh</el-copyable>
+            <button command="--copy" commandfor="install-cmd" type="button" class="group ml-auto shrink-0 rounded p-1.5 text-text-muted transition-colors duration-300 hover:text-text-secondary hover:bg-white/[0.05]" aria-label="Copy install command">
+              <svg class="h-4 w-4 group-data-[copied]:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+              <svg class="hidden h-4 w-4 text-valid group-data-[copied]:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -91,7 +99,7 @@ const s = t(locale);
       <span class="text-sm text-text-muted">{s.ecosystem.title}</span>
       <div class="flex flex-wrap gap-2">
         {s.ecosystem.outputs.map((item: string) => (
-          <span class="rounded-full border border-subtle/60 bg-surface/40 px-3 py-1 text-xs font-medium text-proof-light">{item}</span>
+          <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs font-medium text-proof-light">{item}</span>
         ))}
       </div>
     </div>
@@ -102,8 +110,9 @@ const s = t(locale);
   <!-- ══════════════════════════════════════════════════════════ -->
 
   <div id="features-wrapper">
-  <!-- Sticky feature nav — sits below banner (36px) + header (56px) = 92px -->
-  <nav id="feature-nav" class="sticky top-[92px] z-40 bg-void border-b border-subtle/77 flex">
+  <!-- Sticky feature nav — docks under the main header.
+       Geometry: banner (36px) + header (56px) = 92px -->
+  <nav id="feature-nav" class="sticky top-[92px] z-40 bg-void/80 backdrop-blur-xl border-b border-white/[0.06] flex">
     <a href="#feat-vm" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-vm">VM</a>
     <a href="#feat-circuit" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-circuit">Circuit</a>
     <a href="#feat-deploy" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-deploy">Deploy</a>
@@ -115,8 +124,8 @@ const s = t(locale);
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="p-8 lg:p-10 lg:border-r border-subtle/77">
-      <span class="text-xs tracking-widest uppercase text-text-muted">ACH RUN</span>
-      <h3 class="mt-4 text-xl sm:text-2xl font-bold">{s.featureVM.title}</h3>
+      <span class="inline-flex items-center rounded-full bg-valid/10 ring-1 ring-valid/20 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-valid">ACH RUN</span>
+      <h3 class="mt-5 text-xl sm:text-2xl font-bold tracking-tight">{s.featureVM.title}</h3>
       <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureVM.desc}</p>
     </div>
     <div class="p-6 lg:p-8">
@@ -143,16 +152,11 @@ const s = t(locale);
     </div>
   </section>
 
-  <!-- Circuit Section -->
+  <!-- Circuit Section — INVERTED: code-left, text-right (breaks rhythm) -->
   <section id="feat-circuit" class="border-b border-subtle/77 grid grid-cols-1 lg:grid-cols-2 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
-    <div class="p-8 lg:p-10 lg:border-r border-subtle/77">
-      <span class="text-xs tracking-widest uppercase text-text-muted">ACH CIRCUIT</span>
-      <h3 class="mt-4 text-xl sm:text-2xl font-bold">{s.featureCircuit.title}</h3>
-      <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureCircuit.desc}</p>
-    </div>
-    <div class="relative overflow-hidden">
+    <div class="relative overflow-hidden lg:order-1 order-2 lg:border-r border-subtle/77">
       <div class="absolute inset-0 bg-gradient-to-r from-proof-dim via-proof to-proof-dim"></div>
       <div class="absolute inset-0" style="background-image: repeating-linear-gradient(115deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px);"></div>
       <div class="relative p-6 lg:p-8">
@@ -173,6 +177,11 @@ const s = t(locale);
         </TerminalMockup>
       </div>
     </div>
+    <div class="p-8 lg:p-10 lg:order-2 order-1">
+      <span class="inline-flex items-center rounded-full bg-info/10 ring-1 ring-info/20 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-info">ACH CIRCUIT</span>
+      <h3 class="mt-5 text-xl sm:text-2xl font-bold tracking-tight">{s.featureCircuit.title}</h3>
+      <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureCircuit.desc}</p>
+    </div>
   </section>
 
   <!-- Deploy Section -->
@@ -180,9 +189,15 @@ const s = t(locale);
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="p-8 lg:p-10 lg:border-r border-subtle/77">
-      <span class="text-xs tracking-widest uppercase text-text-muted">--SOLIDITY</span>
-      <h3 class="mt-4 text-xl sm:text-2xl font-bold">{s.featureSolidity.title}</h3>
+      <span class="inline-flex items-center rounded-full bg-warn/10 ring-1 ring-warn/20 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-warn">DEPLOY</span>
+      <h3 class="mt-5 text-xl sm:text-2xl font-bold tracking-tight">{s.featureSolidity.title}</h3>
       <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureSolidity.desc}</p>
+      <div class="mt-6 flex flex-wrap gap-2 font-mono">
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">--solidity</span>
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">Groth16</span>
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">EVM-ready</span>
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">snarkjs-compat</span>
+      </div>
     </div>
     <div class="p-6 lg:p-8">
       <TerminalMockup filename="terminal" badge="CLI" badgeColor="text-warn">
@@ -198,16 +213,11 @@ const s = t(locale);
     </div>
   </section>
 
-  <!-- Prove Section -->
+  <!-- Prove Section — INVERTED: code-left, text-right (breaks rhythm) -->
   <section id="feat-prove" class="border-b border-subtle/77 grid grid-cols-1 lg:grid-cols-2 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
-    <div class="p-8 lg:p-10 lg:border-r border-subtle/77">
-      <span class="text-xs tracking-widest uppercase text-text-muted">PROVE &#123;&#125;</span>
-      <h3 class="mt-4 text-xl sm:text-2xl font-bold">{s.featureProve.title}</h3>
-      <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureProve.desc}</p>
-    </div>
-    <div class="relative overflow-hidden">
+    <div class="relative overflow-hidden lg:order-1 order-2 lg:border-r border-subtle/77">
       <div class="absolute inset-0 bg-gradient-to-r from-proof-dim via-proof to-proof-dim"></div>
       <div class="absolute inset-0" style="background-image: repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px);"></div>
       <div class="relative p-6 lg:p-8">
@@ -226,6 +236,16 @@ const s = t(locale);
         </TerminalMockup>
       </div>
     </div>
+    <div class="p-8 lg:p-10 lg:order-2 order-1">
+      <span class="inline-flex items-center rounded-full bg-proof/10 ring-1 ring-proof/20 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-proof-light">PROVE &#123;&#125;</span>
+      <h3 class="mt-5 text-xl sm:text-2xl font-bold tracking-tight">{s.featureProve.title}</h3>
+      <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{s.featureProve.desc}</p>
+      <div class="mt-6 flex flex-wrap gap-2 font-mono">
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">prove &#123;&#125;</span>
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">proof_json()</span>
+        <span class="rounded-md bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] text-text-secondary">verify_proof()</span>
+      </div>
+    </div>
   </section>
   </div>
 
@@ -236,7 +256,8 @@ const s = t(locale);
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal">
-      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{s.comparison.title}</h2>
+      <span class="inline-flex items-center rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-[10px] uppercase tracking-[0.25em] font-medium text-text-secondary">vs Circom</span>
+      <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{s.comparison.title}</h2>
       <p class="mt-4 text-text-secondary text-lg max-w-2xl mx-auto">{s.comparison.subtitle}</p>
     </div>
   </div>
@@ -319,28 +340,25 @@ const s = t(locale);
   </div>
 
   <!-- ══════════════════════════════════════════════════════════ -->
-  <!-- STATS BAR                                                 -->
+  <!-- STATS BAR — Double-Bezel mini-cards                        -->
   <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="border-b border-subtle/77 px-8 py-8 relative">
+  <div class="border-b border-subtle/77 px-6 sm:px-8 py-10 relative">
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
-    <div class="reveal flex flex-wrap justify-center gap-6 sm:gap-10">
-      <div class="text-center">
-        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">2,700+</span>
-        <span class="text-xs text-text-muted uppercase tracking-wider">tests</span>
-      </div>
-      <div class="text-center">
-        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">2</span>
-        <span class="text-xs text-text-muted uppercase tracking-wider">proof backends</span>
-      </div>
-      <div class="text-center">
-        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">50</span>
-        <span class="text-xs text-text-muted uppercase tracking-wider">methods</span>
-      </div>
-      <div class="text-center">
-        <span class="block text-2xl sm:text-3xl font-bold text-text-primary">0</span>
-        <span class="text-xs text-text-muted uppercase tracking-wider">JS deps</span>
-      </div>
+    <div class="reveal grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+      {[
+        { value: '2,700+', label: 'tests' },
+        { value: '2', label: 'proof backends' },
+        { value: '50', label: 'methods' },
+        { value: '0', label: 'JS deps' },
+      ].map((stat) => (
+        <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-5 px-4 text-center">
+            <span class="block text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">{stat.value}</span>
+            <span class="mt-1 block text-[10px] text-text-muted uppercase tracking-[0.2em]">{stat.label}</span>
+          </div>
+        </div>
+      ))}
     </div>
   </div>
 
