@@ -18,12 +18,16 @@
   --color-warn: #FBBF24;
   --color-info: #60A5FA;
 
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "Fira Code", "Consolas", ui-monospace, monospace;
-  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
+
+  /* Motion choreography — never use linear/ease-in-out defaults */
+  --ease-haptic: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
@@ -50,13 +54,26 @@
 /* Scroll reveal */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(28px);
+  filter: blur(8px);
+  transition: opacity 0.85s var(--ease-spring),
+              transform 0.85s var(--ease-spring),
+              filter 0.85s var(--ease-spring);
+  will-change: opacity, transform, filter;
 }
 .reveal.visible {
   opacity: 1;
   transform: translateY(0);
+  filter: blur(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
 }
 
 /* Staggered children */
@@ -64,6 +81,23 @@
 .reveal-stagger > .reveal:nth-child(2) { transition-delay: 80ms; }
 .reveal-stagger > .reveal:nth-child(3) { transition-delay: 160ms; }
 .reveal-stagger > .reveal:nth-child(4) { transition-delay: 240ms; }
+
+/* CTA haptic motion — applied via class, never inline */
+.cta-primary,
+.cta-ghost {
+  transition:
+    background-color 600ms var(--ease-haptic),
+    color 600ms var(--ease-haptic),
+    box-shadow 600ms var(--ease-haptic),
+    transform 220ms var(--ease-haptic),
+    filter 600ms var(--ease-haptic);
+}
+.cta-icon-shell {
+  transition:
+    transform 600ms var(--ease-haptic),
+    background-color 600ms var(--ease-haptic);
+  will-change: transform;
+}
 
 /* Gradient text utility */
 .gradient-text {
