@@ -69,16 +69,33 @@ End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `Is
 
 ## Unsupported Circom Features
 
-These are rejected at parse or lowering time with clear errors:
+Every unsupported feature below is parsed correctly and rejected with a dedicated error (`E2xx`) pointing at the offending line, rather than crashing or silently miscompiling. The rationale column explains why the feature is gated today and what would unlock it.
 
-- **`bus` declarations** — not yet supported.
-- **`tag` declarations** — not yet supported.
-- **`custom_templates`** — custom gate extensions from Circom 2.1+.
-- **Recursive `function` bodies** — functions are evaluated imperatively at compile time, which rules out non-terminating recursion and any recursion whose depth the lowerer cannot prove bounded.
-- **Non-constant array dimensions** outside of `for`-loop unrolling contexts.
-- **Runtime-variable array indices** in circuit mode (the IR is fully unrolled, so array indices must be compile-time known).
+### Parsed but rejected in lowering
 
-If you hit one of these, the error will tell you exactly which feature was rejected and point at the offending line.
+| Feature | Error | Rationale |
+|---|---|---|
+| **`bus` declarations** (Circom 2.2.0) | `E205` — "bus types require Circom ≥2.2.0 bus compilation support which is not yet implemented" | Adopted by circomlib only sparsely; no circomlib circuit currently shipped in this benchmark requires buses. The lowering mapping is well-defined; work is sequenced after broader `circomlib` coverage demand emerges. |
+| **`custom` templates** (Circom 2.1.0) | `E205` — "template `T` is declared as `custom` which generates Plonk custom gates; custom templates are not supported in R1CS mode" | Custom templates compile to Plonk custom gates in reference circom. Achronyme's Plonkish backend already supports custom gates via halo2, but the `.circom → Plonkish` lowering path is not yet wired — for today's circomlib coverage (all R1CS) the restriction has no user-facing cost. |
+| **`extern_c` modifier** (Circom 2.2.3+) | Parsed as metadata; no lowering code path | Reserved for Circom's experimental FFI escape hatch; no circomlib circuit uses it. Will be addressed if a real need appears. |
+
+### Not yet parsed
+
+| Feature | Rationale |
+|---|---|
+| **Signal `tag` declarations** with semantic meaning | `signal s {tagName}` parses as a signal with metadata; tags themselves do not influence constraint generation yet. Tags are rarely load-bearing in circomlib. |
+| **Anonymous components** (`Template()(...)` inline call without a name binding) | Rarely used; the explicit-name form always works. |
+| **Array literal as signal assignment** (`signal z <== [a, b, c]`) | Element-by-element assignment is the documented workaround. |
+
+### Structural — by design
+
+These restrictions come from Achronyme's lowering model (fully-unrolled IR, R1CS-first), not from missing work:
+
+- **Recursive `function` bodies** — functions are imperative compile-time evaluators. Non-terminating recursion and recursion whose depth the lowerer cannot prove bounded are rejected at evaluation time.
+- **Non-constant array dimensions** outside of `for`-loop unrolling contexts — the IR is statically shaped.
+- **Runtime-variable array indices in circuit mode** — the IR is fully unrolled, so array indices must be compile-time known. This mirrors the restriction circom itself applies; circomlib follows the same discipline.
+
+If any of these are blocking a real circuit for you, please open an issue with the `.circom` source — most cases resolve to a structural workaround rather than a language extension.
 
 ## VM Mode Limitations
 

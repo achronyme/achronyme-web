@@ -69,16 +69,33 @@ La verificacion end-to-end de pruebas Groth16 se ha hecho on-chain para `Num2Bit
 
 ## Caracteristicas Circom No Soportadas
 
-Estas son rechazadas en tiempo de parse o lowering con errores claros:
+Cada caracteristica no soportada abajo es parseada correctamente y rechazada con un error dedicado (`E2xx`) apuntando a la linea ofensora, en lugar de crashear o miscompilar silenciosamente. La columna de razon explica por que la caracteristica esta restringida hoy y que la desbloquearia.
 
-- **Declaraciones `bus`** — aun no soportadas.
-- **Declaraciones `tag`** — aun no soportadas.
-- **`custom_templates`** — extensiones de custom gate de Circom 2.1+.
-- **Cuerpos `function` recursivos** — las funciones se evaluan imperativamente en tiempo de compilacion, lo que descarta recursion no terminante y cualquier recursion cuya profundidad el lowerer no pueda probar acotada.
-- **Dimensiones de array no constantes** fuera de contextos de unrolling de `for`-loop.
-- **Indices de array con variables de runtime** en modo circuito (el IR se desenrolla completamente, asi que los indices de array deben ser conocidos en tiempo de compilacion).
+### Parseadas pero rechazadas en lowering
 
-Si topas con uno de estos, el error te dira exactamente que caracteristica fue rechazada y apuntara a la linea ofensora.
+| Caracteristica | Error | Razon |
+|---|---|---|
+| **Declaraciones `bus`** (Circom 2.2.0) | `E205` — "bus types require Circom ≥2.2.0 bus compilation support which is not yet implemented" | Adoptado por circomlib solo de forma dispersa; ningun circuito de circomlib en el benchmark actual requiere buses. El mapeo de lowering esta bien definido; el trabajo se secuencia despues de que emerja demanda de cobertura mas amplia de `circomlib`. |
+| **Templates `custom`** (Circom 2.1.0) | `E205` — "template `T` is declared as `custom` which generates Plonk custom gates; custom templates are not supported in R1CS mode" | Los templates custom compilan a custom gates Plonk en circom de referencia. El backend Plonkish de Achronyme ya soporta custom gates via halo2, pero el camino de lowering `.circom → Plonkish` aun no esta cableado — para la cobertura actual de circomlib (toda R1CS) la restriccion no tiene costo para el usuario. |
+| **Modificador `extern_c`** (Circom 2.2.3+) | Parseado como metadata; no existe camino de lowering | Reservado para el escape hatch experimental de FFI de Circom; ningun circuito de circomlib lo usa. Se abordara si aparece una necesidad real. |
+
+### No parseadas aun
+
+| Caracteristica | Razon |
+|---|---|
+| **Declaraciones `tag` de signal** con significado semantico | `signal s {tagName}` parsea como signal con metadata; los tags en si no influyen en la generacion de constraints aun. Los tags raramente cargan significado en circomlib. |
+| **Componentes anonimos** (llamada inline `Template()(...)` sin binding a nombre) | Raramente usado; la forma con nombre explicito siempre funciona. |
+| **Literal de array como asignacion de signal** (`signal z <== [a, b, c]`) | La asignacion elemento por elemento es el workaround documentado. |
+
+### Estructurales — por diseno
+
+Estas restricciones vienen del modelo de lowering de Achronyme (IR totalmente desenrollado, R1CS primero), no de trabajo faltante:
+
+- **Cuerpos `function` recursivos** — las funciones son evaluadores imperativos de tiempo de compilacion. Recursion no terminante y recursion cuya profundidad el lowerer no puede probar acotada son rechazadas en tiempo de evaluacion.
+- **Dimensiones de array no constantes** fuera de contextos de unrolling de `for`-loop — el IR tiene forma estatica.
+- **Indices de array con variables de runtime en modo circuito** — el IR se desenrolla completamente, asi que los indices de array deben ser conocidos en tiempo de compilacion. Esto refleja la restriccion que circom mismo aplica; circomlib sigue la misma disciplina.
+
+Si alguna de estas esta bloqueando un circuito real para ti, por favor abre un issue con el fuente `.circom` — la mayoria de los casos se resuelven con un workaround estructural en lugar de una extension de lenguaje.
 
 ## Limitaciones del Modo VM
 
