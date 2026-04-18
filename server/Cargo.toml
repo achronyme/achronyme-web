@@ -5,14 +5,16 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-# Achronyme crates (from main repo)
-compiler = { git = "https://github.com/achronyme/achronyme" }
-vm = { git = "https://github.com/achronyme/achronyme" }
-memory = { git = "https://github.com/achronyme/achronyme" }
-ir = { git = "https://github.com/achronyme/achronyme" }
-constraints = { git = "https://github.com/achronyme/achronyme" }
-achronyme-std = { git = "https://github.com/achronyme/achronyme" }
-achronyme-parser = { git = "https://github.com/achronyme/achronyme" }
+# Achronyme crates (from main repo).
+# Pin to an explicit rev so `cargo build --locked` is reproducible even
+# if upstream `main` advances between a push and this deploy.
+compiler = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+vm = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+memory = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+ir = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+constraints = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
 
 # Web framework
 axum = "0.8"
@@ -25,7 +27,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Proving backends (shared crate)
-proving = { git = "https://github.com/achronyme/achronyme" }
+proving = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
 
 # Session management
 dashmap = "6"
