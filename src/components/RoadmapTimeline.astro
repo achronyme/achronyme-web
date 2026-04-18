@@ -28,7 +28,7 @@ const r = t(locale).roadmap;
         {r.livingPill}
       </span>
       <h1 class="mt-5 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight">{r.title}</h1>
-      <p class="mt-4 text-text-secondary text-lg max-w-2xl leading-relaxed">{r.subtitle}</p>
+      <p class="mt-4 text-text-secondary text-lg lg:text-xl max-w-2xl leading-relaxed">{r.subtitle}</p>
     </div>
 
     <!-- 5 Double-Bezel metric mini-cards — receipts up front -->
@@ -87,7 +87,7 @@ const r = t(locale).roadmap;
           <span class="font-mono text-sm text-text-primary">{r.phases.now.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.now.desc}</span>
         </div>
-        <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight">{r.phases.now.label}</h2>
+        <h2 class="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">{r.phases.now.label}</h2>
       </header>
 
       <!-- Bento asymmetric: featured (12) → 7/5 zig-zag → 12 footer.
@@ -96,9 +96,9 @@ const r = t(locale).roadmap;
         <!-- FEATURED: Generic FieldBackend -->
         <article class="reveal lg:col-span-12 rounded-2xl bg-valid/[0.04] ring-1 ring-valid/15 shadow-[inset_0_1px_0_rgba(52,211,153,0.06)] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6 lg:p-8">
-            <h3 class="text-lg sm:text-xl font-bold text-text-primary tracking-tight">{r.items.multiPrime}</h3>
-            <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed max-w-3xl">{r.items.multiPrimeDesc}</p>
-            <div class="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[12px] font-mono text-text-muted items-center">
+            <h3 class="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">{r.items.multiPrime}</h3>
+            <p class="mt-3 text-[15px] sm:text-base text-text-secondary leading-relaxed max-w-3xl">{r.items.multiPrimeDesc}</p>
+            <div class="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] font-mono text-text-muted items-center">
               <span><span class="text-valid">→</span> {r.receipts.released} v0.1.0-beta.19</span>
               <span class="text-text-muted/60">·</span>
               <span>+43 commits</span>
@@ -116,18 +116,18 @@ const r = t(locale).roadmap;
         <!-- Zig-zag satellites: 7/5 split -->
         <article class="reveal lg:col-span-7 rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col">
-            <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.proveIR}</h3>
-            <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">{r.items.proveIRDesc}</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
+            <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.proveIR}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.proveIRDesc}</p>
+            <div class="mt-4 text-[12px] font-mono text-text-muted">
               <span class="text-valid">→</span> beta.14 · 186+ tests
             </div>
           </div>
         </article>
         <article class="reveal lg:col-span-5 rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col">
-            <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.solidity}</h3>
-            <p class="mt-2 text-[13px] text-text-secondary leading-relaxed flex-1">{r.items.solidityDesc}</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
+            <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.solidity}</h3>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.solidityDesc}</p>
+            <div class="mt-4 text-[12px] font-mono text-text-muted">
               <span class="text-valid">→</span> Groth16 verifier
             </div>
           </div>
@@ -137,10 +137,10 @@ const r = t(locale).roadmap;
         <article class="reveal lg:col-span-12 rounded-2xl bg-valid/[0.025] ring-1 ring-valid/10 p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col sm:flex-row sm:items-center sm:gap-6">
             <div class="flex-1">
-              <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.r1csOptimizer}</h3>
-              <p class="mt-2 text-[13px] text-text-secondary leading-relaxed">{r.items.r1csOptimizerDesc}</p>
+              <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.r1csOptimizer}</h3>
+              <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.r1csOptimizerDesc}</p>
             </div>
-            <div class="mt-4 sm:mt-0 shrink-0 text-[11px] font-mono text-text-muted">
+            <div class="mt-4 sm:mt-0 shrink-0 text-[12px] font-mono text-text-muted">
               <span class="text-valid">→</span> 3.6x perf gain
             </div>
           </div>
@@ -163,7 +163,7 @@ const r = t(locale).roadmap;
           <span class="font-mono text-sm text-text-primary">{r.phases.wip.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.wip.desc}</span>
         </div>
-        <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight">{r.phases.wip.label}</h2>
+        <h2 class="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">{r.phases.wip.label}</h2>
       </header>
 
       <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-12">
@@ -171,8 +171,8 @@ const r = t(locale).roadmap;
         <article class="reveal lg:col-span-12 rounded-2xl bg-proof/[0.06] ring-1 ring-proof/25 shadow-[inset_0_1px_0_rgba(168,85,247,0.08)] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden grid lg:grid-cols-5">
             <div class="lg:col-span-3 p-6 lg:p-8">
-              <h3 class="text-lg sm:text-xl font-bold text-text-primary tracking-tight">{r.items.circomFrontend}</h3>
-              <p class="mt-3 text-sm sm:text-[15px] text-text-secondary leading-relaxed">{r.items.circomFrontendDesc}</p>
+              <h3 class="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">{r.items.circomFrontend}</h3>
+              <p class="mt-3 text-[15px] sm:text-base text-text-secondary leading-relaxed">{r.items.circomFrontendDesc}</p>
               <div class="mt-5 flex flex-wrap gap-1.5">
                 <span class="rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">Poseidon ✓</span>
                 <span class="rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">MiMCSponge ✓</span>
@@ -180,7 +180,7 @@ const r = t(locale).roadmap;
                 <span class="rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">BabyJubjub ✓</span>
                 <span class="rounded-md bg-warn/10 ring-1 ring-warn/20 px-2 py-0.5 text-[10px] font-mono text-warn">EdDSA · pending</span>
               </div>
-              <div class="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] font-mono text-text-muted items-center">
+              <div class="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-mono text-text-muted items-center">
                 <span><span class="text-proof-light">⚡</span> {r.receipts.branch}: main</span>
                 <span class="text-text-muted/60">·</span>
                 <span>180+ circom commits</span>
@@ -214,10 +214,10 @@ const r = t(locale).roadmap;
         <article class="reveal lg:col-span-12 rounded-2xl bg-proof/[0.03] ring-1 ring-proof/15 p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/10 p-5 lg:p-6 h-full flex flex-col sm:flex-row sm:items-center sm:gap-6">
             <div class="flex-1">
-              <h3 class="text-sm font-semibold text-text-primary tracking-tight">{r.items.adversarialTests}</h3>
-              <p class="mt-2 text-[13px] text-text-secondary leading-relaxed">{r.items.adversarialTestsDesc}</p>
+              <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.adversarialTests}</h3>
+              <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.adversarialTestsDesc}</p>
             </div>
-            <div class="mt-4 sm:mt-0 shrink-0 text-[11px] font-mono text-text-muted">
+            <div class="mt-4 sm:mt-0 shrink-0 text-[12px] font-mono text-text-muted">
               <span class="text-proof-light">⚡</span> 4 forge-attempt tests
             </div>
           </div>
@@ -237,7 +237,7 @@ const r = t(locale).roadmap;
           <span class="font-mono text-sm text-text-primary">{r.phases.next.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.next.desc}</span>
         </div>
-        <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight">{r.phases.next.label}</h2>
+        <h2 class="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">{r.phases.next.label}</h2>
       </header>
 
       <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-2">
@@ -245,7 +245,7 @@ const r = t(locale).roadmap;
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] p-6 h-full flex flex-col">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.playground}</h3>
             <p class="mt-2 text-[13.5px] text-text-secondary leading-relaxed flex-1">{r.items.playgroundDesc}</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
+            <div class="mt-4 text-[12px] font-mono text-text-muted">
               <span class="text-info">○</span> WASM feasibility verified · beta.16
             </div>
           </div>
@@ -254,7 +254,7 @@ const r = t(locale).roadmap;
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] p-6 h-full flex flex-col">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.multiFieldVM}</h3>
             <p class="mt-2 text-[13.5px] text-text-secondary leading-relaxed flex-1">{r.items.multiFieldVMDesc}</p>
-            <div class="mt-4 text-[11px] font-mono text-text-muted">
+            <div class="mt-4 text-[12px] font-mono text-text-muted">
               <span class="text-info">○</span> blocked by VM single-field assumption
             </div>
           </div>
@@ -274,27 +274,27 @@ const r = t(locale).roadmap;
           <span class="font-mono text-sm text-text-secondary">{r.phases.later.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.later.desc}</span>
         </div>
-        <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight text-text-secondary">{r.phases.later.label}</h2>
+        <h2 class="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-text-secondary">{r.phases.later.label}</h2>
       </header>
 
       <!-- Bento 7/5 + full footer. STARK is the strategic anchor for Goldilocks. -->
       <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-12">
         <article class="reveal lg:col-span-7 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
           <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.starkBackend}</h3>
-          <p class="mt-2 text-[13px] text-text-muted leading-relaxed flex-1">{r.items.starkBackendDesc}</p>
-          <div class="mt-4 text-[11px] font-mono text-text-muted/70">○ research scoped · Plonky3</div>
+          <p class="mt-2 text-sm text-text-muted leading-relaxed flex-1">{r.items.starkBackendDesc}</p>
+          <div class="mt-4 text-[12px] font-mono text-text-muted/70">○ research scoped · Plonky3</div>
         </article>
         <article class="reveal lg:col-span-5 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
           <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.noirFrontend}</h3>
-          <p class="mt-2 text-[13px] text-text-muted leading-relaxed flex-1">{r.items.noirFrontendDesc}</p>
-          <div class="mt-4 text-[11px] font-mono text-text-muted/70">○ post-Circom</div>
+          <p class="mt-2 text-sm text-text-muted leading-relaxed flex-1">{r.items.noirFrontendDesc}</p>
+          <div class="mt-4 text-[12px] font-mono text-text-muted/70">○ post-Circom</div>
         </article>
         <article class="reveal lg:col-span-12 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col sm:flex-row sm:items-center sm:gap-6">
           <div class="flex-1">
             <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.rustSDK}</h3>
-            <p class="mt-2 text-[13px] text-text-muted leading-relaxed">{r.items.rustSDKDesc}</p>
+            <p class="mt-2 text-sm text-text-muted leading-relaxed">{r.items.rustSDKDesc}</p>
           </div>
-          <div class="mt-4 sm:mt-0 shrink-0 text-[11px] font-mono text-text-muted/70">○ 3-phase plan</div>
+          <div class="mt-4 sm:mt-0 shrink-0 text-[12px] font-mono text-text-muted/70">○ 3-phase plan</div>
         </article>
       </div>
     </section>
@@ -311,7 +311,7 @@ const r = t(locale).roadmap;
           <span class="font-mono text-sm text-text-primary">{r.phases.target.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.target.desc}</span>
         </div>
-        <h2 class="mt-3 text-xl sm:text-2xl font-bold tracking-tight">{r.phases.target.label}</h2>
+        <h2 class="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">{r.phases.target.label}</h2>
       </header>
 
       <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-12">
