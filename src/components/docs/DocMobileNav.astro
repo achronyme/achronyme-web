@@ -36,44 +36,33 @@ const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
       </button>
     </div>
     <nav class="flex-1 overflow-y-auto px-6 py-4 doc-scroll">
-      {sidebar.map((group, gi) => {
-        const hasActive = group.items.some(i => i.slug === currentSlug);
-        const mDisclosureId = `m-sidebar-group-${gi}`;
-        return (
-          <div class:list={['pb-4', gi > 0 && 'pt-4 border-t border-subtle/20']}>
-            <button
-              command={hasActive ? undefined : '--toggle'}
-              commandfor={hasActive ? undefined : mDisclosureId}
-              type="button"
-              class="flex items-center gap-1.5 w-full text-left text-[13px] font-bold text-text-primary pb-2 cursor-pointer select-none"
-            >
-              {getLabel(group, locale)}
-            </button>
-            <el-disclosure id={mDisclosureId} hidden={!hasActive ? true : undefined}>
-              <ul class="space-y-0.5">
-                {group.items.map(item => {
-                  const isActive = item.slug === currentSlug;
-                  return (
-                    <li>
-                      <a
-                        href={`${baseUrl}${item.slug}`}
-                        class:list={[
-                          'block py-1.5 text-[13.5px] transition-colors',
-                          isActive
-                            ? 'text-proof-light font-medium'
-                            : 'text-text-muted hover:text-text-primary',
-                        ]}
-                      >
-                        {getLabel(item, locale)}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </el-disclosure>
-          </div>
-        );
-      })}
+      {sidebar.map((group, gi) => (
+        <div class:list={['pb-4', gi > 0 && 'pt-4 border-t border-subtle/20']}>
+          <h3 class="text-[13px] font-bold text-text-primary pb-2 select-none">
+            {getLabel(group, locale)}
+          </h3>
+          <ul class="space-y-0.5">
+            {group.items.map(item => {
+              const isActive = item.slug === currentSlug;
+              return (
+                <li>
+                  <a
+                    href={`${baseUrl}${item.slug}`}
+                    class:list={[
+                      'block py-1.5 text-[13.5px] transition-colors',
+                      isActive
+                        ? 'text-proof-light font-medium'
+                        : 'text-text-muted hover:text-text-primary',
+                    ]}
+                  >
+                    {getLabel(item, locale)}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </nav>
   </div>
 </dialog>
