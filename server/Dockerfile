@@ -14,7 +14,7 @@
 #     ach-server:local
 
 # ── Builder ────────────────────────────────────────────────────────────
-FROM rust:1.83-slim-bookworm AS builder
+FROM rust:1.92-slim-bookworm AS builder
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -51,7 +51,11 @@ COPY --from=builder /build/server/target/release/ach-server \
 USER achsrv
 EXPOSE 3100
 
+# Inside the container the network namespace is already isolated, so
+# binding to 0.0.0.0 is what docker's port forwarder expects. The bare
+# binary still defaults to 127.0.0.1 when ACH_BIND is unset.
 ENV ACH_PORT=3100 \
+    ACH_BIND=0.0.0.0 \
     RUST_LOG=ach_server=info
 
 ENTRYPOINT ["/usr/local/bin/ach-server"]

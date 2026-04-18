@@ -5,7 +5,7 @@
 //! the same router without a TCP listener.
 
 use std::env;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 
 use ach_server::{build_app, session::SessionStore, AppConfig};
 use tokio::net::TcpListener;
@@ -24,6 +24,14 @@ async fn main() {
         .and_then(|s| s.parse().ok())
         .unwrap_or(3100);
 
+    // Default to loopback so bare-metal deploys never accidentally expose
+    // the API. The container image overrides this to 0.0.0.0 via ENV so
+    // docker's port forwarder can reach the listener.
+    let bind: IpAddr = env::var("ACH_BIND")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_else(|| IpAddr::from([127, 0, 0, 1]));
+
     let cfg = AppConfig {
         cors_origin: env::var("ACH_CORS_ORIGIN")
             .unwrap_or_else(|_| "http://localhost:4321".to_string()),
@@ -34,7 +42,7 @@ async fn main() {
 
     let app = build_app(store, &cfg);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::new(bind, port);
     tracing::info!("ach-server listening on {addr}");
     tracing::info!("CORS origin: {}", cfg.cors_origin);
 
