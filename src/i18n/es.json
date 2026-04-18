@@ -102,6 +102,6 @@
     "discussions": "Discusiones",
     "issues": "Issues",
     "builtWith": "Construido con Rust",
-    "license": "Licencia GPL-3.0"
+    "license": "Licencia Apache-2.0"
   }
 }
