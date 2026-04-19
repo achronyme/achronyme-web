@@ -1,0 +1,254 @@
+---
+title: "Artik Witness VM"
+description: "Register-based witness-computation VM: bytecode, lift surface, and R1CS dispatch."
+---
+
+**Artik** is a dedicated, register-based VM for witness computation in Achronyme circuits. It closes the **E212 gap** — the class of Circom functions (with `var`, `for`, `if/else`, nested calls, and runtime signal arguments) that previously could not be inlined into a circuit.
+
+Artik is paired with [Akron](./akron-vm), the general-purpose bytecode VM. Unlike Akron, Artik has no heap, no GC, no tagged values at runtime, and no shared state with the main VM. It is a one-shot interpreter: signals in, witness slots out.
+
+## Why Artik exists
+
+Before Artik, any non-trivial function body with signal arguments surfaced as `E212 — function body not inlineable with runtime signal arguments`. Circom solves the same problem with **witness calculators** executed at prove time; SHA-256, Pedersen, and EdDSA-family primitives all need this.
+
+Artik lifts those function bodies to a compact bytecode, emits an `Instruction::WitnessCall` in the IR, and executes the bytecode at R1CS witness-gen time against the live witness vector.
+
+## Architecture
+
+```ach
+Circom .circom
+    |
+    v
+circom::lowering (ProveIR)
+    |
+    +-- pure expression? --> CircuitExpr (inline)
+    |
+    +-- complex body?     --> artik_lift --> Artik bytecode
+                                                |
+                                                v
+                                      Instruction::WitnessCall { program_bytes }
+                                                |
+                                                v
+                              R1CS backend: WitnessOp::ArtikCall
+                                                |
+                                                v
+                              WitnessGenerator::execute_op --> artik::execute
+```
+
+### Crate layout
+
+```ach
+artik/
+  src/
+    lib.rs        // re-exports, public surface
+    header.rs     // 16-byte header + FieldFamily
+    ir.rs         // Instr, IntW, IntBinOp, RegType, OpTag
+    program.rs    // Program + FieldConstEntry
+    bytecode/
+      encode.rs   // Program -> bytes
+      decode.rs   // bytes -> Program (runs validator)
+    validate.rs   // structural invariants
+    executor.rs   // execute / execute_with_budget
+    builder.rs    // ProgramBuilder API (used by the lift)
+    error.rs      // ArtikError
+```
+
+## Bytecode format
+
+Every `.artik` program is prefixed by a 16-byte header:
+
+```ach
+0..4   magic "ARTK"
+4..6   version (u16 LE)           // current: 1
+6      field_family (u8)          // 0=BnLike256, 1=Goldilocks64, 2=M31_32
+7      flags (u8)
+8..12  const_pool_len (u32 LE)
+12..16 body_len (u32 LE)
+```
+
+The body begins with a 4-byte `frame_size` prelude, then a sequence of encoded instructions. The validator checks every decoded program before the executor touches it.
+
+### FieldFamily
+
+| Family | Primes | Max const bytes |
+|--------|--------|-----------------|
+| `BnLike256` | BN254, BLS12-381, Grumpkin, Pallas, Vesta, Secp256r1, BLS12-377 | 32 |
+| `Goldilocks64` | Goldilocks (2^64 - 2^32 + 1) | 8 |
+| `M31_32` | Mersenne-31 (reserved for v2) | 4 |
+
+A single `.artik` blob can be executed against any prime in its declared family — the runtime picks up `F` from the caller.
+
+## Registers & types
+
+Artik is SSA-style: each register is assigned at most once per function (enforced at emit time). Every register carries a type category, tracked by the validator:
+
+```rust
+enum RegType {
+    Field,
+    Int(IntW),          // U8 | U32 | U64 | I64
+    Array(ElemT),       // Field | IntU8 | IntU32 | IntU64 | IntI64
+}
+```
+
+Integer ops are bit-exact with wrapping semantics; width-specific mask is applied on every arithmetic output. Field and int registers cannot mix without an explicit `IntFromField` / `FieldFromInt` conversion.
+
+## Opcodes
+
+~25 opcodes, grouped by category. Encoding is `<opcode tag>(1 byte) + operands`.
+
+### Control flow
+
+| Tag | Opcode | Operands |
+|-----|--------|----------|
+| 0x01 | `Jump` | target: u32 |
+| 0x02 | `JumpIf` | cond: Reg, target: u32 |
+| 0x03 | `Return` | - |
+| 0x04 | `Trap` | code: u16 |
+
+### Constants & signals
+
+| Tag | Opcode | Operands |
+|-----|--------|----------|
+| 0x10 | `PushConst` | dst: Reg, const_id: u32 |
+| 0x11 | `ReadSignal` | dst: Reg, signal_id: u32 |
+| 0x12 | `WriteWitness` | slot_id: u32, src: Reg |
+
+Signals are read-only; witness slots are the sole output channel.
+
+### Field ops
+
+| Tag | Opcode | Operands |
+|-----|--------|----------|
+| 0x20 | `FAdd` | dst, a, b |
+| 0x21 | `FSub` | dst, a, b |
+| 0x22 | `FMul` | dst, a, b |
+| 0x23 | `FDiv` | dst, a, b |
+| 0x24 | `FInv` | dst, src |
+| 0x25 | `FEq` | dst, a, b (dst is U8: 0 or 1) |
+
+### Integer ops
+
+| Tag | Opcode | Operands |
+|-----|--------|----------|
+| 0x30 | `IBin` | op: IntBinOp, w: IntW, dst, a, b |
+| 0x31 | `INot` | w: IntW, dst, src |
+| 0x32 | `Rotl32` | dst, src, n |
+| 0x33 | `Rotr32` | dst, src, n |
+| 0x34 | `Rotl8` | dst, src, n |
+
+`IntBinOp` covers `Add`, `Sub`, `Mul`, `And`, `Or`, `Xor`, `Shl`, `Shr`, `CmpLt`, `CmpEq`. The SHA-family `Rotl32` / `Rotr32` / `Rotl8` are first-class opcodes so bit-hash lowering stays compact.
+
+### Conversion
+
+| Tag | Opcode | Operands |
+|-----|--------|----------|
+| 0x40 | `IntFromField` | w: IntW, dst, src |
+| 0x41 | `FieldFromInt` | dst, src, w: IntW |
+
+### Arrays
+
+| Tag | Opcode | Operands |
+|-----|--------|----------|
+| 0x50 | `AllocArray` | dst, len: u32, elem: ElemT |
+| 0x51 | `LoadArr` | dst, arr, idx |
+| 0x52 | `StoreArr` | arr, idx, val |
+
+Arrays live in a bump-allocated `Vec` managed by the executor — no GC.
+
+## Static & runtime limits
+
+The validator rejects adversarial bytecode before it reaches the executor:
+
+| Limit | Value | Enforced by |
+|-------|-------|-------------|
+| `MAX_FRAME_SIZE` | 2^16 registers | validator |
+| `MAX_ARRAY_LEN` | 2^20 cells per `AllocArray` | validator |
+| `MAX_ARRAY_MEMORY_CELLS` | 2^24 cumulative cells per `execute` | executor |
+| `DEFAULT_BUDGET` | 8M instructions per call | executor (`execute_with_budget` overrides) |
+
+Constants larger than `family.max_const_bytes()` are rejected. All traps surface as typed `ArtikError` variants.
+
+## Lift surface
+
+`circom::lowering::artik_lift` compiles function bodies to Artik bytecode. What the lift currently accepts:
+
+### Statements
+
+- Scalar `VarDecl` and 1D array `VarDecl`
+- Scalar `Substitution` and indexed (`arr[i] = expr`) with runtime indices
+- Compound-assigns (`+=`, `*=`, etc.), with const-fold on loop variables
+- `For` with compile-time bounds (unrolled, max 4096 iterations)
+- `IfElse` — both compile-time folded and runtime via field-arithmetic mux
+- `Return` — scalar or array
+- Bare `++` / `--` on loop variables
+
+### Expressions
+
+- `Ident`, `Number`, `HexNumber`
+- `BinOp` — `Add`/`Sub`/`Mul`/`Div` + bitwise `And`/`Or`/`Xor`/`ShiftL`/`ShiftR` via U32 int-promotion
+- `UnaryOp::Neg` and `::BitNot`
+- `Index` with compile-time-folded or runtime index
+- `Call` — inlined, scalar or array return
+- `Ternary`
+
+### Runtime if/else mux
+
+Both arms are lifted; scalar locals merge via the standard `cond * then + (1 - cond) * else` pattern. `cond` is normalized via `FEq(cond, 0) -> FieldFromInt U8 -> 1 - is_zero`. Branches must be side-effect-free (no array writes, no `return`).
+
+Nested calls are admissible inside mux branches — nested returns capture into `nested_result` without emitting `WriteWitness`.
+
+## Runtime dispatch
+
+`ir::eval::evaluate` + `evaluate_lenient` dispatch to `artik::execute` on every `Instruction::WitnessCall`:
+
+```rust
+Instruction::WitnessCall {
+    outputs: Vec<Variable>,        // witness slots to fill
+    inputs: Vec<LinearCombination>, // signals, materialized into LC wires
+    program_bytes: Vec<u8>,        // the .artik blob
+}
+```
+
+The R1CS backend materializes each input LC into a fresh witness wire, allocates wires for each output, and emits a `WitnessOp::ArtikCall` into the trace. At witness-gen time, `WitnessGenerator::execute_op` decodes the bytecode and runs Artik against the live witness vector.
+
+See [Witness Generation](./witness-generation) for the full trace replay model.
+
+## Design decisions
+
+- **Side-channel via `Instruction::WitnessCall`, not a separate side-table on `IrProgram`.** Keeps witness programs in instruction order so the prover's witness-gen loop naturally interleaves them between other `WitnessOp` replays. Cost: ~8 exhaustive match sites extended across `ir` + `compiler`.
+- **Primary output = `outputs[0]`, extras via `extra_result_vars`.** Array-returning lifts expose secondary witness slots this way. Non-empty invariant enforced by the lift.
+- **Public outputs win over fresh witness wires.** Instantiate reuses `output_pub_vars[name]` when the binding name matches a public output signal, so Artik writes directly into the public-output wire.
+- **BN-family check via `F::PRIME_ID`, not `type_name`.** Cleaner and catches Goldilocks as unsupported rather than silently accepting.
+- **No heap, no GC.** Arrays are bump-allocated into a single `Vec` owned by the executor. A program is one-shot: it runs once per proof, then drops.
+
+## Current limits
+
+- **Array parameters** — biggest remaining gap. `sha256compression(hin[256], inp[512])` bails to E212 because the lift maps each param to a single `ReadSignal`. Needs call-site dimension inference + N-signal allocation + array binding.
+- **Multi-dim arrays** (`var M[t][t]`) — current support is 1D only.
+- **Runtime loop bounds** — loops with signal-dependent end are not unrolled; Artik's `JumpIf` is not yet used by the lift.
+- **Plonkish backend** — returns a clean error on `WitnessCall`. R1CS is the sole proving path for Artik this release.
+
+## E2E coverage
+
+| Case | Path |
+|------|------|
+| SHA-256 `sigma0` | lift -> R1CS -> witness (end-to-end verified) |
+| Pedersen_old(8) | field-aware BigVal + lift -> R1CS |
+| EdDSaMiMCVerifier | lift + R1CS with `enabled=0` |
+| Fuzz (180s / target) | 62M runs / 0 crashes after Fase 6 hardening |
+
+## Source files
+
+| Component | File |
+|-----------|------|
+| IR + opcodes | `artik/src/ir.rs` |
+| Header + families | `artik/src/header.rs` |
+| Program | `artik/src/program.rs` |
+| Encode / decode | `artik/src/bytecode/` |
+| Validator | `artik/src/validate.rs` |
+| Executor | `artik/src/executor.rs` |
+| Builder API (used by lift) | `artik/src/builder.rs` |
+| Circom lift | `circom/src/lowering/artik_lift.rs` |
+| IR dispatch | `ir/src/eval/mod.rs::dispatch_witness_call` |
+| R1CS dispatch | `compiler/src/witness_gen.rs::dispatch_artik_call` |
+| IR variant | `ir/src/types.rs` — `Instruction::WitnessCall` |

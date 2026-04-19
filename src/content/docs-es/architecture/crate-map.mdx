@@ -3,7 +3,7 @@ title: "Mapa de Crates"
 description: "Dependencias y responsabilidades de los crates del workspace."
 ---
 
-El workspace de Achronyme contiene 10 crates. Todos comparten la misma versión, edición 2021.
+El workspace de Achronyme contiene 12 crates. Todos comparten la misma versión, edición 2021.
 
 ## Resumen de Crates
 
@@ -13,7 +13,8 @@ El workspace de Achronyme contiene 10 crates. Todos comparten la misma versión,
 | `achronyme-parser` | `achronyme-parser/` | Parser de descenso recursivo, tipos del AST |
 | `constraints` | `constraints/` | Sistema de restricciones R1CS, sistema Plonkish, hash Poseidon (multi-campo), exportación binaria |
 | `ir` | `ir/` | Representación intermedia SSA, bajada AST→IR, pases de optimización, ProveIR |
-| `vm` | `vm/` | Máquina virtual basada en registros, intérprete de bytecode, despacho de métodos por prototipos |
+| `akron` | `akron/` | VM de bytecode de propósito general basada en registros, intérprete, despacho de métodos por prototipos |
+| `artik` | `artik/` | VM dedicada a cómputo de testigos (estilo SSA, sin heap, sin GC) |
 | `compiler` | `compiler/` | Backends R1CS y Plonkish, generación de testigos |
 | `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), generación de verificadores Solidity |
 | `achronyme-std` | `std/` | Librería estándar vía trait `NativeModule` (parse_int, join, I/O) |
@@ -30,17 +31,17 @@ memory          achronyme-parser
 constraints   ┌────────┘
   │      │    │
   │      ▼    ▼
-  │       ir ◄──── memory
+  │       ir ◄──── memory, artik
   │       │
-  ▼       │
-  vm      │
+  ▼       ▼
+ akron  circom ◄── artik
   │       │
   └──┬────┘
      ▼
-  compiler ◄── memory, achronyme-parser
+  compiler ◄── memory, achronyme-parser, artik
      │
      ▼
-    cli ◄── memory, vm, constraints, ir
+    cli ◄── memory, akron, constraints, ir
 ```
 
 ### Fundación (sin dependencias del workspace)
@@ -59,17 +60,21 @@ Abstracciones centrales del sistema de restricciones. `Variable(usize)` para ref
 
 Representación intermedia SSA para compilación de circuitos. `IrLowering` convierte el AST en un `IrProgram` plano (19 variantes de instrucción). Incluye 4 pases de optimización (`const_fold`, `dce`, `bool_prop`, `taint`) y un evaluador para ejecución concreta del IR.
 
-**`vm`** → `memory`, `constraints`
+**`akron`** → `memory`, `constraints`
 
-VM de bytecode basada en registros. 40+ opcodes, compilador de bytecode (`FunctionCompiler`), 23 funciones nativas, soporte de bloques `prove {}`. Usa `constraints` para cálculo de hash Poseidon en modo VM.
+VM de bytecode de propósito general basada en registros. 40+ opcodes, compilador de bytecode (`FunctionCompiler`), 40+ funciones nativas, soporte de bloques `prove {}`. Usa `constraints` para cálculo de hash Poseidon en modo VM. Ver [Akron VM y Bytecode](./akron-vm).
+
+**`artik`** → `memory`
+
+VM dedicada a cómputo de testigos emparejada con Akron. Registros estilo SSA, ~25 opcodes, sin heap, sin GC. Lifted desde cuerpos de funciones Circom que no se pueden inlinear en el circuito (cierra la brecha E212). Ver [VM de Testigos Artik](./artik-vm).
 
 ### Capa Superior
 
-**`compiler`** → `memory`, `vm`, `constraints`, `achronyme-parser`, `ir`
+**`compiler`** → `memory`, `akron`, `constraints`, `achronyme-parser`, `ir`, `artik`
 
 Compilación de backend desde IR a sistemas de restricciones. `R1CSCompiler` mapea variables SSA a combinaciones lineales y emite restricciones R1CS. `PlonkishCompiler` usa evaluación perezosa `PlonkVal` con filas basadas en celdas. Ambos backends incluyen `compile_ir_with_witness()` para compilación + generación de testigos combinada.
 
-**`cli`** → `memory`, `vm`, `compiler`, `constraints`, `ir`
+**`cli`** → `memory`, `akron`, `compiler`, `constraints`, `ir`
 
 CLI orientado al usuario. Despacha `ach run` (ruta VM) y `ach circuit` (ruta de restricciones). Maneja orquestación de pruebas con bibliotecas criptográficas externas:
 - **arkworks**: `ark-groth16`, `ark-bn254`, `ark-relations` para pruebas Groth16
@@ -87,5 +92,6 @@ CLI orientado al usuario. Despacha `ach run` (ruta VM) y `ach circuit` (ruta de 
 | Generar testigo | `compiler` | `R1CSCompiler::compile_ir_with_witness(program, inputs)` |
 | Exportar .r1cs | `constraints` | `write_r1cs(cs)` |
 | Exportar .wtns | `constraints` | `write_wtns(witness)` |
-| Ejecutar VM | `vm` | `VM::interpret(function)` |
+| Ejecutar VM | `akron` | `VM::interpret(function)` |
+| Ejecutar VM de testigos | `artik` | `artik::execute(program, ctx)` |
 | Ejecutar CLI | `cli` | `main()` → despacho de comandos |

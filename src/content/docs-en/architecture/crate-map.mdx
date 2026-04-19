@@ -14,7 +14,8 @@ The Achronyme workspace contains 12 crates. All share the same version, edition 
 | `achronyme-parser` | `achronyme-parser/` | Recursive descent parser, owned AST types |
 | `constraints` | `constraints/` | R1CS constraint system, Plonkish system, Poseidon hash (multi-field), binary export |
 | `ir` | `ir/` | SSA intermediate representation, AST→IR lowering, optimization passes, ProveIR |
-| `vm` | `vm/` | Register-based virtual machine, bytecode interpreter, prototype method dispatch |
+| `akron` | `akron/` | Register-based general-purpose bytecode VM, interpreter, prototype method dispatch |
+| `artik` | `artik/` | Dedicated witness-computation VM (SSA-style, no heap, no GC) |
 | `compiler` | `compiler/` | R1CS and Plonkish backends, witness generation |
 | `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), Solidity verifier generation |
 | `achronyme-std` | `std/` | Standard library via `NativeModule` trait (parse_int, join, I/O) |
@@ -29,15 +30,15 @@ diagnostics (zero deps)
   │
   ├──→ achronyme-parser
   │         │
-  ├──→ ir ──┘──→ memory, constraints
+  ├──→ ir ──┘──→ memory, constraints, artik
   │    │
-  ├──→ circom ──→ ir
+  ├──→ circom ──→ ir, artik
   │
-  └──→ compiler → ir, achronyme-parser, memory, constraints
+  ├──→ akron → memory, constraints
+  │
+  └──→ compiler → ir, achronyme-parser, memory, constraints, artik
           │
-          └──→ cli → compiler, vm, proving
-                      │
-                      └──→ vm → memory
+          └──→ cli → compiler, akron, proving
 ```
 
 ### Foundation (no workspace dependencies)
@@ -66,17 +67,21 @@ Circom 2.x frontend. Complete pipeline from `.circom` source to ProveIR:
 - **Analysis** — constraint pairing check (`<--` without `===` = hard error E100), include resolution with cycle detection
 - **Lowering** — signal extraction, expression/statement/template lowering to ProveIR `CircuitNode`/`CircuitExpr`
 
-**`vm`** → `memory`, `constraints`
+**`akron`** → `memory`, `constraints`
 
-Register-based bytecode VM. 40+ opcodes, bytecode compiler (`FunctionCompiler`), 43 native functions, `prove {}` block support. Uses `constraints` for Poseidon hash computation in VM mode.
+General-purpose register-based bytecode VM. 40+ opcodes, bytecode compiler (`FunctionCompiler`), 40+ native functions, `prove {}` block support. Uses `constraints` for Poseidon hash computation in VM mode. See [Akron VM & Bytecode](./akron-vm).
+
+**`artik`** → `memory`
+
+Dedicated witness-computation VM paired with Akron. SSA-style register file, ~25 opcodes, no heap, no GC. Lifted from Circom function bodies that cannot be circuit-inlined (closes the E212 gap). See [Artik Witness VM](./artik-vm).
 
 ### Top Layer
 
-**`compiler`** → `memory`, `vm`, `constraints`, `achronyme-parser`, `ir`
+**`compiler`** → `memory`, `akron`, `constraints`, `achronyme-parser`, `ir`, `artik`
 
 Backend compilation from IR to constraint systems. `R1CSCompiler` maps SSA variables to linear combinations and emits R1CS constraints. `PlonkishCompiler` uses lazy `PlonkVal` evaluation with cell-based rows. Both backends include `compile_ir_with_witness()` for combined compilation + witness generation.
 
-**`cli`** → `memory`, `vm`, `compiler`, `constraints`, `ir`
+**`cli`** → `memory`, `akron`, `compiler`, `constraints`, `ir`
 
 User-facing CLI. Dispatches `ach run` (VM path) and `ach circuit` (constraint path). Handles proof orchestration with external cryptographic libraries:
 - **arkworks**: `ark-groth16`, `ark-bn254`, `ark-relations` for Groth16 proving
@@ -94,5 +99,6 @@ User-facing CLI. Dispatches `ach run` (VM path) and `ach circuit` (constraint pa
 | Generate witness | `compiler` | `R1CSCompiler::compile_ir_with_witness(program, inputs)` |
 | Export .r1cs | `constraints` | `write_r1cs(cs)` |
 | Export .wtns | `constraints` | `write_wtns(witness)` |
-| Run VM | `vm` | `VM::interpret(function)` |
+| Run VM | `akron` | `VM::interpret(function)` |
+| Execute witness VM | `artik` | `artik::execute(program, ctx)` |
 | Run CLI | `cli` | `main()` → command dispatch |

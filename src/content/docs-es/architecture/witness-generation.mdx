@@ -72,6 +72,17 @@ PoseidonHash { left: Variable, right: Variable, output: Variable,
 
 Calcula el hash Poseidon 2-a-1 reproduciendo la permutación completa nativamente. Llena ~361 valores de cables internos (360 estados de ronda + 1 inicialización de capacidad) comenzando en `internal_start`. El orden de asignación coincide exactamente con lo que `compile_poseidon` produce en el backend R1CS.
 
+### ArtikCall
+
+```rust
+ArtikCall { outputs: Vec<Variable>, input_vars: Vec<Variable>,
+            program_bytes: Vec<u8> }
+```
+
+Despacha a la [VM de testigos Artik](./artik-vm). Se emite cuando el IR carga una `Instruction::WitnessCall` — típicamente de un cuerpo de función Circom que el pase `artik_lift` compiló a bytecode.
+
+En tiempo de generación de testigo, el generador decodifica `program_bytes`, conecta `input_vars` al slice de señales de solo-lectura de Artik, y ejecuta el programa. Cada valor que Artik escribe vía `WriteWitness` aterriza en uno de los cables `outputs`. Ver [VM de Testigos Artik](./artik-vm) para el formato de bytecode y la superficie del lift.
+
 ## WitnessGenerator
 
 ```rust

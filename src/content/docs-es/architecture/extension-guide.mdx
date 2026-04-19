@@ -164,7 +164,7 @@ pub fn optimize(program: &mut IrProgram) {
 
 ### 1. Implementar la función
 
-En `vm/src/stdlib/core.rs`, agrega la implementación:
+En `akron/src/stdlib/core.rs`, agrega la implementación:
 
 ```rust
 pub fn native_my_func(vm: &mut VM, args: &[Value]) -> Result<Value, RuntimeError> {
@@ -178,7 +178,7 @@ La firma siempre es `fn(&mut VM, &[Value]) -> Result<Value, RuntimeError>`.
 
 ### 2. Registrar en la tabla de despacho
 
-En `vm/src/specs.rs`, agrega una entrada a `NATIVE_TABLE`:
+En `akron/src/specs.rs`, agrega una entrada a `NATIVE_TABLE`:
 
 ```rust
 pub const NATIVE_TABLE: &[NativeSpec] = &[
@@ -199,7 +199,7 @@ La aserción en tiempo de compilación detectará cualquier discrepancia.
 
 ### 4. Mapear en bootstrap
 
-En `vm/src/machine/native.rs`, agrega el brazo de match en `bootstrap_natives`:
+En `akron/src/machine/native.rs`, agrega el brazo de match en `bootstrap_natives`:
 
 ```rust
 "my_func" => stdlib::core::native_my_func,
@@ -209,7 +209,7 @@ En `vm/src/machine/native.rs`, agrega el brazo de match en `bootstrap_natives`:
 
 ### 1. Definir el opcode
 
-En `vm/src/opcode.rs`, agrega una constante:
+En `akron/src/opcode.rs`, agrega una constante:
 
 ```rust
 pub const MY_OP: u8 = /* siguiente número disponible */;
@@ -226,7 +226,7 @@ self.emit(opcode::MY_OP, a, b, c);
 
 ### 3. Manejar en el intérprete de la VM
 
-En `vm/src/machine/vm.rs`, agrega un brazo de match en `interpret_inner`:
+En `akron/src/machine/vm.rs`, agrega un brazo de match en `interpret_inner`:
 
 ```rust
 opcode::MY_OP => {

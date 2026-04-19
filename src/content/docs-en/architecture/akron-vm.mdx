@@ -1,37 +1,39 @@
 ---
-title: "VM & Bytecode"
-description: "Register-based virtual machine, opcodes, and binary format."
+title: "Akron VM & Bytecode"
+description: "Register-based general-purpose bytecode VM: opcodes, value encoding, and binary format."
 ---
 
-The Achronyme VM is a register-based bytecode interpreter. It executes compiled `.achb` files using a fixed-size stack of 65,536 Value slots.
+**Akron** is Achronyme's general-purpose bytecode VM — a register-based interpreter that runs `.achb` files produced by the bytecode compiler. It executes the Achronyme language at runtime (`ach run`) and evaluates `prove {}` blocks in VM mode.
+
+Akron is paired with [Artik](./artik-vm), the dedicated witness-computation VM. The split is deliberate: Akron handles scripting and mutable heap state with a GC, while Artik handles side-effect-free witness math with no heap or GC.
 
 ## Architecture
 
 ```ach
 Source (.ach)
-    │
-    ▼
-Bytecode Compiler → Function prototypes + bytecode
-    │
-    ▼
-Serializer → .achb binary file
-    │
-    ▼
-Loader → VM heap + stack + frames
-    │
-    ▼
-Interpreter → Register-based execution
+    |
+    v
+Bytecode Compiler -> Function prototypes + bytecode
+    |
+    v
+Serializer -> .achb binary file
+    |
+    v
+Loader -> Akron heap + stack + frames
+    |
+    v
+Interpreter -> Register-based execution
 ```
 
 ### VM Structure
 
 ```ach
-VM {
+Akron {
     heap: Heap,              // typed arenas + GC
     stack: [Value; 65536],   // fixed-size register stack
     frames: Vec<CallFrame>,  // call stack
     globals: Vec<GlobalEntry>,  // global variables
-    natives: Vec<NativeObj>,    // 43 built-in functions
+    natives: Vec<NativeObj>,    // built-in functions
     open_upvalues: linked list, // captured stack variables
     stress_mode: bool,          // force GC every cycle
 }
@@ -66,18 +68,20 @@ Bits 59..0  = 60-bit payload
 | Tag | Name | Payload |
 |-----|------|---------|
 | 0 | `INT` | i60 signed integer (inline) |
-| 1 | `NIL` | — |
-| 2 | `FALSE` | — |
-| 3 | `TRUE` | — |
-| 4 | `STRING` | u32 handle → strings arena |
-| 5 | `LIST` | u32 handle → lists arena |
-| 6 | `MAP` | u32 handle → maps arena |
-| 7 | `FUNCTION` | u32 handle → functions arena |
-| 8 | `FIELD` | u32 handle → fields arena (BN254) |
-| 9 | `PROOF` | u32 handle → proofs arena |
-| 10 | `NATIVE` | u32 handle → natives table |
-| 11 | `CLOSURE` | u32 handle → closures arena |
-| 12 | `ITER` | u32 handle → iterators arena |
+| 1 | `NIL` | - |
+| 2 | `FALSE` | - |
+| 3 | `TRUE` | - |
+| 4 | `STRING` | u32 handle -> strings arena |
+| 5 | `LIST` | u32 handle -> lists arena |
+| 6 | `MAP` | u32 handle -> maps arena |
+| 7 | `FUNCTION` | u32 handle -> functions arena |
+| 8 | `FIELD` | u32 handle -> fields arena |
+| 9 | `PROOF` | u32 handle -> proofs arena |
+| 10 | `NATIVE` | u32 handle -> natives table |
+| 11 | `CLOSURE` | u32 handle -> closures arena |
+| 12 | `ITER` | u32 handle -> iterators arena |
+| 14 | `BYTES` | u32 handle -> bytes arena (ProveIR constants) |
+| 15 | `CIRCOM_HANDLE` | u32 handle -> circom templates |
 
 Integers (tag 0) are the most common value type — using tag 0 means no masking is needed for the common case.
 
@@ -183,11 +187,13 @@ Used for instructions with a 16-bit operand, like `LoadConst R[A] = K[Bx]` or `J
 | `GetIndex` | 152 | ABC | `R[A] = R[B][R[C]]` |
 | `SetIndex` | 153 | ABC | `R[A][R[B]] = R[C]` |
 
-### ZK
+### ZK & Dispatch
 
 | Opcode | Code | Format | Description |
 |--------|------|--------|-------------|
-| `Prove` | 160 | — | Compile + verify ZK circuit |
+| `Prove` | 160 | - | Compile + verify ZK circuit |
+| `MethodCall` | 161 | ABC | Method dispatch `R[A] = R[B].method(args)` |
+| `CallCircomTemplate` | 162 | ABC | Invoke a registered Circom template handle |
 
 ### Special
 
@@ -230,7 +236,8 @@ Global Constants:
     for each: tag (u8) + payload
         INT (0):    i64 LE
         STRING (1): u32 LE handle
-        FIELD (8):  4 × u64 LE (Montgomery limbs)
+        FIELD (8):  4 x u64 LE (Montgomery limbs)
+        BYTES (14): u32 LE length + raw bytes (ProveIR blobs)
         NIL (255):  (no payload)
 
 Prototypes:
@@ -248,7 +255,7 @@ Main Bytecode:
     instructions (u32 LE each)
 ```
 
-The format is compatible with the VM's `loader` module, which deserializes into heap objects.
+The format is compatible with Akron's `loader` module, which deserializes into heap objects.
 
 ## Global Variable Layout
 
@@ -257,19 +264,35 @@ Index:  0..22       23..
         Natives     User globals
 ```
 
-The first 23 slots (0–22) are reserved for native functions. User-defined globals start at index 23 (`USER_GLOBAL_START`).
+The first 23 slots (0-22) are reserved for native functions. User-defined globals start at index 23 (`USER_GLOBAL_START`).
+
+## Relationship to Artik
+
+Akron and [Artik](./artik-vm) are sibling VMs with disjoint roles:
+
+| Akron | Artik |
+|-------|-------|
+| General-purpose scripting + `prove {}` | Witness computation for circuits |
+| Tagged values, 13+ type tags | Field elements + fixed-width ints only |
+| Mark-sweep GC, typed arenas | No heap, no GC |
+| ~40 opcodes, 3-operand format | ~25 opcodes, typed registers |
+| Invoked by `ach run`, VM mode | Dispatched from R1CS witness-gen (`WitnessOp::ArtikCall`) |
+
+See [Artik Witness VM](./artik-vm) for details on the witness path.
 
 ## Source Files
 
 | Component | File |
 |-----------|------|
-| Opcodes | `vm/src/opcode.rs` |
-| VM interpreter | `vm/src/machine/vm.rs` |
-| Call frames | `vm/src/machine/frame.rs` |
-| Native dispatch | `vm/src/specs.rs` |
+| Opcodes | `akron/src/opcode.rs` |
+| VM interpreter | `akron/src/machine/vm.rs` |
+| Call frames | `akron/src/machine/frame.rs` |
+| Interpreter loop | `akron/src/machine/interpreter.rs` |
+| Native dispatch | `akron/src/specs.rs` |
+| Prototype methods | `akron/src/machine/methods/` |
 | Value encoding | `memory/src/value.rs` |
 | Function struct | `memory/src/heap.rs` |
 | Bytecode compiler | `compiler/src/codegen.rs` |
 | Function compiler | `compiler/src/function_compiler.rs` |
 | Binary serializer | `cli/src/commands/compile.rs` |
-| Binary loader | `vm/src/loader.rs` |
+| Binary loader | `akron/src/loader.rs` |
