@@ -99,6 +99,28 @@
   will-change: transform;
 }
 
+/* Material Symbols base — inline-flex ligature icon, baseline-aligned */
+.ms-icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  font-size: 1em;
+  vertical-align: -0.15em;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+.ms-icon-sm { font-size: 14px; vertical-align: -0.18em; }
+.ms-icon-md { font-size: 16px; vertical-align: -0.2em; }
+.ms-icon-lg { font-size: 20px; vertical-align: -0.25em; }
+.ms-icon-filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20; }
+
 /* Roadmap inline receipt links — tactile spring with arrow micro-physics */
 .receipt-link {
   transition:
@@ -242,10 +264,10 @@
   color: var(--color-text-secondary);
   background: color-mix(in srgb, var(--color-subtle) 30%, transparent);
 }
-.doc-prose .code-block-wrapper .copy-btn .icon-copy { display: block; }
+.doc-prose .code-block-wrapper .copy-btn .icon-copy { display: inline-flex; }
 .doc-prose .code-block-wrapper .copy-btn .icon-check { display: none; }
 .doc-prose .code-block-wrapper .copy-btn[data-copied] .icon-copy { display: none; }
-.doc-prose .code-block-wrapper .copy-btn[data-copied] .icon-check { display: block; }
+.doc-prose .code-block-wrapper .copy-btn[data-copied] .icon-check { display: inline-flex; }
 .doc-prose .code-block-wrapper .copy-btn[data-copied] { opacity: 1; color: var(--color-valid); }
 
 .doc-prose pre {
