@@ -99,7 +99,10 @@
   will-change: transform;
 }
 
-/* Material Symbols base — inline-flex ligature icon, baseline-aligned */
+/* Material Symbols base — inline-flex ligature icon, baseline-aligned.
+   width/height:1em + overflow:hidden clips the literal ligature name
+   (e.g. "chevron_right") if the font fails to load; combined with
+   display=block in the Google Fonts URL we avoid FOUT entirely. */
 .ms-icon {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -115,6 +118,11 @@
   font-size: 1em;
   vertical-align: -0.15em;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .ms-icon-sm { font-size: 14px; vertical-align: -0.18em; }
 .ms-icon-md { font-size: 16px; vertical-align: -0.2em; }
