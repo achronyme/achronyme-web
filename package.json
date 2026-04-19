@@ -30,6 +30,7 @@
     "astro": "^5.17.1",
     "codemirror": "^6.0.2",
     "gsap": "^3.14.2",
+    "material-symbols": "^0.44.2",
     "mermaid": "^11.13.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1"

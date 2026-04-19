@@ -3,6 +3,7 @@ import '../styles/global.css';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import '@fontsource-variable/jetbrains-mono';
+import 'material-symbols/outlined.css';
 
 interface Props {
   title: string;
@@ -60,14 +61,6 @@ const alternate = new URL(otherPath, Astro.site).href;
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-
-    <!-- Material Symbols Outlined (Google Fonts, tree-shaken via icon_names) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..500,0..1,-25..0&icon_names=arrow_outward,arrow_right_alt,bolt,check,radio_button_unchecked&display=block"
-    />
 
     <script>
       import '@tailwindplus/elements'
