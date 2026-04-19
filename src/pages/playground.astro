@@ -13,6 +13,14 @@ import '@fontsource-variable/jetbrains-mono';
   <title>Playground — Achronyme</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+  <!-- Material Symbols Outlined (Google Fonts, tree-shaken via icon_names) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..500,0..1,-25..0&icon_names=add,check,chevron_right,close,code_blocks,content_copy,create_new_folder,deployed_code,description,download,folder,inventory_2,keyboard_arrow_down,keyboard_arrow_up,menu_book,open_in_new,play_arrow,search,sell,settings,splitscreen,upload"
+  />
+
   <style is:global>
     :root {
       --bg-titlebar: #1e1e1e;
@@ -48,6 +56,29 @@ import '@fontsource-variable/jetbrains-mono';
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; background: var(--bg-editor); color: var(--text-primary); font-family: var(--font-mono); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     ::selection { background: rgba(168, 85, 247, 0.35); }
+
+    /* Material Symbols base — ligature icon, baseline-aligned, no line-height push. */
+    .ms-icon {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      font-size: 16px;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      flex-shrink: 0;
+    }
+    .ms-icon-xs { font-size: 12px; }
+    .ms-icon-sm { font-size: 14px; }
+    .ms-icon-md { font-size: 16px; }
+    .ms-icon-lg { font-size: 20px; }
+    .ms-icon-xl { font-size: 24px; }
+    .ms-icon-filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20; }
 
     /* Screen-reader-only label for the implicit editor landmark. */
     .visually-hidden {
@@ -156,8 +187,8 @@ import '@fontsource-variable/jetbrains-mono';
       background: #252526;
     }
     .sidebar-section:hover { background: #2a2d2e; }
-    .sidebar-section svg { width: 9px; height: 9px; color: var(--text-secondary); transition: transform 0.1s; }
-    .sidebar-section.collapsed svg { transform: rotate(-90deg); }
+    .sidebar-section .sidebar-section-chevron { color: var(--text-secondary); transition: transform 0.15s ease; transform: rotate(90deg); }
+    .sidebar-section.collapsed .sidebar-section-chevron { transform: rotate(0deg); }
     .file-tree { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0; }
     .file-row {
       display: flex; align-items: center; gap: 6px;
@@ -269,7 +300,7 @@ import '@fontsource-variable/jetbrains-mono';
     }
     .tab:hover:not(.active) { background: #2a2a2a; }
     .tab-icon { display: flex; align-items: center; flex-shrink: 0; }
-    .tab-icon svg { width: 14px; height: 14px; }
+    .tab-icon .ms-icon { font-size: 14px; }
     .tab-label { font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
     .tab-dot {
       width: 9px; height: 9px; min-width: 9px; border-radius: 50%;
@@ -303,7 +334,7 @@ import '@fontsource-variable/jetbrains-mono';
     .run-btn:hover { background: var(--accent); }
     .run-btn:active { background: #6d28d9; }
     .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .run-btn svg { width: 10px; height: 10px; fill: #fff; }
+    .run-btn .ms-icon { font-size: 14px; color: #fff; }
     .tab-action-btn {
       width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
       background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 3px; flex-shrink: 0;
@@ -465,8 +496,8 @@ import '@fontsource-variable/jetbrains-mono';
       display: flex; align-items: center; gap: 6px;
     }
     .proof-section-label:hover { background: rgba(255,255,255,0.04); }
-    .proof-section-label svg { width: 8px; height: 8px; color: var(--text-muted); transition: transform 0.1s; }
-    .proof-section-label.collapsed svg { transform: rotate(-90deg); }
+    .proof-section-label .proof-section-chevron { color: var(--text-muted); transition: transform 0.15s ease; transform: rotate(90deg); }
+    .proof-section-label.collapsed .proof-section-chevron { transform: rotate(0deg); }
 
     /* ═══ STATUS BAR ═══ */
     .statusbar {
@@ -735,17 +766,17 @@ import '@fontsource-variable/jetbrains-mono';
     <!-- ACTIVITY BAR -->
     <nav class="activitybar" aria-label="Activity bar">
       <div class="activity-icon active" title="Explorer" aria-label="Explorer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 7v13h18V7M3 7l4-4h6l2 2h7v2"/><path d="M8 14h8M8 11h5"/></svg>
+        <span class="ms-icon ms-icon-xl" aria-hidden="true">folder</span>
       </div>
       <div class="activity-icon" title="Run" id="activity-run" aria-label="Run">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 3l14 9-14 9V3z"/></svg>
+        <span class="ms-icon ms-icon-xl" aria-hidden="true">play_arrow</span>
       </div>
       <div class="activity-icon" title="Documentation" id="activity-docs" aria-label="Documentation">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+        <span class="ms-icon ms-icon-xl" aria-hidden="true">menu_book</span>
       </div>
       <div class="activity-spacer" aria-hidden="true"></div>
       <div class="activity-icon" title="Settings" style="margin-bottom: 4px;" aria-label="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        <span class="ms-icon ms-icon-xl" aria-hidden="true">settings</span>
       </div>
     </nav>
 
@@ -755,15 +786,15 @@ import '@fontsource-variable/jetbrains-mono';
         <span>Explorer</span>
         <div class="sidebar-actions">
           <button class="sidebar-btn" id="new-file-btn" title="New File">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 3v10M3 8h10"/></svg>
+            <span class="ms-icon ms-icon-md" aria-hidden="true">add</span>
           </button>
           <button class="sidebar-btn" id="new-folder-btn" title="New Folder">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4h5l1.5 1.5H15V13H1V4z"/><path d="M8 7.5v3M6.5 9h3"/></svg>
+            <span class="ms-icon ms-icon-md" aria-hidden="true">create_new_folder</span>
           </button>
         </div>
       </div>
       <div class="sidebar-section" id="section-files">
-        <svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span class="ms-icon ms-icon-sm sidebar-section-chevron" aria-hidden="true">chevron_right</span>
         <span id="project-name">Project</span>
       </div>
       <div class="file-tree" id="file-tree"></div>
@@ -777,11 +808,11 @@ import '@fontsource-variable/jetbrains-mono';
         </select>
         <div class="footer-actions">
           <button class="footer-btn" id="export-btn" title="Export project as JSON">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10v3h10v-3"/><path d="M8 2v8M5 7l3 3 3-3"/></svg>
+            <span class="ms-icon ms-icon-sm" aria-hidden="true">download</span>
             Export
           </button>
           <button class="footer-btn" id="import-btn" title="Import project from JSON">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10v3h10v-3"/><path d="M8 10V2M5 5l3-3 3 3"/></svg>
+            <span class="ms-icon ms-icon-sm" aria-hidden="true">upload</span>
             Import
           </button>
           <input type="file" id="import-input" accept=".json" style="display:none" />
@@ -804,13 +835,13 @@ import '@fontsource-variable/jetbrains-mono';
             </div>
             <div class="panel-actions">
               <button class="panel-action-btn" id="panel-position-btn" title="Toggle Panel Position">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="10" y1="1" x2="10" y2="15"/></svg>
+                <span class="ms-icon ms-icon-sm" aria-hidden="true">splitscreen</span>
               </button>
               <button class="panel-action-btn" id="clear-btn" title="Clear Terminal">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 2l12 12M14 2L2 14"/></svg>
+                <span class="ms-icon ms-icon-sm" aria-hidden="true">close</span>
               </button>
               <button class="panel-action-btn" id="panel-close-btn" title="Close Panel (Ctrl+`)">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                <span class="ms-icon ms-icon-sm" aria-hidden="true">close</span>
               </button>
             </div>
           </div>
@@ -819,7 +850,7 @@ import '@fontsource-variable/jetbrains-mono';
           </div>
           <div class="output-scroll" id="proof-panel" style="display:none">
             <div class="proof-empty" id="proof-empty">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span class="ms-icon ms-icon-lg" aria-hidden="true">deployed_code</span>
               <span>Run code with <code>prove {}</code> blocks to see proof artifacts</span>
             </div>
             <div id="proof-artifacts" style="display:none"></div>
@@ -853,9 +884,7 @@ import '@fontsource-variable/jetbrains-mono';
         <div class="cmd-palette" id="cmd-palette-shell">
           <el-command-palette id="cmd-palette">
             <div class="cmd-input-row">
-              <svg class="cmd-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-              </svg>
+              <span class="ms-icon ms-icon-md cmd-search-icon" aria-hidden="true">search</span>
               <input type="text" class="cmd-input" autofocus placeholder="Type a command or search..." autocomplete="off" spellcheck="false" />
             </div>
             <el-command-list class="cmd-list">
@@ -1475,7 +1504,7 @@ import '@fontsource-variable/jetbrains-mono';
     function dlBtn(label, onClick) {
       const btn = document.createElement("button");
       btn.className = "proof-dl-btn";
-      btn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 10v3h10v-3"/><path d="M8 2v8M5 7l3 3 3-3"/></svg> ${label}`;
+      btn.innerHTML = `<span class="ms-icon ms-icon-sm" aria-hidden="true">download</span> ${label}`;
       btn.addEventListener("click", onClick);
       return btn;
     }
@@ -1483,7 +1512,7 @@ import '@fontsource-variable/jetbrains-mono';
     function collapsibleSection(label, content) {
       const lbl = document.createElement("div");
       lbl.className = "proof-section-label";
-      lbl.innerHTML = `<svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> ${label}`;
+      lbl.innerHTML = `<span class="ms-icon ms-icon-sm proof-section-chevron" aria-hidden="true">chevron_right</span> ${label}`;
       const body = document.createElement("div");
       body.className = "proof-json-preview";
       body.textContent = typeof content === "string" ? content : JSON.stringify(content, null, 2);
@@ -1513,7 +1542,7 @@ import '@fontsource-variable/jetbrains-mono';
         header.className = "proof-artifact-header";
         header.innerHTML = `
           <div class="proof-artifact-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="ms-icon ms-icon-md" aria-hidden="true">deployed_code</span>
             ${p.name || "Proof"}
             <span class="proof-badge">${p.backend || "r1cs"}</span>
           </div>
@@ -1571,9 +1600,9 @@ import '@fontsource-variable/jetbrains-mono';
     // ═══ TAB ICONS ═══
     function fileTabIcon(path) {
       if (path.endsWith(".toml")) {
-        return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4.5v7l6 3 6-3v-7L8 1.5z" stroke="#8b8b9a" stroke-width="1.2"/><circle cx="8" cy="8" r="1.5" fill="#8b8b9a"/></svg>`;
+        return `<span class="ms-icon ms-icon-sm" style="color:#8b8b9a" aria-hidden="true">inventory_2</span>`;
       }
-      return `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L13 8L8 14L3 8L8 2Z" fill="none" stroke="#a855f7" stroke-width="1.2"/></svg>`;
+      return `<span class="ms-icon ms-icon-sm" style="color:#a855f7" aria-hidden="true">sell</span>`;
     }
 
     // ═══ TAB RENDERING (per group) ═══
@@ -1600,7 +1629,7 @@ import '@fontsource-variable/jetbrains-mono';
 
         const close = document.createElement("button");
         close.className = "tab-close";
-        close.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+        close.innerHTML = `<span class="ms-icon ms-icon-xs" aria-hidden="true">close</span>`;
         close.addEventListener("click", (e) => { e.stopPropagation(); closeTabInGroup(group, i); });
 
         tab.appendChild(icon); tab.appendChild(label); tab.appendChild(dot); tab.appendChild(close);
@@ -1620,12 +1649,12 @@ import '@fontsource-variable/jetbrains-mono';
       const splitBtn = document.createElement("button");
       splitBtn.className = "tab-action-btn";
       splitBtn.title = "Split Editor (Ctrl+\\)";
-      splitBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1" y="1" width="14" height="14" rx="1"/><line x1="8" y1="1" x2="8" y2="15"/></svg>`;
+      splitBtn.innerHTML = `<span class="ms-icon ms-icon-sm" aria-hidden="true">splitscreen</span>`;
       splitBtn.addEventListener("click", () => { setActiveGroup(groups.indexOf(group)); splitRight(); });
 
       const runBtn = document.createElement("button");
       runBtn.className = "run-btn";
-      runBtn.innerHTML = `<svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg> Run`;
+      runBtn.innerHTML = `<span class="ms-icon ms-icon-sm ms-icon-filled" aria-hidden="true">play_arrow</span> Run`;
       runBtn.addEventListener("click", runCode);
 
       actions.appendChild(splitBtn);
@@ -1953,7 +1982,7 @@ import '@fontsource-variable/jetbrains-mono';
       const navBtn = document.createElement("button");
       navBtn.className = "docs-nav-btn";
       navBtn.type = "button";
-      navBtn.innerHTML = `<svg viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg> <span>Docs</span>`;
+      navBtn.innerHTML = `<span class="ms-icon ms-icon-sm" aria-hidden="true">chevron_right</span> <span>Docs</span>`;
 
       const actions = document.createElement("div");
       actions.className = "docs-group-actions";
@@ -1961,13 +1990,13 @@ import '@fontsource-variable/jetbrains-mono';
       const extBtn = document.createElement("button");
       extBtn.className = "panel-action-btn";
       extBtn.title = "Open in new tab";
-      extBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M7 3H3v10h10V9"/><path d="M9 3h4v4M13 3L7 9"/></svg>`;
+      extBtn.innerHTML = `<span class="ms-icon ms-icon-sm" aria-hidden="true">open_in_new</span>`;
       extBtn.addEventListener("click", () => window.open(`/docs/${currentDocSlug}`, "_blank"));
 
       const closeBtn = document.createElement("button");
       closeBtn.className = "panel-action-btn";
       closeBtn.title = "Close Documentation";
-      closeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+      closeBtn.innerHTML = `<span class="ms-icon ms-icon-sm" aria-hidden="true">close</span>`;
       closeBtn.addEventListener("click", closeDocs);
 
       actions.append(extBtn, closeBtn);
@@ -2120,8 +2149,8 @@ import '@fontsource-variable/jetbrains-mono';
             btn.className = 'copy-btn';
             btn.ariaLabel = 'Copy code';
             btn.innerHTML =
-              '<svg class="icon-copy" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
-              '<svg class="icon-check" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+              '<span class="ms-icon ms-icon-md icon-copy" aria-hidden="true">content_copy</span>' +
+              '<span class="ms-icon ms-icon-md icon-check" aria-hidden="true">check</span>';
             btn.addEventListener('click', () => {
               navigator.clipboard.writeText(pre.textContent ?? '').then(() => {
                 btn.setAttribute('data-copied', '');
