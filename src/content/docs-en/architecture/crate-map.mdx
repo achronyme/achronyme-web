@@ -3,102 +3,176 @@ title: "Crate Map"
 description: "Workspace crate dependencies and responsibilities."
 ---
 
-The Achronyme workspace contains 12 crates. All share the same version, edition 2021.
+The Achronyme workspace contains **19 crates**. All share the same version and Rust edition. The post-cleanup layering (closed 2026-04-24) groups them into four tiers: leaves with no workspace dependencies, vocabulary crates, IR/compiler stack, and top-level orchestration.
 
-## Crate Overview
+## Crate overview
 
 | Crate | Path | Purpose |
 |-------|------|---------|
-| `diagnostics` | `diagnostics/` | Shared diagnostic infrastructure: spans, errors, rendering (zero external deps) |
-| `memory` | `memory/` | `FieldElement<F>` (BN254, BLS12-381, Goldilocks), `FieldBackend` trait, heap arenas, GC |
-| `achronyme-parser` | `achronyme-parser/` | Recursive descent parser, owned AST types |
-| `constraints` | `constraints/` | R1CS constraint system, Plonkish system, Poseidon hash (multi-field), binary export |
-| `ir` | `ir/` | SSA intermediate representation, AST→IR lowering, optimization passes, ProveIR |
-| `akron` | `akron/` | Register-based general-purpose bytecode VM, interpreter, prototype method dispatch |
-| `artik` | `artik/` | Dedicated witness-computation VM (SSA-style, no heap, no GC) |
-| `compiler` | `compiler/` | R1CS and Plonkish backends, witness generation |
-| `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), Solidity verifier generation |
-| `achronyme-std` | `std/` | Standard library via `NativeModule` trait (parse_int, join, I/O) |
-| `ach-macros` | `ach-macros/` | Proc-macros: `#[ach_native]`, `#[ach_module]` |
-| `circom` | `circom/` | Circom 2.x frontend: lexer, parser, analysis, ProveIR lowering |
-| `cli` | `cli/` | Command-line interface, proof orchestration |
+| `diagnostics` | `crates/diagnostics/` | Spans, errors, suggestions, rustc-style renderer (zero-dep leaf) |
+| `memory` | `crates/memory/` | `FieldElement<F>` (BN254/BLS12-381/Goldilocks), `FieldBackend` trait, heap arenas, GC |
+| `ach-macros` | `crates/ach-macros/` | Proc macros: `#[ach_native]`, `#[ach_module]` |
+| `achronyme-parser` | `crates/achronyme-parser/` | Lexer, Pratt+recursive-descent parser, owned AST types |
+| `resolve` | `crates/resolve/` | Symbol table, builtin registry, unified dispatch resolver (Movimiento 2) |
+| `lysis-types` | `crates/lysis-types/` | `InstructionKind<F>`, `NodeId` shared with the [Lysis VM](/docs/architecture/lysis-vm/) |
+| `constraints` | `crates/constraints/` | `Variable`, `LinearCombination`, R1CS + Plonkish system, Poseidon, binary export |
+| `ir-core` | `crates/ir-core/` | SSA leaf: `Instruction<F>`, `SsaVar`, `Visibility`, `IrType` |
+| `ir-forge` | `crates/ir-forge/` | ProveIR templates, AST→ProveIR compiler, Lysis lift walker |
+| `ir` | `crates/ir/` | IR passes (DCE, CSE, const-fold, taint), module loader, inspector, ProveIR orchestration |
+| `zkc` | `crates/zkc/` | Constraint compiler: R1CS backend, Plonkish backend, witness ops, oracle scaffold |
+| `akronc` | `crates/akronc/` | Bytecode compiler for the [Akron VM](/docs/architecture/akron-vm/) (was `compiler`) |
+| `akron` | `crates/akron/` | Register-based general-purpose bytecode VM (was `vm`) |
+| `artik` | `crates/artik/` | Witness-computation SSA VM (was `witness`) — see [Artik](/docs/architecture/artik-vm/) |
+| `lysis` | `crates/lysis/` | Third VM, structural template instantiator with hash-consing — **in progress** |
+| `circom` | `crates/circom/` | Circom 2.x frontend: lexer, parser, analysis, lowering — see [Circom Frontend](/docs/architecture/circom-frontend/) |
+| `proving` | `crates/proving/` | Groth16 (arkworks), PlonK (halo2-KZG), Solidity verifier generation |
+| `achronyme-std` | `crates/std/` | Standard library via `NativeModule` trait |
+| `cli` | `crates/cli/` | Command-line interface, proof orchestration |
 
-## Dependency Graph
+## Crate renames (post-cleanup)
 
+The structural cleanup of 2026-04-18 → 2026-04-24 renamed three crates and split `ir` into three:
+
+| Old name | New name | Reason |
+|----------|----------|--------|
+| `vm` | `akron` | Distinguish from the witness VM and the in-progress Lysis VM |
+| `witness` | `artik` | Match the bytecode magic `ARTK` and the file extension `.artik` |
+| `compiler` | `akronc` | Disambiguate from the constraint compiler `zkc`; "akron compiler" |
+| `ir` | `ir-core` + `ir` + `ir-forge` | Break dependency cycles; expose SSA primitives as a leaf crate |
+
+The old names appear in git history pre-2026-04-18 and in some legacy file-path comments — they all map mechanically to the new names.
+
+## Dependency tiers
+
+### Tier 0 — Foundation (zero workspace deps)
+
+`diagnostics`, `memory`, `ach-macros`, `lysis-types`. Pure leaves. Together they define the universal vocabulary of the workspace: spans, errors, field elements, opcode token shapes, and proc macros.
+
+### Tier 1 — Vocabulary
+
+`achronyme-parser` (depends on `diagnostics`) — surface AST.
+
+`resolve` (depends on `achronyme-parser`, `diagnostics`) — symbol table, builtin registry, ModuleGraph. Hosts `SymbolId`, `CallableKind`, `Availability`. After Movimiento 2, all dispatch (method call, `Type::MEMBER`, native call) goes through `resolve` rather than ad-hoc table lookups.
+
+`constraints` (depends on `memory`) — `LinearCombination`, `ConstraintSystem`, `PlonkishSystem`, Poseidon parameters, `.r1cs`/`.wtns` binary writers in iden3 format.
+
+`ir-core` (depends on `memory`, `diagnostics`) — SSA `Instruction<F>`, `SsaVar`, `Visibility`, `IrType`. Leaf crate so `ir` and `ir-forge` can both depend on it without forming a cycle.
+
+### Tier 2 — IR and circuit compilation
+
+`ir-forge` (depends on `ir-core`, `achronyme-parser`, `resolve`, `diagnostics`, `lysis-types`, `circom` for lowering hooks)
+
+ProveIR data types (`ProveIR`, `CircuitExpr`, `CircuitNode`, `CaptureDef`), AST→ProveIR compiler (`ProveIrCompiler`), Lysis lift walker. The single layer where compile-time symbolic circuit reasoning happens. See [ProveIR](/docs/architecture/prove-ir/).
+
+`ir` (depends on `ir-core`, `ir-forge`, `resolve`)
+
+IR orchestration: passes (`const_fold`, `cse`, `dce`, `bool_prop`, `taint`, `bound_inference`), evaluator, module loader, inspector graph builder. Hosts the `CircomLibraryHandle` trait.
+
+`zkc` (depends on `ir-core`, `constraints`, `memory`)
+
+The constraint compiler. R1CS backend (`compile_to_r1cs`), Plonkish backend, witness operations (`WitnessOp`), oracle scaffolding for the Lysis Phase 3.C gate.
+
+`circom` (depends on `achronyme-parser`, `diagnostics`, `ir-forge`, `resolve`)
+
+Full Circom 2.x frontend. Lifts non-inlinable function bodies to Artik via `lowering::artik_lift`.
+
+### Tier 3 — Bytecode + VMs
+
+`akronc` (depends on `achronyme-parser`, `resolve`, `diagnostics`)
+
+Bytecode compiler for the Akron VM. Owns the bytecode optimizer (peephole, const-fold, dead-store elim).
+
+`akron` (depends on `memory`, `constraints`, `ir`, `ir-forge`)
+
+Register-based general-purpose VM. 43 opcodes, mark-sweep tri-color GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Hosts `prove {}` execution at runtime via the `ProveHandler` trait.
+
+`artik` (depends on `memory`)
+
+Dedicated witness-computation VM. ~25 opcodes, SSA-style registers, no heap, no GC. Loads `.artik` blobs embedded in `WitnessOp::ArtikCall`.
+
+`lysis` (depends on `memory`, `artik`, `lysis-types`)
+
+Third VM — **in progress**. Structural template instantiator with hash-consing interner. See [Lysis VM](/docs/architecture/lysis-vm/). Walker lives in `ir-forge::lysis_lift`; oracle scaffold in `zkc::lysis_oracle`.
+
+### Tier 4 — Top-level orchestration
+
+`proving` (depends on `constraints`, `memory`)
+
+In-process Groth16 (`ark-groth16` + `ark-bn254`) and PlonK (halo2 KZG, PSE fork). Generates Solidity verifiers for on-chain Groth16 verification.
+
+`achronyme-std` (depends on `akron`, `memory`, `ach-macros`)
+
+Standard library natives via the `NativeModule` trait. 16 natives, registered through `#[ach_native]` proc macros.
+
+`cli` (depends on `akron`, `akronc`, `ir`, `ir-forge`, `zkc`, `circom`, `proving`, `resolve`, `achronyme-std`)
+
+User-facing binary. Dispatches `ach run`, `ach circuit`, `ach circom`, `ach prove`, `ach inspect`, `ach init`. Owns the `DefaultCircomWitnessHandler` and the `ProveHandler` implementations injected into Akron.
+
+## Dependency graph
+
+```text
+diagnostics ─── lysis-types ─── ach-macros        (Tier 0 leaves)
+    │                                  │
+    ├── achronyme-parser               │
+    │       │                          │
+    │       └── resolve                │
+    │              │                   │
+    ├── memory ────┼── constraints     │
+    │              │       │           │
+    │              ├── ir-core         │
+    │              │       │           │
+    │              ├── ir-forge ◀──────┴── (uses lysis-types)
+    │              │       │
+    │              ├── ir ─┘
+    │              │
+    │              ├── zkc
+    │              │
+    │              ├── circom
+    │              │
+    │              ├── akronc
+    │              │
+    │              ├── akron
+    │              │       │
+    │              ├── artik
+    │              │       │
+    │              └── lysis ◀───── (uses artik, lysis-types)
+    │
+    ├── proving
+    ├── achronyme-std
+    └── cli ◀── (uses everything)
 ```
-diagnostics (zero deps)
-  │
-  ├──→ achronyme-parser
-  │         │
-  ├──→ ir ──┘──→ memory, constraints, artik
-  │    │
-  ├──→ circom ──→ ir, artik
-  │
-  ├──→ akron → memory, constraints
-  │
-  └──→ compiler → ir, achronyme-parser, memory, constraints, artik
-          │
-          └──→ cli → compiler, akron, proving
-```
 
-### Foundation (no workspace dependencies)
-
-**`diagnostics`** — Shared error reporting infrastructure with zero external dependencies. Defines `Span` (source location), `Diagnostic` (unified error/warning type with builder pattern), `SpanRange`, `Severity`, `Label`, `Suggestion`, and `DiagnosticRenderer` (rustc-style source rendering with ANSI colors). Consumed by all frontends and the IR crate.
-
-**`memory`** — The base layer. Defines `FieldElement<F: FieldBackend>`, a generic field element parameterized by a zero-sized backend marker type. Three backends are implemented: `Bn254Fr` (Montgomery `[u64; 4]`), `Bls12_381Fr` (Montgomery `[u64; 4]`), and `GoldilocksFr` (direct `u64`). The default type parameter is `Bn254Fr`, so bare `FieldElement` means BN254. Also provides tagged `Value` (4-bit tag + 60-bit payload), typed heap arenas, and mark-and-sweep GC.
-
-**`achronyme-parser`** — Achronyme language parser. Recursive descent with Pratt expression parsing. Re-exports all types from `diagnostics`. Exports `parse_program(source) -> (Program, Vec<Diagnostic>)` and owned AST types.
-
-### Middle Layer
-
-**`constraints`** → `memory`
-
-Core constraint system abstractions. `Variable(usize)` for wire references, `LinearCombination` for sparse symbolic expressions, `ConstraintSystem` for A×B=C enforcement. Also contains the `PlonkishSystem` (gates, lookups, copy constraints), Poseidon hash parameters (circomlibjs-compatible), and binary export (`write_r1cs`, `write_wtns` in iden3 format).
-
-**`ir`** → `memory`, `constraints`, `diagnostics`, `achronyme-parser`
-
-SSA intermediate representation for circuit compilation. `IrLowering` converts the AST into a flat `IrProgram` (19 instruction variants). Includes 4 optimization passes (`const_fold`, `dce`, `bool_prop`, `taint`) and an evaluator for concrete IR execution.
-
-**`circom`** → `diagnostics`, `ir`
-
-Circom 2.x frontend. Complete pipeline from `.circom` source to ProveIR:
-- **Lexer** — single-pass tokenizer with maximal munch disambiguation for signal operators (`<==`, `<--`, `===`, `==>`, `-->`)
-- **Parser** — hand-written Pratt + recursive descent, matching Circom 2.x syntax (templates, signals, components, buses)
-- **Analysis** — constraint pairing check (`<--` without `===` = hard error E100), include resolution with cycle detection
-- **Lowering** — signal extraction, expression/statement/template lowering to ProveIR `CircuitNode`/`CircuitExpr`
-
-**`akron`** → `memory`, `constraints`
-
-General-purpose register-based bytecode VM. 40+ opcodes, bytecode compiler (`FunctionCompiler`), 40+ native functions, `prove {}` block support. Uses `constraints` for Poseidon hash computation in VM mode. See [Akron VM & Bytecode](./akron-vm).
-
-**`artik`** → `memory`
-
-Dedicated witness-computation VM paired with Akron. SSA-style register file, ~25 opcodes, no heap, no GC. Lifted from Circom function bodies that cannot be circuit-inlined (closes the E212 gap). See [Artik Witness VM](./artik-vm).
-
-### Top Layer
-
-**`compiler`** → `memory`, `akron`, `constraints`, `achronyme-parser`, `ir`, `artik`
-
-Backend compilation from IR to constraint systems. `R1CSCompiler` maps SSA variables to linear combinations and emits R1CS constraints. `PlonkishCompiler` uses lazy `PlonkVal` evaluation with cell-based rows. Both backends include `compile_ir_with_witness()` for combined compilation + witness generation.
-
-**`cli`** → `memory`, `akron`, `compiler`, `constraints`, `ir`
-
-User-facing CLI. Dispatches `ach run` (VM path) and `ach circuit` (constraint path). Handles proof orchestration with external cryptographic libraries:
-- **arkworks**: `ark-groth16`, `ark-bn254`, `ark-relations` for Groth16 proving
-- **halo2**: `halo2_proofs` for PlonK proving
-
-## Key Entry Points
+## Key entry points
 
 | Task | Crate | Function |
 |------|-------|----------|
-| Parse source | `achronyme-parser` | `parse_program(source)` |
-| Lower to IR | `ir` | `IrLowering::lower_circuit(source, pub, wit)` |
+| Parse `.ach` source | `achronyme-parser` | `parse_program(source)` |
+| Parse `.circom` source | `circom` | `circom::parser::parse_circom(source)` |
+| Compile bytecode | `akronc` | `Compiler::compile(&program)` |
+| Compile prove block | `ir-forge` | `ProveIrCompiler::compile_prove_block(...)` |
+| Compile circom template | `circom` | `compile_to_prove_ir(source)` |
+| Instantiate ProveIR | `ir` | `ProveIR::instantiate(captures, ...)` |
+| Lower AST to IR (circuit) | `ir` | `IrLowering::lower_circuit(source, pub, wit)` |
 | Optimize IR | `ir` | `passes::optimize(&mut program)` |
-| Compile to R1CS | `compiler` | `R1CSCompiler::compile_ir(program)` |
-| Compile to Plonkish | `compiler` | `PlonkishCompiler::compile_ir(program)` |
-| Generate witness | `compiler` | `R1CSCompiler::compile_ir_with_witness(program, inputs)` |
-| Export .r1cs | `constraints` | `write_r1cs(cs)` |
-| Export .wtns | `constraints` | `write_wtns(witness)` |
-| Run VM | `akron` | `VM::interpret(function)` |
-| Execute witness VM | `artik` | `artik::execute(program, ctx)` |
+| Compile to R1CS | `zkc` | `compile_to_r1cs(program)` |
+| Compile to Plonkish | `zkc` | `PlonkishCompiler::compile_ir(program)` |
+| Generate witness | `zkc` | `compile_to_r1cs_with_witness(program, inputs)` |
+| Run Akron VM | `akron` | `Vm::run(function)` |
+| Run Artik | `artik` | `artik::execute_with_budget(program, ctx, budget)` |
+| Run Lysis (in-progress) | `lysis` | `lysis::execute(program, sink)` |
+| Lift Circom function to Artik | `circom` | `lowering::artik_lift::lift(...)` |
+| Lift ProveIR to Lysis | `ir-forge` | `lysis_lift::Walker::lift(...)` |
+| Generate Groth16 proof | `proving` | `proving::groth16::prove(cs, witness, pk)` |
+| Generate PlonK proof | `proving` | `proving::halo2_proof::prove(cs, witness, pk)` |
+| Solidity verifier | `proving` | `proving::solidity::generate(...)` |
 | Run CLI | `cli` | `main()` → command dispatch |
+
+## Cross-references
+
+- For the full pipeline, see [Pipeline Overview](/docs/architecture/pipeline/).
+- For SSA + optimization details, see [IR & Optimization](/docs/architecture/ir-and-optimization/).
+- For the constraint backends, see [Backends](/docs/architecture/backends/).
+- For VM internals, see [Akron VM](/docs/architecture/akron-vm/), [Artik VM](/docs/architecture/artik-vm/), [Lysis VM](/docs/architecture/lysis-vm/).
+- For ProveIR and templates, see [ProveIR](/docs/architecture/prove-ir/).
+- For diagnostics, see [Diagnostics](/docs/architecture/diagnostics/).
+- For Circom internals, see [Circom Frontend](/docs/architecture/circom-frontend/).
