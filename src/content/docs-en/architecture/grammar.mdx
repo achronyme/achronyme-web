@@ -1,0 +1,258 @@
+---
+title: "Grammar & Lexer"
+description: "Token kinds, operator precedence, and EBNF grammar for the Achronyme surface language."
+---
+
+## Lexer
+
+Hand-written single-pass byte scanner. No external dependency (no `pest`, no `logos`).
+
+- File: `crates/achronyme-parser/src/lexer.rs`
+- Entry: `Lexer::tokenize(source: &str) -> Result<Vec<Token>, ParseError>`
+- Handles UTF-8 multibyte input via `advance_multibyte()`; tracks `(line, col, byte_offset)` for every produced token so downstream diagnostics can render carets at the correct visual column even when the source contains non-ASCII identifiers.
+- Comments are stripped at lex time:
+  - `//` line comment, terminated by newline (or EOF)
+  - `/* ... */` block comment, **non-nesting** (single-pass scanner; nesting would require a counter and is not supported)
+- Whitespace (`' '`, `'\t'`, `'\r'`, `'\n'`) is consumed between tokens.
+- Numeric literals are recognised by their prefix:
+  - bare digits → `Number`
+  - `0p` → `FieldLit` (decimal/hex/bin variant by suffix)
+  - `0i<width>` → `BigIntLit` (width is the bit width: 256, 384, 512, ...)
+
+## Token kinds
+
+The full `TokenKind` enum lives in `crates/achronyme-parser/src/token.rs`. Below it is grouped by role. A token is `(kind, span, lexeme)`; `lexeme` is borrowed from the source for cheap identifier comparison.
+
+### Literals
+
+```rust
+pub enum TokenKind {
+    Number,        // 42, 0, 9999
+    FieldLit,      // 0p123, 0p1A2F, 0p0b1010
+    BigIntLit,     // 0i256_DEAD..., 0i384_0b1010..., 0i512_999
+    StringLit,     // "hello"
+    True,          // true
+    False,         // false
+    Nil,           // nil
+    // ...
+}
+```
+
+### Keywords (23 reserved)
+
+```text
+let       mut       if        else      while
+for       in        fn        return    break
+continue  print     nil       true      false
+public    witness   prove     circuit   forever
+import    export    as
+```
+
+These are matched by exact lexeme after a generic identifier has been recognised. Keywords cannot be shadowed as identifiers.
+
+### Identifiers
+
+```rust
+pub enum TokenKind {
+    Ident,         // x, foo_bar, MerkleProof
+    // ...
+}
+```
+
+`IDENT = letter { letter | digit | "_" }`. ASCII letters only at the start; `_` allowed after the first byte.
+
+### Operators
+
+```rust
+pub enum TokenKind {
+    // Arithmetic
+    Plus, Minus, Star, Slash, Percent, Caret,
+    // Comparison
+    Eq, NotEq, Lt, Le, Gt, Ge,
+    // Logical
+    AndAnd, OrOr, Bang,
+    // Assignment
+    Assign,                // =
+    // Path / member
+    ColonColon,            // ::
+    Dot,                   // .
+    Question,              // ? (ternary)
+    // ...
+}
+```
+
+### Delimiters
+
+```rust
+pub enum TokenKind {
+    LParen, RParen,        // ( )
+    LBrace, RBrace,        // { }
+    LBracket, RBracket,    // [ ]
+    Comma, Colon, Semicolon,
+    DotDot,                // ..  (range)
+    Arrow,                 // ->  (return type, unused in current grammar)
+    Eof,
+}
+```
+
+## Operator precedence
+
+Pratt parser. Source: `crates/achronyme-parser/src/parser/tables.rs`. The Pratt loop reads `left_bp` and `right_bp` from `infix_binding_power(token)` and recurses while `right_bp >= caller_bp`.
+
+| Level | Operators                           | Associativity |
+|-------|-------------------------------------|---------------|
+| 1     | `^` (pow)                           | right         |
+| 2     | `*`, `/`, `%`                       | left          |
+| 3     | `+`, `-`                            | left          |
+| 4     | `==`, `!=`, `<`, `<=`, `>`, `>=`    | left          |
+| 5     | `&&`                                | left          |
+| 6     | `\|\|`                              | left          |
+
+Lower level number = **higher** binding power. Exponent is right-associative because in `tables.rs` its `left_bp > right_bp`, so `a ^ b ^ c` parses as `a ^ (b ^ c)`.
+
+Unary `-` and `!` are handled in the prefix table and bind tighter than any binary operator. The ternary `cond ? a : b` is handled at expression top level (lower than `||`) and is right-associative for the chained-ternary case.
+
+## Surface EBNF
+
+```ebnf
+program        = { stmt } EOF ;
+stmt           = let_decl | mut_decl | assign | public_decl | witness_decl
+               | fn_decl   | circuit_decl | import | export | import_circuit
+               | print | return | break | continue | expr_stmt ;
+
+let_decl       = "let" IDENT [ ":" type_ann ] "=" expr ";" ;
+mut_decl       = "mut" IDENT [ ":" type_ann ] "=" expr ";" ;
+assign         = lvalue "=" expr ";" ;
+lvalue         = IDENT { "[" expr "]" | "." IDENT } ;
+
+public_decl    = "public" input_decl { "," input_decl } ";" ;
+witness_decl   = "witness" input_decl { "," input_decl } ";" ;
+input_decl     = IDENT [ ":" type_ann ] ;
+
+fn_decl        = "fn" IDENT "(" [ params ] ")" [ ":" type_ann ] block ;
+circuit_decl   = "circuit" IDENT "(" [ params ] ")" block ;
+params         = typed_param { "," typed_param } ;
+typed_param    = IDENT ":" type_ann ;
+
+import         = "import" STRING [ "as" IDENT ] ";" ;
+export         = "export" stmt ;
+import_circuit = "import" "circuit" STRING [ "as" IDENT ] ";" ;
+
+block          = "{" { stmt } "}" ;
+
+expr           = ternary ;
+ternary        = logical_or [ "?" expr ":" expr ] ;
+logical_or     = logical_and { "||" logical_and } ;
+logical_and    = comparison { "&&" comparison } ;
+comparison     = additive { ("=="|"!="|"<"|"<="|">"|">=") additive } ;
+additive       = multiplicative { ("+"|"-") multiplicative } ;
+multiplicative = power { ("*"|"/"|"%") power } ;
+power          = unary { "^" unary } ;        (* right-associative *)
+unary          = ("-"|"!") unary | postfix ;
+postfix        = primary { post_op } ;
+post_op        = "(" [ args ] ")"
+               | "[" expr "]"
+               | "." IDENT [ "(" [ args ] ")" ] ;
+
+primary        = NUMBER | FIELD_LIT | BIGINT_LIT | STRING_LIT
+               | "true" | "false" | "nil"
+               | IDENT
+               | TYPE "::" MEMBER
+               | "(" expr ")"
+               | "[" [ expr { "," expr } ] "]"
+               | "{" [ map_pair { "," map_pair } ] "}"
+               | if_expr | for_expr | while_expr | forever_expr
+               | block | fn_expr | prove_expr ;
+
+if_expr        = "if" expr block [ "else" ( block | if_expr ) ] ;
+for_expr       = "for" IDENT "in" iterable block ;
+iterable       = range | expr ;
+range          = NUMBER ".." (NUMBER | expr) ;
+while_expr     = "while" expr block ;
+forever_expr   = "forever" block ;
+fn_expr        = "fn" [ IDENT ] "(" [ params ] ")" [ ":" type_ann ] block ;
+prove_expr     = "prove" [ IDENT ] "(" [ prove_params ] ")" block ;
+prove_params   = prove_param { "," prove_param } ;
+prove_param    = IDENT ":" visibility base_type [ "[" "]" ] ;
+
+args           = arg { "," arg } ;
+arg            = [ IDENT ":" ] expr ;        (* positional or keyword *)
+map_pair       = ( IDENT | STRING_LIT ) ":" expr ;
+
+type_ann       = [ visibility ] base_type [ "[" NUMBER "]" ] ;
+visibility     = "Public" | "Witness" ;
+base_type      = "Field" | "Bool" | "Int" | "String" ;
+
+NUMBER         = digit { digit } ;
+FIELD_LIT      = "0p" ( hex_digit { hex_digit } | "0" "1" { "0" | "1" } | digit { digit } ) ;
+BIGINT_LIT     = "0i" digit { digit } ( hex_digit { hex_digit } | "0" "1" { "0" | "1" } | digit { digit } ) ;
+STRING_LIT     = '"' { any_char_except_quote } '"' ;
+IDENT          = letter { letter | digit | "_" } ;
+```
+
+## Literal forms
+
+| Form          | Example              | Notes |
+|---------------|----------------------|-------|
+| Integer       | `42`, `-7`           | Bytecode VM uses i60 inline (range −2⁵⁹...2⁵⁹−1) |
+| Field decimal | `0p123`              | Hex variant `0p1A2F`, binary `0p0b1010` |
+| BigInt        | `0i256_DEAD...`      | Width-prefixed (256, 384, 512 ...) |
+| String        | `"hello"`            | UTF-8, no escape sequences yet |
+| Boolean       | `true`, `false`      | Tag values, not field |
+| Nil           | `nil`                | VM only |
+| Array         | `[1, 2, 3]`          | Homogeneous; circuit arrays must have static size |
+| Map           | `{a: 1, b: 2}`       | VM only |
+
+`Number` literals are stored as `String` in the AST and parsed lazily by the lowering layer — this lets the parser accept arbitrarily long integers without committing to a numeric type.
+
+## prove block syntax
+
+Two accepted forms. The new typed-parameter form is preferred; the legacy public-list form is kept for backwards compatibility with beta.14 sources.
+
+```ach
+// New explicit form (typed parameters)
+prove (root: public Field, leaf: witness Field, path: witness Field[]) {
+    // body sees root, leaf, path bound by the prove block
+}
+
+// Legacy public-list form
+prove (public: [root]) {
+    public root;
+    witness leaf;
+    // ...
+}
+```
+
+Captured variables follow normal scope rules; the ProveIR compiler walks the surrounding `OuterScope` to bind them. Captures are serialised into the constant pool together with the ProveIR template (`TAG_BYTES`).
+
+## Comments + whitespace
+
+- `//` line comment (newline-terminated)
+- `/* ... */` block comment, **non-nesting** (single-pass scanner)
+- Whitespace is significant only as token separator
+- Newlines are **not** statement terminators — semicolons are required between statements
+
+The lexer never emits comment tokens; they are discarded inline. Doc-comment harvesting (for the LSP) happens at the parser layer by inspecting trivia stored alongside tokens.
+
+## Error recovery
+
+The hand-written parser uses synchronization on `;` and `}` boundaries to keep emitting `Stmt::Error` / `Expr::Error` placeholders so the LSP gets multiple diagnostics from one pass. The recovery strategy is:
+
+1. On parse error in a statement, consume tokens until the next `;` or matching `}` is reached.
+2. Emit `Stmt::Error { span }` covering the swallowed range.
+3. Resume parsing the next statement.
+
+For expression errors inside a statement, the parser returns `Expr::Error { id, span }` and lets the statement-level recovery catch the rest. See `crates/achronyme-parser/src/parser/core.rs` for the `synchronize()` helper.
+
+## Source files
+
+| Component                     | File |
+|-------------------------------|------|
+| Lexer                         | `crates/achronyme-parser/src/lexer.rs` |
+| Tokens                        | `crates/achronyme-parser/src/token.rs` |
+| Parser core (Pratt)           | `crates/achronyme-parser/src/parser/core.rs` |
+| Expression parsing            | `crates/achronyme-parser/src/parser/exprs.rs` |
+| Statement parsing             | `crates/achronyme-parser/src/parser/stmts.rs` |
+| Precedence + dispatch tables  | `crates/achronyme-parser/src/parser/tables.rs` |
+
+See [AST Reference](/docs/architecture/ast-reference/) for the data structure produced by the parser.

@@ -21,7 +21,7 @@ Achronyme compila código fuente a través de cuatro caminos distintos: **Modo V
 
     AST --> BC["Compilador de Bytecode"]
     BC --> OPT_BC["Optimizador de Bytecode<br/><small>peephole · const fold · dead store</small>"]
-    OPT_BC --> VM["VM<br/><small>basada en registros, 37 opcodes</small>"]
+    OPT_BC --> VM["VM<br/><small>basada en registros, 43 opcodes</small>"]
 
     AST --> PROVEIR["Compilador ProveIR<br/><small>plantillas de circuito pre-compiladas</small>"]
     PROVEIR --> BYTES["Bytes serializados<br/><small>constant pool TAG_BYTES</small>"]
@@ -204,15 +204,15 @@ La selección de campo se resuelve una vez en el boundary de sesión; la monomor
 | Parser Circom | `circom/src/parser/` |
 | Análisis Circom | `circom/src/analysis/` |
 | Lowering Circom | `circom/src/lowering/` |
-| Compilador de Bytecode | `compiler/src/codegen.rs` |
-| Optimizador de Bytecode | `compiler/src/optimizer.rs` |
+| Compilador de Bytecode | `akronc/src/codegen.rs` |
+| Optimizador de Bytecode | `akronc/src/optimizer.rs` |
 | Compilador ProveIR | `ir/src/prove_ir/compiler.rs` |
 | Instanciación ProveIR | `ir/src/prove_ir/instantiate.rs` |
 | Bajada a IR | `ir/src/lower/mod.rs` |
 | Pases de Optimización | `ir/src/passes/` |
-| Backend R1CS | `compiler/src/r1cs_backend.rs` |
-| Backend Plonkish | `compiler/src/plonkish_backend/` |
-| Generación de Testigos | `compiler/src/witness_gen.rs` |
+| Backend R1CS | `zkc/src/r1cs_backend.rs` |
+| Backend Plonkish | `zkc/src/plonkish_backend/` |
+| Generación de Testigos | `zkc/src/r1cs_witness.rs` |
 | Exportación Binaria | `constraints/src/export.rs` |
 | Proving | `proving/src/` |
 | Despacho CLI | `cli/src/commands/circuit.rs` |

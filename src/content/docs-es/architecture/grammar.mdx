@@ -1,0 +1,258 @@
+---
+title: "Gramática y Lexer"
+description: "Tipos de tokens, precedencia de operadores y gramática EBNF del lenguaje de superficie de Achronyme."
+---
+
+## Lexer
+
+Escáner de bytes single-pass escrito a mano. Sin dependencias externas (sin `pest`, sin `logos`).
+
+- Archivo: `crates/achronyme-parser/src/lexer.rs`
+- Entrada: `Lexer::tokenize(source: &str) -> Result<Vec<Token>, ParseError>`
+- Maneja entrada UTF-8 multibyte vía `advance_multibyte()`; rastrea `(line, col, byte_offset)` para cada token producido para que los diagnósticos posteriores puedan renderizar carets en la columna visual correcta incluso cuando el código fuente contiene identificadores no ASCII.
+- Los comentarios se eliminan en tiempo de lexeo:
+  - `//` comentario de línea, terminado por newline (o EOF)
+  - `/* ... */` comentario de bloque, **sin anidamiento** (escáner single-pass; el anidamiento requeriría un contador y no es soportado)
+- Espacios en blanco (`' '`, `'\t'`, `'\r'`, `'\n'`) se consumen entre tokens.
+- Los literales numéricos se reconocen por su prefijo:
+  - dígitos puros → `Number`
+  - `0p` → `FieldLit` (variante decimal/hex/bin por sufijo)
+  - `0i<width>` → `BigIntLit` (width es el ancho de bits: 256, 384, 512, ...)
+
+## Tipos de tokens
+
+El enum completo `TokenKind` vive en `crates/achronyme-parser/src/token.rs`. A continuación se agrupa por rol. Un token es `(kind, span, lexeme)`; `lexeme` se toma prestado del código fuente para comparación barata de identificadores.
+
+### Literales
+
+```rust
+pub enum TokenKind {
+    Number,        // 42, 0, 9999
+    FieldLit,      // 0p123, 0p1A2F, 0p0b1010
+    BigIntLit,     // 0i256_DEAD..., 0i384_0b1010..., 0i512_999
+    StringLit,     // "hello"
+    True,          // true
+    False,         // false
+    Nil,           // nil
+    // ...
+}
+```
+
+### Palabras clave (23 reservadas)
+
+```text
+let       mut       if        else      while
+for       in        fn        return    break
+continue  print     nil       true      false
+public    witness   prove     circuit   forever
+import    export    as
+```
+
+Estas se emparejan por lexeme exacto después de que se ha reconocido un identificador genérico. Las palabras clave no pueden ser sombreadas como identificadores.
+
+### Identificadores
+
+```rust
+pub enum TokenKind {
+    Ident,         // x, foo_bar, MerkleProof
+    // ...
+}
+```
+
+`IDENT = letter { letter | digit | "_" }`. Solo letras ASCII al inicio; `_` permitido después del primer byte.
+
+### Operadores
+
+```rust
+pub enum TokenKind {
+    // Arithmetic
+    Plus, Minus, Star, Slash, Percent, Caret,
+    // Comparison
+    Eq, NotEq, Lt, Le, Gt, Ge,
+    // Logical
+    AndAnd, OrOr, Bang,
+    // Assignment
+    Assign,                // =
+    // Path / member
+    ColonColon,            // ::
+    Dot,                   // .
+    Question,              // ? (ternary)
+    // ...
+}
+```
+
+### Delimitadores
+
+```rust
+pub enum TokenKind {
+    LParen, RParen,        // ( )
+    LBrace, RBrace,        // { }
+    LBracket, RBracket,    // [ ]
+    Comma, Colon, Semicolon,
+    DotDot,                // ..  (range)
+    Arrow,                 // ->  (return type, unused in current grammar)
+    Eof,
+}
+```
+
+## Precedencia de operadores
+
+Parser Pratt. Fuente: `crates/achronyme-parser/src/parser/tables.rs`. El loop de Pratt lee `left_bp` y `right_bp` desde `infix_binding_power(token)` y recursa mientras `right_bp >= caller_bp`.
+
+| Nivel | Operadores                          | Asociatividad |
+|-------|-------------------------------------|---------------|
+| 1     | `^` (pow)                           | derecha       |
+| 2     | `*`, `/`, `%`                       | izquierda     |
+| 3     | `+`, `-`                            | izquierda     |
+| 4     | `==`, `!=`, `<`, `<=`, `>`, `>=`    | izquierda     |
+| 5     | `&&`                                | izquierda     |
+| 6     | `\|\|`                              | izquierda     |
+
+Número de nivel más bajo = poder de enlace **más alto**. La exponenciación es asociativa por la derecha porque en `tables.rs` su `left_bp > right_bp`, entonces `a ^ b ^ c` se parsea como `a ^ (b ^ c)`.
+
+Los unarios `-` y `!` se manejan en la tabla de prefijos y se enlazan más fuerte que cualquier operador binario. El ternario `cond ? a : b` se maneja a nivel del tope de expresión (más bajo que `||`) y es asociativo por la derecha para el caso de ternarios encadenados.
+
+## EBNF de superficie
+
+```ebnf
+program        = { stmt } EOF ;
+stmt           = let_decl | mut_decl | assign | public_decl | witness_decl
+               | fn_decl   | circuit_decl | import | export | import_circuit
+               | print | return | break | continue | expr_stmt ;
+
+let_decl       = "let" IDENT [ ":" type_ann ] "=" expr ";" ;
+mut_decl       = "mut" IDENT [ ":" type_ann ] "=" expr ";" ;
+assign         = lvalue "=" expr ";" ;
+lvalue         = IDENT { "[" expr "]" | "." IDENT } ;
+
+public_decl    = "public" input_decl { "," input_decl } ";" ;
+witness_decl   = "witness" input_decl { "," input_decl } ";" ;
+input_decl     = IDENT [ ":" type_ann ] ;
+
+fn_decl        = "fn" IDENT "(" [ params ] ")" [ ":" type_ann ] block ;
+circuit_decl   = "circuit" IDENT "(" [ params ] ")" block ;
+params         = typed_param { "," typed_param } ;
+typed_param    = IDENT ":" type_ann ;
+
+import         = "import" STRING [ "as" IDENT ] ";" ;
+export         = "export" stmt ;
+import_circuit = "import" "circuit" STRING [ "as" IDENT ] ";" ;
+
+block          = "{" { stmt } "}" ;
+
+expr           = ternary ;
+ternary        = logical_or [ "?" expr ":" expr ] ;
+logical_or     = logical_and { "||" logical_and } ;
+logical_and    = comparison { "&&" comparison } ;
+comparison     = additive { ("=="|"!="|"<"|"<="|">"|">=") additive } ;
+additive       = multiplicative { ("+"|"-") multiplicative } ;
+multiplicative = power { ("*"|"/"|"%") power } ;
+power          = unary { "^" unary } ;        (* right-associative *)
+unary          = ("-"|"!") unary | postfix ;
+postfix        = primary { post_op } ;
+post_op        = "(" [ args ] ")"
+               | "[" expr "]"
+               | "." IDENT [ "(" [ args ] ")" ] ;
+
+primary        = NUMBER | FIELD_LIT | BIGINT_LIT | STRING_LIT
+               | "true" | "false" | "nil"
+               | IDENT
+               | TYPE "::" MEMBER
+               | "(" expr ")"
+               | "[" [ expr { "," expr } ] "]"
+               | "{" [ map_pair { "," map_pair } ] "}"
+               | if_expr | for_expr | while_expr | forever_expr
+               | block | fn_expr | prove_expr ;
+
+if_expr        = "if" expr block [ "else" ( block | if_expr ) ] ;
+for_expr       = "for" IDENT "in" iterable block ;
+iterable       = range | expr ;
+range          = NUMBER ".." (NUMBER | expr) ;
+while_expr     = "while" expr block ;
+forever_expr   = "forever" block ;
+fn_expr        = "fn" [ IDENT ] "(" [ params ] ")" [ ":" type_ann ] block ;
+prove_expr     = "prove" [ IDENT ] "(" [ prove_params ] ")" block ;
+prove_params   = prove_param { "," prove_param } ;
+prove_param    = IDENT ":" visibility base_type [ "[" "]" ] ;
+
+args           = arg { "," arg } ;
+arg            = [ IDENT ":" ] expr ;        (* positional or keyword *)
+map_pair       = ( IDENT | STRING_LIT ) ":" expr ;
+
+type_ann       = [ visibility ] base_type [ "[" NUMBER "]" ] ;
+visibility     = "Public" | "Witness" ;
+base_type      = "Field" | "Bool" | "Int" | "String" ;
+
+NUMBER         = digit { digit } ;
+FIELD_LIT      = "0p" ( hex_digit { hex_digit } | "0" "1" { "0" | "1" } | digit { digit } ) ;
+BIGINT_LIT     = "0i" digit { digit } ( hex_digit { hex_digit } | "0" "1" { "0" | "1" } | digit { digit } ) ;
+STRING_LIT     = '"' { any_char_except_quote } '"' ;
+IDENT          = letter { letter | digit | "_" } ;
+```
+
+## Formas de literales
+
+| Forma         | Ejemplo              | Notas |
+|---------------|----------------------|-------|
+| Entero        | `42`, `-7`           | La VM de bytecode usa i60 inline (rango −2⁵⁹...2⁵⁹−1) |
+| Field decimal | `0p123`              | Variante hex `0p1A2F`, binaria `0p0b1010` |
+| BigInt        | `0i256_DEAD...`      | Prefijo de ancho (256, 384, 512 ...) |
+| String        | `"hello"`            | UTF-8, aún sin secuencias de escape |
+| Booleano      | `true`, `false`      | Valores tag, no field |
+| Nil           | `nil`                | Solo VM |
+| Array         | `[1, 2, 3]`          | Homogéneo; los arrays de circuito deben tener tamaño estático |
+| Map           | `{a: 1, b: 2}`       | Solo VM |
+
+Los literales `Number` se almacenan como `String` en el AST y se parsean perezosamente por la capa de lowering — esto permite que el parser acepte enteros arbitrariamente largos sin comprometerse con un tipo numérico.
+
+## Sintaxis del bloque prove
+
+Dos formas aceptadas. La nueva forma de parámetros tipados es la preferida; la forma legacy de lista pública se mantiene por compatibilidad hacia atrás con fuentes de beta.14.
+
+```ach
+// New explicit form (typed parameters)
+prove (root: public Field, leaf: witness Field, path: witness Field[]) {
+    // body sees root, leaf, path bound by the prove block
+}
+
+// Legacy public-list form
+prove (public: [root]) {
+    public root;
+    witness leaf;
+    // ...
+}
+```
+
+Las variables capturadas siguen las reglas normales de alcance; el compilador de ProveIR recorre el `OuterScope` circundante para enlazarlas. Las capturas se serializan en la pool de constantes junto con la plantilla de ProveIR (`TAG_BYTES`).
+
+## Comentarios + espacios en blanco
+
+- `//` comentario de línea (terminado por newline)
+- `/* ... */` comentario de bloque, **sin anidamiento** (escáner single-pass)
+- Los espacios en blanco son significativos solo como separador de tokens
+- Los newlines **no** son terminadores de sentencias — los punto y coma son requeridos entre sentencias
+
+El lexer nunca emite tokens de comentario; se descartan inline. La cosecha de doc-comments (para el LSP) ocurre en la capa del parser inspeccionando trivia almacenada junto con los tokens.
+
+## Recuperación de errores
+
+El parser escrito a mano usa sincronización en límites `;` y `}` para seguir emitiendo placeholders `Stmt::Error` / `Expr::Error` para que el LSP obtenga múltiples diagnósticos de un solo pase. La estrategia de recuperación es:
+
+1. Ante un error de parseo en una sentencia, consumir tokens hasta alcanzar el siguiente `;` o `}` correspondiente.
+2. Emitir `Stmt::Error { span }` cubriendo el rango tragado.
+3. Reanudar el parseo de la siguiente sentencia.
+
+Para errores de expresión dentro de una sentencia, el parser retorna `Expr::Error { id, span }` y deja que la recuperación a nivel de sentencia atrape el resto. Ver `crates/achronyme-parser/src/parser/core.rs` para el helper `synchronize()`.
+
+## Archivos fuente
+
+| Componente                    | Archivo |
+|-------------------------------|---------|
+| Lexer                         | `crates/achronyme-parser/src/lexer.rs` |
+| Tokens                        | `crates/achronyme-parser/src/token.rs` |
+| Núcleo del parser (Pratt)     | `crates/achronyme-parser/src/parser/core.rs` |
+| Parseo de expresiones         | `crates/achronyme-parser/src/parser/exprs.rs` |
+| Parseo de sentencias          | `crates/achronyme-parser/src/parser/stmts.rs` |
+| Tablas de precedencia + dispatch | `crates/achronyme-parser/src/parser/tables.rs` |
+
+Ver [Referencia del AST](/docs/architecture/ast-reference/) para la estructura de datos producida por el parser.

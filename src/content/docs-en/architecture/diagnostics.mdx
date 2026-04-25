@@ -1,0 +1,156 @@
+---
+title: "Diagnostics"
+description: "Achronyme's diagnostic system: codes, severity, suggestions, and rustc-style rendering."
+---
+
+## Overview
+
+A unified diagnostic system spans the parser, IR lowering, ProveIR compiler, Circom frontend, and CLI. Diagnostics are first-class values — every frontend produces a `Vec<Diagnostic>` rather than throwing exceptions.
+
+Crate: `diagnostics` (zero workspace dependencies). Used by every other crate. File: `crates/diagnostics/src/lib.rs`.
+
+## Core types
+
+```rust
+pub struct Diagnostic {
+    pub severity: Severity,
+    pub message: String,
+    pub span: Option<SpanRange>,
+    pub labels: Vec<Label>,
+    pub suggestions: Vec<Suggestion>,
+    pub code: Option<String>,
+}
+
+pub enum Severity { Error, Warning, Note }
+
+pub struct Label {
+    pub span: SpanRange,
+    pub message: String,
+    pub style: LabelStyle,    // Primary | Secondary
+}
+
+pub struct Suggestion {
+    pub message: String,
+    pub replacement: String,
+    pub span: SpanRange,
+    pub applicability: Applicability,    // MachineApplicable | MaybeIncorrect | HasPlaceholders
+}
+
+pub struct Span {
+    pub byte_start: usize,
+    pub byte_end: usize,
+    pub line_start: usize,
+    pub col_start: usize,
+    pub line_end: usize,
+    pub col_end: usize,
+}
+
+pub struct SpanRange { pub start: Span, pub end: Span }
+```
+
+Builder pattern: `Diagnostic::error("…").with_code("E212").with_span(...).with_suggestion(...)`.
+
+## Error code ranges
+
+| Range | Domain | Crate |
+|-------|--------|-------|
+| E001–E099 | Parser (Achronyme) | `achronyme-parser` |
+| E100–E102 | Parser (Circom) | `circom` |
+| W101–W103 | Warnings (Circom) | `circom` |
+| E200–E211 | Circom lowering | `circom` |
+| E300–E306 | Circom constraint analysis | `circom` |
+| E400–E499 | IR lowering / ProveIR | `ir`, `ir-forge` |
+| E500–E599 | Constraint backend (R1CS / Plonkish) | `zkc` |
+| W001–W002 | Achronyme warnings (unused, shadow) | `ir`, `resolve` |
+
+Codes are stable across releases — a code that appears in user-facing output is documented and tested.
+
+## Selected diagnostics
+
+### E212 — function body not inlineable with runtime signal arguments
+
+The Circom frontend hits this when a `function` body has signal-dependent control flow that can't fold to `CircuitExpr`. Resolution: lift to Artik bytecode via `circom::lowering::artik_lift`. Currently the **trigger** for the witness-VM path.
+
+### W103 — DoubleSignalAssignment
+
+A signal `<--`'d twice. Allowed (because of if-else branch coverage where each branch sets the signal exactly once on its path), but flagged. Was hard error E101 pre-beta.20.
+
+### E300 — UnderConstrained
+
+A witness input flows to no assertion. Surfaced by the `taint` IR pass.
+
+### "Did you mean?" suggestions
+
+File: `crates/diagnostics/src/suggest.rs`. Levenshtein-distance lookup against a list of valid identifiers (builtin names, in-scope variables, template names). Threshold: distance ≤ 2 and >= 50% similarity.
+
+## Severity policy
+
+- **Error** — compilation halts at the end of the current pass; downstream passes do not run.
+- **Warning** — compilation continues. CLI exits non-zero only with `--strict`.
+- **Note** — informational, paired with errors/warnings as supporting labels.
+
+## Renderer
+
+File: `crates/diagnostics/src/renderer.rs`.
+
+```rust
+pub struct DiagnosticRenderer {
+    pub color_mode: ColorMode,
+    pub source_lines: HashMap<String, Vec<String>>,
+}
+
+impl DiagnosticRenderer {
+    pub fn render(&self, diag: &Diagnostic, source_path: &str) -> String;
+    pub fn render_json(&self, diag: &Diagnostic) -> serde_json::Value;
+}
+
+pub enum ColorMode { Auto, Force, Never }
+```
+
+Output mimics rustc:
+
+- File path + line/col anchor at the top
+- Source code excerpt with carets pointing at the span
+- Inline labels for primary + secondary spans
+- Suggestion blocks with `+` / `-` lines for `MachineApplicable` fixes
+
+## CLI integration
+
+- `--error-format=human` (default) — colored ANSI rendering
+- `--error-format=json` — line-delimited JSON for editor integrations
+- `--error-format=short` — single-line summaries
+- `--no-color` — disables ANSI even in tty mode
+
+The LSP (`ach-lsp`) consumes diagnostics via `--error-format=json` and surfaces them through LSP `textDocument/publishDiagnostics`.
+
+## Error recovery
+
+The parser uses synchronization on `;` and `}` boundaries to keep producing `Stmt::Error` / `Expr::Error` placeholders, so a single pass yields multiple diagnostics. See `crates/achronyme-parser/src/parser/core.rs`.
+
+## Adding a new diagnostic
+
+1. Pick a code in the right range (or extend the range if introducing a new domain).
+2. Construct via the builder:
+   ```rust
+   Diagnostic::error("circuit cannot use mut bindings")
+       .with_code("E412")
+       .with_span(stmt.span)
+       .with_suggestion(Suggestion::from_replacement("let", stmt.span, Applicability::MachineApplicable))
+   ```
+3. Emit through whatever the local error channel is (`Vec<Diagnostic>` or `Result<_, Diagnostic>`).
+4. Add a test under `tests/diagnostics_*.rs` in the producing crate.
+5. If user-facing, add a row to the diagnostics index in `/docs/language/diagnostics/` (achronyme-web).
+
+## Source files
+
+| Component | File |
+|-----------|------|
+| `Diagnostic` type | `crates/diagnostics/src/lib.rs` |
+| `Span` / `SpanRange` | `crates/diagnostics/src/span.rs` |
+| Renderer | `crates/diagnostics/src/renderer.rs` |
+| `Suggestion` + applicability | `crates/diagnostics/src/suggest.rs` |
+| Parser diagnostics | `crates/achronyme-parser/src/parser/core.rs` |
+| Circom diagnostics | `crates/circom/src/diagnostics.rs` |
+| IR diagnostics | `crates/ir/src/diagnostics.rs` |
+
+See [Pipeline Overview](/docs/architecture/pipeline/) for where each diagnostic phase fires. See [Extension Guide](/docs/architecture/extension-guide/) for how to register a new code in the matching pass.

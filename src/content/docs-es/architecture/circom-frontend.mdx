@@ -1,0 +1,225 @@
+---
+title: "Frontend de Circom"
+description: "Cómo los archivos .circom llegan a ProveIR: lexer, parser, análisis, lowering y composición de componentes."
+---
+
+## Visión general
+
+El crate `circom` es la implementación de Achronyme del compilador de Circom 2.x — solo el frontend. La semántica de circuito se baja a ProveIR, y luego se entrega al mismo pipeline de instanciación → IR → backend que los bloques `prove {}`.
+
+Para uso de cara al usuario (importar plantillas, llamarlas desde `.ach`), ver el capítulo [Interoperabilidad con Circom](/docs/circom/overview/). Esta página documenta los **internals** para colaboradores.
+
+## Pipeline
+
+```
+.circom source
+    │
+    ▼  circom::lexer
+Tokens
+    │
+    ▼  circom::parser
+Circom AST
+    │
+    ▼  circom::analysis
+Validated AST + diagnostics
+    │
+    ▼  circom::lowering
+ProveIR + Artik bytecode (for non-inlinable functions)
+    │
+    ▼  ProveIR instantiate
+SSA IR
+    │
+    ▼  R1CS backend
+Constraints
+```
+
+Punto de entrada: `compile_to_prove_ir(source: &str) -> Result<CircomCompileResult, CircomError>` (archivo: `crates/circom/src/lib.rs`).
+
+```rust
+pub struct CircomCompileResult {
+    pub prove_ir: ProveIR,
+    pub output_names: HashSet<String>,
+    pub capture_values: HashMap<String, u64>,
+    pub warnings: Vec<Diagnostic>,
+}
+```
+
+API multi-archivo: `compile_file(path, library_dirs)` resuelve cadenas de `include` con deduplicación mutua (flag CLI `-l/--lib`, `[circom] libs` en `achronyme.toml`).
+
+## Lexer
+
+Archivo: `crates/circom/src/lexer.rs`. Escáner de bytes single-pass. Desambiguación maximal-munch para la familia de operadores de señales:
+
+| Tokens | Significado |
+|--------|-------------|
+| `<` | menor que |
+| `<=` | menor o igual |
+| `<==` | asignación de señal con constraint (LHS computado de RHS, también con constraint) |
+| `<--` | asignación de señal sin constraint (witness hint, sin constraint emitida) |
+| `===` | constraint puro |
+| `==>` | asignación de señal con constraint, dirección inversa |
+| `-->` | asignación de señal sin constraint, dirección inversa |
+
+El lexer debe comprometerse al match más largo; de lo contrario `<==` sería lexeado como `<=` seguido de `=`.
+
+## Parser
+
+Archivo: `crates/circom/src/parser/`. Pratt + descenso recursivo escrito a mano para Circom 2.x. Produce:
+
+```rust
+pub struct CircomProgram {
+    pub version: Option<PragmaVersion>,
+    pub definitions: Vec<Definition>,
+}
+
+pub enum Definition {
+    Template { name, params, body: TemplateBody },
+    Function { name, params, body: FunctionBody },         // imperative, compile-time evaluator
+    Bus { … },
+    Component { name, component_type, params: Vec<Expr> }, // top-level main
+    Include { path },
+}
+
+pub struct TemplateBody {
+    pub signals: Vec<SignalDecl>,
+    pub statements: Vec<Stmt>,
+}
+
+pub enum SignalDecl {
+    Input { name, array_size: Option<Expr> },
+    Output { name, array_size: Option<Expr> },
+    Intermediate { name, array_size: Option<Expr> },
+}
+```
+
+La forma de sentencia pura es soportada (Circom 2.1+): `for (...) stmt;` sin llaves.
+
+## Análisis (`circom::analysis`)
+
+Archivo: `crates/circom/src/analysis/`. Corre después del parseo:
+
+1. **Verificación de emparejamiento de constraints** — cada `<--` / `-->` (asignación sin constraint) debe tener un constraint correspondiente `===` sobre la misma señal. Un `<--` puro sin `===` es la fuente #1 de vulnerabilidades de bajo-constraint — emitido como advertencia **W103** (rebajado de error duro E101 en beta.20 para permitir patrones de ramificación if-else donde una rama añade el constraint).
+2. **Resolución de includes** — recorre como DAG las cadenas `include "file.circom";`, detecta ciclos, deduplica includes mutuos.
+3. **Validación del componente main** — exactamente una declaración `component main { … }` es requerida (E210 si falta, E211 si referencia una plantilla indefinida).
+
+## Lowering (`circom::lowering`)
+
+Archivo: `crates/circom/src/lowering/`. Traduce el AST de Circom validado a ProveIR.
+
+Submódulos (split post-auditoría, 21 módulos):
+
+- `lowering/mod.rs` — driver
+- `lowering/components.rs` — instanciación de componentes, enlace de parámetros
+- `lowering/signals.rs` — extracción de dimensiones de señales
+- `lowering/expressions.rs` — lowering de `CircuitExpr`
+- `lowering/statements.rs` — lowering de `CircuitNode`
+- `lowering/const_fold.rs` — evaluación de constantes en tiempo de compilación (BigVal, fold de ternarios, constantes de array)
+- `lowering/artik_lift.rs` — cuerpos de funciones que no pueden inlinearse → bytecode Artik
+- `lowering/context.rs` — entorno, capturas, known_constants
+
+Comportamientos importantes:
+
+- **Palabra clave `function`** — intérprete en tiempo de compilación para cuerpos imperativos (`var`, `while`, `for`, `if/else`, `return`, `++`, `*=`, llamadas anidadas). Desbloquea `nbits()`, `log2()`, etc. Resultado alimentado a `precompute_vars` para resolver dimensiones de señales.
+- **Constant-fold de ternarios** — los ternarios conocidos en tiempo de compilación seleccionan una rama en lowering, evitando errores de `ArrayIndex` en ramas muertas como `xL[-1]`.
+- **Desenrollado de for-loops** — auto-desenrolla cuando el cuerpo referencia `known_array_values`. Variantes de ForRange: `Literal`, `WithCapture` (acotado por parámetro), `WithExpr` (límite computado, p.ej., `n+1`).
+- **Arrays de componentes** — `component muls[n]; muls[i] = Template()` se desenrolla en lowering usando `known_constants`.
+- **Parámetros de plantilla tipo array** — `Ark(t, C, 0)` pasa arrays a través del inlining de componentes; `Capture` resuelve desde los parámetros del padre.
+- **Arrays 2D** — `var M[t][t] = GET_MATRIX(t)` — aplanado con strides + resolución multi-dim de índices.
+- **Evaluador BigVal** — el `var` en tiempo de compilación es complemento a dos de 256 bits `[u64; 4]`. Arregla overflow `1 << 128` en `CompConstant`.
+
+## Composición de componentes
+
+Una instanciación de componente:
+
+```circom
+component lt = LessThan(8);
+lt.in[0] <== a;
+lt.in[1] <== b;
+out <== lt.out;
+```
+
+… se expande en tiempo de lowering: el cuerpo de lt se inlinea con `(8)` sustituido por el parámetro de plantilla `n`, las señales de entrada de lt se vuelven let-bindings en el árbol de expresiones del padre, la señal de salida de lt se realimenta a `out` vía `===`.
+
+Las capturas del padre fluyen al hijo vía `CaptureDef`. El anidamiento multi-nivel (p.ej., `EscalarMulAny(254)` que contiene `Pedersen` y `EscalarMulFix`) fue el foco de los fixes de bug de deep-inlining (2026-04-04).
+
+## Witness hints
+
+`<--` (y `-->`) emiten nodos `WitnessHint { name, hint }` en ProveIR. Le dan un valor al prover pero no emiten constraint. Combinados con `===`, implementan el patrón estándar "testigo + verificación".
+
+Para loops con asignación de señales tipo array (`out[i] <-- expr`), el lowering emite `WitnessHintIndexed`.
+
+## Códigos de diagnóstico
+
+Rangos específicos de Circom:
+
+| Rango | Severidad | Significado |
+|-------|-----------|-------------|
+| E100–E102 | Error | Errores de parser (sintaxis, ops de señales malformadas) |
+| W101–W103 | Warning | Problemas con pragma de versión, formas deprecadas, doble asignación (W103) |
+| E200–E211 | Error | Errores de lowering (plantilla indefinida, falta main, type mismatch, dim mismatch) |
+| E300–E306 | Error | Errores de análisis de constraints (señales bajo-constraint, problemas estructurales) |
+
+Códigos seleccionados:
+
+- **E101** — histórico; rebajado a W103 en beta.20.
+- **E210** — `NoMainComponent`: no se encontró declaración `component main`.
+- **E211** — `MainTemplateNotFound`: `main` referencia una plantilla indefinida.
+- **W103** — `DoubleSignalAssignment`: una señal se asigna dos veces (permitido para cobertura de ramas if-else).
+
+Todos los diagnósticos llevan sugerencias "did you mean?" con distancia de Levenshtein y usan el `DiagnosticRenderer` estándar para salida estilo rustc.
+
+## Evaluación de constantes en tiempo de compilación
+
+- Los cuerpos de funciones se evalúan en tiempo de compilación cuando sus llamadores necesitan una constante (p.ej., dimensiones de señales).
+- `EvalValue` ∈ `{Scalar(BigVal), Array(Vec<EvalValue>), Expr(CircuitExpr)}`.
+- `eval_function_to_value` corre el intérprete imperativo; las ramas if-else que retornan valores distintos se unifican.
+- `precompute_array_vars` expande `var C[n] = POSEIDON_C(t)` tipo array a `Const` lets por elemento.
+
+## Lift a Artik
+
+Para cuerpos de funciones que **no pueden** ser inlineados como `CircuitExpr` (porque tienen control de flujo dependiente de señales o escrituras de array), el lowering los entrega a `circom::lowering::artik_lift`. Salida: un blob de bytecode Artik, embebido en `CircuitNode::WitnessCall`.
+
+Ver [Artik Witness VM](/docs/architecture/artik-vm/) para la ruta de dispatch.
+
+## Integración con el optimizador R1CS
+
+El frontend de Circom produce ProveIR que, después de la instanciación, es optimizado por **pases O1 + O2**:
+
+| Pase | Efecto |
+|------|--------|
+| Propagación de constantes | Folding de campo BN254 + inlining de señales constantes |
+| Eliminación lineal | Sustitución estilo Gaussiana |
+| Manejo de zero-product | Elimina `x · y == 0` redundantes cuando un lado es probadamente cero |
+| DEDUCE | Heurística de frecuencia + remoción de lineales tautológicos |
+
+Resultado: Achronyme iguala o supera a `circom --O2` en cada plantilla de referencia (Num2Bits 9 vs 17, LessThan 10 vs 20, MiMCSponge 1317 vs 1320, EscalarMulAny 2310 = circom).
+
+## Tests adversariales de soundness
+
+Archivo: `crates/circom/tests/adversarial.rs`. Cuatro tests prueban que los deltas de constraints vs circom O2 son ganancias de folding LC, no bugs de bajo-constraint:
+
+1. Forjar bits no-bool en `Num2Bits` → la aserción falla.
+2. Forjar violación de suma en `Num2Bits` → la aserción falla.
+3. Forjar salida de `LessThan` (ambas direcciones) → la aserción falla.
+
+## Archivos fuente
+
+| Componente | Archivo |
+|------------|---------|
+| Lexer | `crates/circom/src/lexer.rs` |
+| Parser | `crates/circom/src/parser/` |
+| Análisis | `crates/circom/src/analysis/` |
+| Driver del lowering | `crates/circom/src/lowering/mod.rs` |
+| Componentes | `crates/circom/src/lowering/components.rs` |
+| Señales | `crates/circom/src/lowering/signals.rs` |
+| Expresiones | `crates/circom/src/lowering/expressions.rs` |
+| Sentencias | `crates/circom/src/lowering/statements.rs` |
+| Const fold | `crates/circom/src/lowering/const_fold.rs` |
+| Lift a Artik | `crates/circom/src/lowering/artik_lift.rs` |
+| Context | `crates/circom/src/lowering/context.rs` |
+| Diagnósticos | `crates/circom/src/diagnostics.rs` |
+| Tests adversariales | `crates/circom/tests/adversarial.rs` |
+| Tests E2E | `crates/circom/tests/e2e.rs` |
+| API pública | `crates/circom/src/lib.rs` |
+
+Ver [Interoperabilidad con Circom](/docs/circom/overview/) para uso de cara al usuario. Ver [ProveIR](/docs/architecture/prove-ir/) para el formato producido por lowering. Ver [Artik Witness VM](/docs/architecture/artik-vm/) para cuerpos de funciones no inlinables.

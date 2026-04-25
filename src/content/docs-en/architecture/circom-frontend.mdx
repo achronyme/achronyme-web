@@ -1,0 +1,225 @@
+---
+title: "Circom Frontend"
+description: "How .circom files reach ProveIR: lexer, parser, analysis, lowering, and component composition."
+---
+
+## Overview
+
+The `circom` crate is the Achronyme implementation of the Circom 2.x compiler — frontend only. Circuit semantics are lowered to ProveIR, then handed off to the same instantiation → IR → backend pipeline as `prove {}` blocks.
+
+For user-facing usage (importing templates, calling them from `.ach`), see the [Circom Interop](/docs/circom/overview/) chapter. This page documents the **internals** for contributors.
+
+## Pipeline
+
+```
+.circom source
+    │
+    ▼  circom::lexer
+Tokens
+    │
+    ▼  circom::parser
+Circom AST
+    │
+    ▼  circom::analysis
+Validated AST + diagnostics
+    │
+    ▼  circom::lowering
+ProveIR + Artik bytecode (for non-inlinable functions)
+    │
+    ▼  ProveIR instantiate
+SSA IR
+    │
+    ▼  R1CS backend
+Constraints
+```
+
+Entry point: `compile_to_prove_ir(source: &str) -> Result<CircomCompileResult, CircomError>` (file: `crates/circom/src/lib.rs`).
+
+```rust
+pub struct CircomCompileResult {
+    pub prove_ir: ProveIR,
+    pub output_names: HashSet<String>,
+    pub capture_values: HashMap<String, u64>,
+    pub warnings: Vec<Diagnostic>,
+}
+```
+
+Multi-file API: `compile_file(path, library_dirs)` resolves `include` chains with mutual deduplication (`-l/--lib` CLI flag, `[circom] libs` in `achronyme.toml`).
+
+## Lexer
+
+File: `crates/circom/src/lexer.rs`. Single-pass byte scanner. Maximal-munch disambiguation for the signal-operator family:
+
+| Tokens | Meaning |
+|--------|---------|
+| `<` | less-than |
+| `<=` | less-or-equal |
+| `<==` | constrained signal assignment (LHS computed from RHS, also constrained) |
+| `<--` | unconstrained signal assignment (witness hint, no constraint emitted) |
+| `===` | bare constraint |
+| `==>` | constrained signal assignment, reverse direction |
+| `-->` | unconstrained signal assignment, reverse direction |
+
+The lexer must commit to the longest match; otherwise `<==` would be lexed as `<=` followed by `=`.
+
+## Parser
+
+File: `crates/circom/src/parser/`. Hand-written Pratt + recursive descent for Circom 2.x. Produces:
+
+```rust
+pub struct CircomProgram {
+    pub version: Option<PragmaVersion>,
+    pub definitions: Vec<Definition>,
+}
+
+pub enum Definition {
+    Template { name, params, body: TemplateBody },
+    Function { name, params, body: FunctionBody },         // imperative, compile-time evaluator
+    Bus { … },
+    Component { name, component_type, params: Vec<Expr> }, // top-level main
+    Include { path },
+}
+
+pub struct TemplateBody {
+    pub signals: Vec<SignalDecl>,
+    pub statements: Vec<Stmt>,
+}
+
+pub enum SignalDecl {
+    Input { name, array_size: Option<Expr> },
+    Output { name, array_size: Option<Expr> },
+    Intermediate { name, array_size: Option<Expr> },
+}
+```
+
+Bare-statement form is supported (Circom 2.1+): `for (...) stmt;` without braces.
+
+## Analysis (`circom::analysis`)
+
+File: `crates/circom/src/analysis/`. Runs after parsing:
+
+1. **Constraint pairing check** — every `<--` / `-->` (unconstrained assignment) must have a corresponding `===` constraint over the same signal. Bare `<--` without `===` is the #1 source of under-constrained vulnerabilities — emitted as warning **W103** (downgraded from hard error E101 in beta.20 to allow if-else branching patterns where one branch constrains).
+2. **Include resolution** — DAG-walks `include "file.circom";` chains, detects cycles, deduplicates mutual includes.
+3. **Main component validation** — exactly one `component main { … }` declaration is required (E210 if missing, E211 if it references an undefined template).
+
+## Lowering (`circom::lowering`)
+
+File: `crates/circom/src/lowering/`. Translates the validated Circom AST into ProveIR.
+
+Submodules (post-audit split, 21 modules):
+
+- `lowering/mod.rs` — driver
+- `lowering/components.rs` — component instantiation, parameter binding
+- `lowering/signals.rs` — signal dimension extraction
+- `lowering/expressions.rs` — `CircuitExpr` lowering
+- `lowering/statements.rs` — `CircuitNode` lowering
+- `lowering/const_fold.rs` — compile-time constant evaluation (BigVal, ternary fold, array constants)
+- `lowering/artik_lift.rs` — function bodies that can't inline → Artik bytecode
+- `lowering/context.rs` — environment, captures, known_constants
+
+Behaviors that matter:
+
+- **`function` keyword** — compile-time interpreter for imperative bodies (`var`, `while`, `for`, `if/else`, `return`, `++`, `*=`, nested calls). Unlocks `nbits()`, `log2()`, etc. Result fed to `precompute_vars` to resolve signal dimensions.
+- **Ternary constant-fold** — compile-time-known ternaries select a branch at lowering, avoiding dead-branch `ArrayIndex` errors like `xL[-1]`.
+- **For-loop unrolling** — auto-unrolls when the body references `known_array_values`. ForRange variants: `Literal`, `WithCapture` (param-bound), `WithExpr` (computed bound, e.g., `n+1`).
+- **Component arrays** — `component muls[n]; muls[i] = Template()` unrolls at lowering using `known_constants`.
+- **Array template params** — `Ark(t, C, 0)` passes arrays through component inlining; `Capture` resolves from parent params.
+- **2D arrays** — `var M[t][t] = GET_MATRIX(t)` — flattened with strides + multi-dim index resolution.
+- **BigVal evaluator** — compile-time `var` is two's-complement 256-bit `[u64; 4]`. Fixes `1 << 128` overflow in `CompConstant`.
+
+## Component composition
+
+A component instantiation:
+
+```circom
+component lt = LessThan(8);
+lt.in[0] <== a;
+lt.in[1] <== b;
+out <== lt.out;
+```
+
+… expands at lowering time: lt's body is inlined with `(8)` substituted for the template parameter `n`, lt's input signals become let-bindings on the parent's expression tree, lt's output signal feeds back to `out` via `===`.
+
+Captures from the parent flow into the child via `CaptureDef`. Multi-level nesting (e.g., `EscalarMulAny(254)` containing `Pedersen` and `EscalarMulFix`) was the focus of the deep-inlining bug fixes (2026-04-04).
+
+## Witness hints
+
+`<--` (and `-->`) emit `WitnessHint { name, hint }` nodes in ProveIR. They give the prover a value but emit no constraint. Combined with `===`, they implement the standard "witness + check" pattern.
+
+For loops with array signal assignment (`out[i] <-- expr`), the lowering emits `WitnessHintIndexed`.
+
+## Diagnostic codes
+
+Circom-specific ranges:
+
+| Range | Severity | Meaning |
+|-------|----------|---------|
+| E100–E102 | Error | Parser errors (syntax, malformed signal ops) |
+| W101–W103 | Warning | Version pragma issues, deprecated forms, double-assignment (W103) |
+| E200–E211 | Error | Lowering errors (undefined template, missing main, type mismatch, dim mismatch) |
+| E300–E306 | Error | Constraint analysis errors (under-constrained signals, structural issues) |
+
+Selected codes:
+
+- **E101** — historical; downgraded to W103 in beta.20.
+- **E210** — `NoMainComponent`: no `component main` declaration found.
+- **E211** — `MainTemplateNotFound`: `main` references an undefined template.
+- **W103** — `DoubleSignalAssignment`: a signal is assigned twice (allowed for if-else branch coverage).
+
+All diagnostics carry "did you mean?" Levenshtein suggestions and use the standard `DiagnosticRenderer` for rustc-style output.
+
+## Compile-time constant evaluation
+
+- Function bodies are evaluated at compile time when their callers need a constant (e.g., signal dimensions).
+- `EvalValue` ∈ `{Scalar(BigVal), Array(Vec<EvalValue>), Expr(CircuitExpr)}`.
+- `eval_function_to_value` runs the imperative interpreter; if-else branches return distinct values are unified.
+- `precompute_array_vars` expands array `var C[n] = POSEIDON_C(t)` into per-element `Const` lets.
+
+## Artik lift
+
+For function bodies that **can't** be inlined as `CircuitExpr` (because they have signal-dependent control flow or array writes), the lowering hands them to `circom::lowering::artik_lift`. Output: an Artik bytecode blob, embedded in `CircuitNode::WitnessCall`.
+
+See [Artik Witness VM](/docs/architecture/artik-vm/) for the dispatch path.
+
+## R1CS optimizer integration
+
+The Circom frontend produces ProveIR that, after instantiation, is optimized by **O1 + O2 passes**:
+
+| Pass | Effect |
+|------|--------|
+| Constant propagation | BN254 field folding + const-signal inlining |
+| Linear elimination | Gaussian-style substitution |
+| Zero-product handling | Removes redundant `x · y == 0` when one side is provably zero |
+| DEDUCE | Frequency heuristic + tautological linear removal |
+
+Result: Achronyme matches or beats `circom --O2` on every reference template (Num2Bits 9 vs 17, LessThan 10 vs 20, MiMCSponge 1317 vs 1320, EscalarMulAny 2310 = circom).
+
+## Adversarial soundness tests
+
+File: `crates/circom/tests/adversarial.rs`. Four tests prove constraint deltas vs circom O2 are LC folding wins, not under-constrained bugs:
+
+1. Forge non-bool bits in `Num2Bits` → assertion fails.
+2. Forge sum violation in `Num2Bits` → assertion fails.
+3. Forge `LessThan` output (both directions) → assertion fails.
+
+## Source files
+
+| Component | File |
+|-----------|------|
+| Lexer | `crates/circom/src/lexer.rs` |
+| Parser | `crates/circom/src/parser/` |
+| Analysis | `crates/circom/src/analysis/` |
+| Lowering driver | `crates/circom/src/lowering/mod.rs` |
+| Components | `crates/circom/src/lowering/components.rs` |
+| Signals | `crates/circom/src/lowering/signals.rs` |
+| Expressions | `crates/circom/src/lowering/expressions.rs` |
+| Statements | `crates/circom/src/lowering/statements.rs` |
+| Const fold | `crates/circom/src/lowering/const_fold.rs` |
+| Artik lift | `crates/circom/src/lowering/artik_lift.rs` |
+| Context | `crates/circom/src/lowering/context.rs` |
+| Diagnostics | `crates/circom/src/diagnostics.rs` |
+| Adversarial tests | `crates/circom/tests/adversarial.rs` |
+| E2E tests | `crates/circom/tests/e2e.rs` |
+| Public API | `crates/circom/src/lib.rs` |
+
+See [Circom Interop](/docs/circom/overview/) for user-facing usage. See [ProveIR](/docs/architecture/prove-ir/) for the format produced by lowering. See [Artik Witness VM](/docs/architecture/artik-vm/) for non-inlinable function bodies.
