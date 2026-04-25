@@ -1,0 +1,230 @@
+---
+title: "AST Reference"
+description: "Achronyme abstract syntax tree: enums, fields, and span tracking."
+---
+
+## Overview
+
+- Owned, hand-built AST. No `rowan`, no `Rc`, no interning at this layer.
+- File: `crates/achronyme-parser/src/ast.rs`
+- Every node carries a `Span`. Re-exported from `crates/diagnostics/src/span.rs`.
+- Each `Expr` carries an `ExprId(u32)` — dense, unique within a `Program`. Used by the resolver to attach `SymbolId` via a parallel `HashMap<ExprId, SymbolId>` instead of mutating the AST.
+- Synthetic compile-generated expressions use `ExprId::SYNTHETIC = 0`. Real parser-allocated IDs start at 1.
+- The AST is **immutable after parsing**. Lowering passes (ProveIR, bytecode) read the tree and emit new IRs; they never rewrite nodes.
+
+## Span / source position
+
+```rust
+pub struct Span {
+    pub byte_start: usize,
+    pub byte_end: usize,
+    pub line_start: usize,
+    pub col_start: usize,
+    pub line_end: usize,
+    pub col_end: usize,
+}
+
+pub struct SpanRange {
+    pub start: Span,
+    pub end: Span,
+}
+```
+
+Spans are byte-offset based for slicing the original source and `(line, col)` based for human-facing diagnostics. `SpanRange` is used when a node's span genuinely needs two anchors (e.g. an `if`/`else` whose else branch lives far from the head).
+
+## Top-level: `Program`
+
+```rust
+pub struct Program {
+    pub stmts: Vec<Stmt>,
+}
+```
+
+A `Program` is the unit of parsing. Each input file becomes one `Program`; module imports are resolved separately by walking `Stmt::Import` and re-parsing each referenced file into its own `Program`.
+
+## `Stmt` enum
+
+From `crates/achronyme-parser/src/ast.rs:52-141`:
+
+| Variant | Fields | Purpose |
+|---------|--------|---------|
+| `LetDecl` | `name: String`, `type_ann: Option<TypeAnnotation>`, `value: Expr`, `span: Span` | Immutable binding. `let x = 1;` |
+| `MutDecl` | `name: String`, `type_ann: Option<TypeAnnotation>`, `value: Expr`, `span: Span` | Mutable binding. `mut x = 1;` |
+| `Assignment` | `target: Expr`, `value: Expr`, `span: Span` | `target` must be an lvalue (`Ident` / `Index` / `DotAccess`); validated at resolve time. |
+| `PublicDecl` | `names: Vec<InputDecl>`, `span: Span` | `public root, leaf;` — circuit / prove input visibility. |
+| `WitnessDecl` | `names: Vec<InputDecl>`, `span: Span` | `witness path;` — same shape as `PublicDecl`, opposite visibility. |
+| `FnDecl` | `name: String`, `params: Vec<TypedParam>`, `return_type: Option<TypeAnnotation>`, `body: Block`, `span: Span` | Top-level function. |
+| `CircuitDecl` | `name: String`, `params: Vec<TypedParam>`, `body: Block`, `span: Span` | `circuit MerkleProof(...) { ... }`. |
+| `Print` | `value: Expr`, `span: Span` | VM-only side effect. |
+| `Return` | `value: Option<Expr>`, `span: Span` | Bare `return;` is allowed in `nil`-returning functions. |
+| `Break` | `span: Span` | Loop control. |
+| `Continue` | `span: Span` | Loop control. |
+| `Import` | `path: String`, `alias: Option<String>`, `span: Span` | `import "./foo.ach" as foo;` |
+| `SelectiveImport` | `names: Vec<String>`, `path: String`, `span: Span` | `import { a, b } from "./foo.ach";` |
+| `Export` | `inner: Box<Stmt>`, `span: Span` | `export fn foo() { ... }`. |
+| `ExportList` | `names: Vec<String>`, `span: Span` | `export { a, b };` |
+| `ImportCircuit` | `path: String`, `alias: Option<String>`, `span: Span` | `import circuit "./foo.circom" as Foo;` |
+| `Expr` | `Expr` | Bare expression as statement (`foo();`). |
+| `Error` | `span: Span` | Recovery placeholder; lowering passes skip silently. |
+
+## `Expr` enum
+
+From `crates/achronyme-parser/src/ast.rs:188-331`. Every variant carries `id: ExprId` and `span: Span` in addition to the listed fields.
+
+### Literals
+
+| Variant | Extra fields | Notes |
+|---------|--------------|-------|
+| `Number` | `value: String` | String-stored; parsed lazily by lowering. Enables arbitrary-length integers without committing to a numeric type at parse time. |
+| `FieldLit` | `value: String`, `radix: FieldRadix` | `radix ∈ {Decimal, Hex, Bin}`. |
+| `BigIntLit` | `value: String`, `width: u16`, `radix: BigIntRadix` | `width` is the bit width: `0i256_…` → `width = 256`. |
+| `Bool` | `value: bool` | |
+| `StringLit` | `value: String` | Unescaped UTF-8. |
+| `Nil` | — | VM only; rejected by ProveIR lowering. |
+
+### Names + access
+
+| Variant | Extra fields | Notes |
+|---------|--------------|-------|
+| `Ident` | `name: String` | |
+| `StaticAccess` | `type_name: String`, `member: String` | `Type::MEMBER`, e.g. `Field::ZERO`, `Int::MAX`, `BigInt::from_bits`. |
+| `Index` | `object: Box<Expr>`, `index: Box<Expr>` | `arr[i]`. |
+| `DotAccess` | `object: Box<Expr>`, `field: String` | Desugars to method dispatch when followed by `(...)` (handled in `postfix`). |
+| `Call` | `callee: Box<Expr>`, `args: Vec<CallArg>` | Positional and keyword args mixed in `args`. |
+
+### Operators
+
+| Variant | Extra fields |
+|---------|--------------|
+| `BinOp` | `op: BinOp`, `lhs: Box<Expr>`, `rhs: Box<Expr>` |
+| `UnaryOp` | `op: UnaryOp`, `operand: Box<Expr>` |
+
+### Control + structure
+
+| Variant | Extra fields | Notes |
+|---------|--------------|-------|
+| `If` | `condition: Box<Expr>`, `then_block: Block`, `else_branch: Option<ElseBranch>` | `else_branch` is either a block or another `If`, supporting `else if` chains. |
+| `For` | `var: String`, `iterable: ForIterable`, `body: Block` | See `ForIterable` below. |
+| `While` | `condition: Box<Expr>`, `body: Block` | Unrolled by the lowering layer when used inside a circuit body. |
+| `Forever` | `body: Block` | `forever { ... }` — VM-only; circuit lowering rejects it. |
+| `Block` | `block: Block` | Block-as-expression; the last expression's value is the block's value if no trailing `;`. |
+| `FnExpr` | `name: Option<String>`, `params: Vec<TypedParam>`, `return_type: Option<TypeAnnotation>`, `body: Block` | Function-as-value. `name` is for self-recursion. |
+| `Prove` | `name: Option<String>`, `body: Block`, `params: Vec<TypedParam>` | The new typed-parameter form; the legacy public-list form is rewritten into this shape during parsing. |
+
+### Composite
+
+| Variant | Extra fields | Notes |
+|---------|--------------|-------|
+| `Array` | `elements: Vec<Expr>` | Static-size arrays in circuit mode. |
+| `Map` | `pairs: Vec<(MapKey, Expr)>` | VM only; rejected by ProveIR. |
+
+### Recovery
+
+| Variant | Extra fields | Notes |
+|---------|--------------|-------|
+| `Error` | — | Emitted by parser sync points (`synchronize()` in `parser/core.rs`). |
+
+## Operators
+
+```rust
+pub enum BinOp {
+    Add, Sub, Mul, Div, Mod, Pow,
+    Eq, Neq, Lt, Le, Gt, Ge,
+    And, Or,
+}
+
+pub enum UnaryOp {
+    Neg, Not,
+}
+```
+
+`BinOp` covers all infix operators in the precedence table. There is no separate node for the ternary — it is desugared into `If` at parse time so downstream passes only see one conditional shape.
+
+## Auxiliary types
+
+```rust
+pub struct CallArg {
+    pub name: Option<String>,   // None = positional, Some("x") = keyword
+    pub value: Expr,
+}
+
+pub enum ElseBranch {
+    Block(Block),
+    If(Box<Expr>),    // chained else-if
+}
+
+pub enum ForIterable {
+    Range { start: u64, end: u64 },              // 0..10
+    ExprRange { start: u64, end: Box<Expr> },    // 0..n  (dynamic upper bound, circuit mode)
+    Expr(Box<Expr>),                             // for x in arr
+}
+
+pub enum MapKey {
+    Ident(String),
+    StringLit(String),
+}
+
+pub enum FieldRadix {
+    Decimal,
+    Hex,
+    Bin,
+}
+
+pub enum BigIntRadix {
+    Decimal,
+    Hex,
+    Bin,
+}
+
+pub struct InputDecl {
+    pub name: String,
+    pub type_ann: Option<TypeAnnotation>,
+}
+
+pub struct TypedParam {
+    pub name: String,
+    pub type_ann: TypeAnnotation,
+}
+
+pub struct TypeAnnotation {
+    pub visibility: Option<Visibility>,
+    pub base: BaseType,
+    pub array_size: Option<usize>,
+}
+
+pub enum Visibility {
+    Public,
+    Witness,
+}
+
+pub enum BaseType {
+    Field,
+    Bool,
+    Int,
+    String,
+}
+```
+
+`ForIterable::ExprRange` is the variant introduced for circuit-mode parametric loop bounds: `for i in 0..n` where `n` is a template parameter or a compile-time-known `var`. The lowering pass evaluates `end` to a `u64` before unrolling.
+
+`TypeAnnotation::array_size` is `Some(n)` for fixed-size arrays (`Field[8]`) and `None` for `Field[]` in `prove(...)` parameters where the size is captured from the calling scope.
+
+## ExprId allocation
+
+- Dense `u32` IDs, allocated by the parser as it walks the source.
+- The whole `Program` is the ID arena; cross-program comparisons are not meaningful (e.g. `ExprId(42)` in `foo.ach` and `ExprId(42)` in `bar.ach` are unrelated).
+- `ExprId::SYNTHETIC = 0` is reserved for compiler-generated nodes (mainly inside the Circom lowering and the ProveIR compiler when synthesising auxiliary expressions during template instantiation).
+- The resolver pass annotates each `ExprId` with a `SymbolId` in `SymbolTable`. See `crates/resolve/src/annotate.rs`. The resolver does **not** mutate the AST — it builds a side table keyed by `ExprId`.
+- This shape (immutable AST + side-table annotations) is what makes the LSP cheap: the resolver runs in microseconds and discards its tables when the AST is invalidated.
+
+## Source files
+
+| Component             | File |
+|-----------------------|------|
+| AST types             | `crates/achronyme-parser/src/ast.rs` |
+| Span                  | `crates/diagnostics/src/span.rs` |
+| Parser entry          | `crates/achronyme-parser/src/lib.rs` |
+| Resolver annotation   | `crates/resolve/src/annotate.rs` |
+| Symbol table          | `crates/resolve/src/table.rs` |
+
+See [Grammar & Lexer](/docs/architecture/grammar/) for the surface syntax. See [Pipeline Overview](/docs/architecture/pipeline/) for what happens after parsing.
