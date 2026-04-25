@@ -1,0 +1,203 @@
+---
+title: "Lysis VM (en progreso)"
+description: "Tercera VM: instanciación estructural de plantillas con hash-consing. Estado: Fase 3.B entregada."
+---
+
+## Estado
+
+Lysis está **en progreso**. Las fases 0–2 + 3.A + 3.B + 3.C.6 P1 + P1.5 están entregadas (al 2026-04-24). La Fase 3.C (oracle gate, 7 fixtures × 3 fields, 38 E2E de circom vía la ruta Lysis, HARD GATE de SHA-256(64)) es el siguiente entregable.
+
+Esta página está **sujeta a cambios** — los números de opcodes y la semántica de los sinks pueden evolucionar antes de que cierre la Fase 3.C. Trátala como el estado actual de la implementación, no un contrato estable.
+
+## Por qué existe Lysis
+
+Akron y Artik **ejecutan ambos una vez por prueba**. Lysis es diferente: separa **compile/instantiate** de la **emisión en runtime**. El walker emite un programa Lysis que, al correr, produce IR SSA — y el sink interning del ejecutor colapsa sub-árboles estructuralmente idénticos durante la emisión.
+
+Concretamente: el legacy `ir::prove_ir::instantiate` (~3,025 LOC) expande plantillas de manera ávida y desenrolla loops. Lysis difiere esa expansión a runtime y deduplica sub-grafos redundantes vía hash-consing — se midió una reducción de constraints de 58.3× en el esqueleto SHA-256(64) en la Fase 2.
+
+## Dónde se ubica Lysis
+
+```text
+ProveIR
+  │
+  ▼
+ir-forge::lysis_lift::walker  ── BTA + extract + diff + symbolic ──▶  Lysis bytecode (.lysis)
+                                                                              │
+                                                                              ▼
+                                                              lysis::execute (interpreter)
+                                                                              │
+                                                                              ▼
+                                                              InterningSink (hash-cons)
+                                                                              │
+                                                                              ▼
+                                                              Vec<Instruction<F>>  (IR-SSA)
+                                                                              │
+                                                                              ▼
+                                                                          R1CS / Plonkish
+```
+
+El walker es el **lifter del lado IR**: consume `ExtendedInstruction<F>` (de `ir-forge`) y produce bytecode Lysis. El ejecutor es el **lado VM**: corre ese bytecode y emite SSA vía un sink.
+
+## Pipeline de lift (ir-forge::lysis_lift)
+
+Archivo: `crates/ir-forge/src/lysis_lift/mod.rs`. Cinco fases:
+
+| Fase | Módulo | Entregable |
+|------|--------|------------|
+| Recorrido simbólico | `symbolic.rs` | `SymbolicTree` con slots placeholder para derivativas de variables de loop |
+| Diff estructural | `diff.rs` | `Diff` con identidad de slot por ruta de AST (3.B.4) |
+| Binding-Time Analysis | `bta.rs` | Clasificación de 3 puntos (Constant / Invariant / DataDependent) |
+| Extracción de plantillas | `extract.rs` | Lambda lifting + tamaño de frame, layout de capturas |
+| Walker (driver) | `walker.rs` | Orquesta el pase completo de lift |
+
+Las cinco implementan el RFC §6 (Lysis Fase 3.B) con **evaluación diferida** — las plantillas permanecen simbólicas hasta proof-time.
+
+## Encabezado del bytecode
+
+```text
+0..4    magic "AALSS"  (0xAA 0x4C 0x53 0x53)
+4..5    version (u8)
+5..6    field_family (u8)        — BnLike256 | Goldilocks64
+6..…    const_pool (FieldConst entries + bytecode blobs for Artik calls)
+…..     body (instruction stream)
+```
+
+Las secciones más allá del cuerpo están por definir — la Fase 3 puede agregar una sección de tabla de plantillas.
+
+## Modelo de registros / frame
+
+- Registros: 256 por frame, almacenados como `Vec<Option<FieldElement<F>>>` (indefinidos hasta que se escriben).
+- Pila de frames: `Vec<Frame>` con `pc`, `body_start_idx`, `body_end_idx`, `template_id`, `loop_stack: Vec<LoopState>`.
+- Estado de loop: cada `LoopUnroll` empuja un `LoopState` rastreando los límites de iteración; el paso `advance_loops()` del despachador incrementa y detecta completitud.
+
+## Tabla de opcodes (29 opcodes)
+
+Sujeto a cambios. Archivo: `crates/lysis/src/bytecode/opcode.rs`.
+
+| Código | Mnemónico | Operandos | Semántica |
+|--------|-----------|-----------|-----------|
+| 0x01 | `LoadCapture` | dst, idx | `R[dst] = captures[idx]` |
+| 0x02 | `LoadConst` | dst, idx | `R[dst] = const_pool[idx]` |
+| 0x03 | `LoadInput` | dst, name_idx, vis | `R[dst] = inputs[name_idx]` (Public/Witness) |
+| 0x04 | `EnterScope` | — | scope_depth += 1 |
+| 0x05 | `ExitScope` | — | scope_depth −= 1 |
+| 0x10 | `Jump` | offset | `PC += offset` |
+| 0x11 | `JumpIf` | cond, offset | condicional |
+| 0x12 | `Return` | — | pop frame |
+| 0x13 | `Halt` | — | termina ejecución |
+| 0x14 | `Trap` | code | aborta |
+| 0x20 | `LoopUnroll` | iter_var, start, end, body_len | inline body N veces |
+| 0x21 | `LoopRolled` | iter_var, start, end, template_id | llama plantilla repetidamente (Fase 4+) |
+| 0x22 | `LoopRange` | iter_var, R(end), template_id | loop dinámico (Fase 4+) |
+| 0x30 | `DefineTemplate` | template_id, frame_size, n_params, body_offset, body_len | registra metadata de plantilla |
+| 0x31 | `InstantiateTemplate` | template_id, capture_regs, output_regs | empuja frame + llama |
+| 0x32 | `TemplateOutput` | output_idx, src | publica valor de salida |
+| 0x40 | `EmitConst` | dst, src | emite `Const(R[src])` |
+| 0x41 | `EmitAdd` | dst, lhs, rhs | emite `Add` |
+| 0x42 | `EmitSub` | dst, lhs, rhs | emite `Sub` |
+| 0x43 | `EmitMul` | dst, lhs, rhs | emite `Mul` |
+| 0x44 | `EmitNeg` | dst, src | emite `Neg` |
+| 0x45 | `EmitMux` | dst, cond, t, f | emite `Mux` |
+| 0x46 | `EmitDecompose` | dst_arr, src, n_bits | emite `Decompose` |
+| 0x47 | `EmitAssertEq` | lhs, rhs | emite `AssertEq` |
+| 0x48 | `EmitRangeCheck` | var, max_bits | emite `RangeCheck` |
+| 0x49 | `EmitWitnessCall` | bytecode_idx, in_regs, out_regs | emite `WitnessCall` (Artik) |
+| 0x4A | `EmitPoseidonHash` | dst, in_regs | emite `PoseidonHash` |
+| 0x4B | `EmitIsEq` | dst, lhs, rhs | emite `IsEq` |
+| 0x4C | `EmitIsLt` | dst, lhs, rhs | emite `IsLt` |
+| 0x4D | `EmitIntDiv` | dst, lhs, rhs, max_bits | emite `IntDiv` (Fase P1.5) |
+| 0x4E | `EmitIntMod` | dst, lhs, rhs, max_bits | emite `IntMod` (Fase P1.5) |
+
+Los opcodes `Emit*` no computan resultados — empujan entradas al **sink**.
+
+## Sinks
+
+El despachador escribe los opcodes que emiten IR en un trait object `IrSink`. Existen dos implementaciones:
+
+- **`StubSink`** — no-op (Fase 1, usado para tests de esqueleto)
+- **`InterningSink`** — hash-cons vía `IndexMap<NodeKey, NodeId>`. Default de la Fase 2. Materializa un `Vec<Instruction<F>>` plano vía `sink.materialize()`.
+
+Futuro: la Fase 4 puede agregar un `RecordingSink` para el oracle gate.
+
+## Loop del despachador
+
+Archivo: `crates/lysis/src/execute/mod.rs:77-179`. Loop externo sobre frames + paso interno:
+
+```rust
+loop {
+    check_instruction_budget()?;
+    let instr = program.body[frame.pc];
+    match dispatch(instr, ...)? {
+        Step::Next => frame.pc += 1,
+        Step::JumpToIndex(idx) => frame.pc = idx,
+        Step::PushFrame(f) => stack.push(f),
+        Step::PopFrame => stack.pop(),
+        Step::Halt => break,
+    }
+    advance_loops()?;
+}
+```
+
+## Modelo de memoria
+
+Sin GC. Los registros del frame viven en la struct del frame. El interner usa internamente un `IndexMap<NodeKey, NodeId>` prestado mutablemente durante la ejecución.
+
+## Salida del lift → walker
+
+Archivo: `crates/ir-forge/src/lysis_lift/walker.rs`. Driver que consume `Vec<ExtendedInstruction<F>>`:
+
+| Variante | Acción del walker |
+|----------|-------------------|
+| `Plain(ir::Instruction)` | emite el opcode `Emit*` correspondiente |
+| `LoopUnroll { iter_var, start, end, body }` | emite opcode `LoopUnroll` |
+| `TemplateCall {…}` | Fase 4+ — actualmente rechazado |
+| `TemplateBody {…}` | Fase 4+ — actualmente rechazado |
+
+## Oracle (andamiaje de la Fase 3.C)
+
+Archivo: `crates/zkc/src/lysis_oracle/`. Compara el R1CS emitido por Lysis contra el R1CS directo de circom vía:
+
+1. `canonicalize_ssa` — renombrado topológico de variables SSA
+2. `semantic_equivalence` — comparación de constraints como multiset + solver de testigos
+
+La Fase 3.C debe pasar: 7 fixtures × 3 fields = 21 celdas del oracle, todas en verde.
+
+## HARD GATE de SHA-256(64)
+
+El benchmark bloqueante es Decompose(254) en `Num2Bits_strict` para slicing de arrays de bits de SHA.
+
+- **Fase 2 (superada el 2026-04-20):** el interner logró 58.3× de reducción de constraints vs desenrollado ávido.
+- **Gate de la Fase 3:** wallclock de SHA-256(64) < 60s, conteo de constraints dentro de ±5% de circom O2.
+
+## Snapshot del estado de fases
+
+| Fase | Fecha | Entregable |
+|------|-------|------------|
+| 0–2 | 2026-04-20 | Mark-sweep tri-color + interner hash-cons + clasificador BTA (HARD GATE superado) |
+| 3.A | 2026-04-20 | Esquema `ExtendedInstruction` + puente (dependencia `ir-forge → lysis`) |
+| 3.B | 2026-04-21 | Primitivas leaf de Lysis, lifter del lado IR, `LoopUnroll` desbloqueado |
+| 3.C.6 P1 | 2026-04-23 | Andamiaje del walker, 24/24 tests del walker |
+| P1.5 | 2026-04-24 | Split mecánico de plantillas de nivel superior, opcodes `IntDiv`/`IntMod`, `one` perezoso |
+| 3.C (siguiente) | TBD | Oracle gate (7 fixtures × 3 fields), 38 E2E de circom, SHA-256(64) bajo gate |
+
+## Archivos fuente
+
+| Componente | Archivo |
+|------------|---------|
+| Opcodes de bytecode | `crates/lysis/src/bytecode/opcode.rs` |
+| Codificación | `crates/lysis/src/bytecode/encoding.rs` |
+| Validador | `crates/lysis/src/bytecode/validate.rs` |
+| Pool de constantes | `crates/lysis/src/bytecode/const_pool.rs` |
+| Despachador | `crates/lysis/src/execute/mod.rs` |
+| Frame | `crates/lysis/src/execute/frame.rs` |
+| Sink interning | `crates/lysis/src/execute/interning_sink.rs` |
+| Interner | `crates/lysis/src/intern/interner.rs` |
+| Builder | `crates/lysis/src/builder.rs` |
+| Walker (lift) | `crates/ir-forge/src/lysis_lift/walker.rs` |
+| Clasificador BTA | `crates/ir-forge/src/lysis_lift/bta.rs` |
+| Árbol simbólico | `crates/ir-forge/src/lysis_lift/symbolic.rs` |
+| Diff estructural | `crates/ir-forge/src/lysis_lift/diff.rs` |
+| Extracción de plantillas | `crates/ir-forge/src/lysis_lift/extract.rs` |
+| Andamiaje del oracle | `crates/zkc/src/lysis_oracle/` |
+
+Ver [ProveIR](/docs/architecture/prove-ir/) para la capa que alimenta a Lysis. Ver [Akron VM](/docs/architecture/akron-vm/) y [Artik Witness VM](/docs/architecture/artik-vm/) para las otras dos VMs.
