@@ -21,7 +21,7 @@ Achronyme compiles source code through four distinct paths: **VM mode** for gene
 
     AST --> BC["Bytecode Compiler"]
     BC --> OPT_BC["Bytecode Optimizer<br/><small>peephole · const fold · dead store</small>"]
-    OPT_BC --> VM["VM<br/><small>register-based, 37 opcodes</small>"]
+    OPT_BC --> VM["Akron VM<br/><small>register-based, 43 opcodes</small>"]
 
     AST --> PROVEIR["ProveIR Compiler<br/><small>pre-compiled circuit templates</small>"]
     PROVEIR --> BYTES["Serialized bytes<br/><small>constant pool TAG_BYTES</small>"]
@@ -66,7 +66,7 @@ Operator precedence (high to low):
 
 ## Stage 2a: Bytecode Compilation (VM Mode)
 
-**Entry point:** `compiler::FunctionCompiler::compile()`
+**Entry point:** `akronc::Compiler::compile()`
 
 For `ach run`, the AST is compiled to bytecode for the register-based VM (37 opcodes). A 3-pass bytecode optimizer runs after compilation:
 
@@ -199,20 +199,23 @@ Field selection is resolved once at the session boundary; monomorphization elimi
 
 | Stage | File |
 |-------|------|
-| Parser | `achronyme-parser/src/parser.rs` |
+| Parser | `achronyme-parser/src/parser/` |
+| AST | `achronyme-parser/src/ast.rs` |
+| Symbol resolution | `resolve/src/annotate.rs` |
 | Circom Lexer | `circom/src/lexer.rs` |
 | Circom Parser | `circom/src/parser/` |
 | Circom Analysis | `circom/src/analysis/` |
 | Circom Lowering | `circom/src/lowering/` |
-| Bytecode Compiler | `compiler/src/codegen.rs` |
-| Bytecode Optimizer | `compiler/src/optimizer.rs` |
-| ProveIR Compiler | `ir/src/prove_ir/compiler.rs` |
+| Bytecode Compiler | `akronc/src/codegen.rs` |
+| Bytecode Optimizer | `akronc/src/optimizer.rs` |
+| ProveIR Compiler | `ir-forge/src/ast_lower/api.rs` |
 | ProveIR Instantiation | `ir/src/prove_ir/instantiate.rs` |
+| Lysis Lift | `ir-forge/src/lysis_lift/walker.rs` |
 | IR Lowering | `ir/src/lower/mod.rs` |
 | Optimization Passes | `ir/src/passes/` |
-| R1CS Backend | `compiler/src/r1cs_backend.rs` |
-| Plonkish Backend | `compiler/src/plonkish_backend/` |
-| Witness Generation | `compiler/src/witness_gen.rs` |
+| R1CS Backend | `zkc/src/r1cs_backend.rs` |
+| Plonkish Backend | `zkc/src/plonkish_backend/` |
+| Witness Generation | `zkc/src/r1cs_witness.rs` |
 | Binary Export | `constraints/src/export.rs` |
 | Proving | `proving/src/` |
 | CLI Dispatch | `cli/src/commands/circuit.rs` |

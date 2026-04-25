@@ -3,11 +3,11 @@ title: "Backends"
 description: "Backends de compilación de restricciones R1CS y Plonkish."
 ---
 
-Achronyme compila el mismo IR SSA en dos backends de sistema de restricciones: **R1CS** (para Groth16) y **Plonkish** (para KZG-PlonK). Ambos residen en el crate `compiler`.
+Achronyme compila el mismo IR SSA en dos backends de sistema de restricciones: **R1CS** (para Groth16) y **Plonkish** (para KZG-PlonK). Ambos residen en los crates `akronc` (bytecode) y `zkc` (constraints).
 
 ## Backend R1CS
 
-**Archivo:** `compiler/src/r1cs_backend.rs`
+**Archivo:** `zkc/src/r1cs_backend.rs`
 
 El backend R1CS compila instrucciones IR en restricciones del sistema de restricciones de rango 1 de la forma `A × B = C`, donde A, B, C son combinaciones lineales de valores de cables.
 
@@ -72,7 +72,7 @@ Si una variable está en el conjunto `proven_boolean` (del pase `bool_prop`), el
 
 ## Backend Plonkish
 
-**Archivo:** `compiler/src/plonkish_backend.rs`
+**Archivo:** `zkc/src/plonkish_backend.rs`
 
 El backend Plonkish compila IR en una tabla de filas de puerta con columnas, restricciones de copia y tablas de lookup.
 
@@ -149,8 +149,8 @@ PlonkWitnessOp::BitExtract { ... }     // extraer bit del valor
 
 | Componente | Archivo |
 |-----------|------|
-| Backend R1CS | `compiler/src/r1cs_backend.rs` |
-| Backend Plonkish | `compiler/src/plonkish_backend.rs` |
+| Backend R1CS | `zkc/src/r1cs_backend.rs` |
+| Backend Plonkish | `zkc/src/plonkish_backend.rs` |
 | Sistema de restricciones | `constraints/src/r1cs.rs` |
 | Sistema Plonkish | `constraints/src/plonkish.rs` |
-| Errores R1CS | `compiler/src/r1cs_error.rs` |
+| Errores R1CS | `zkc/src/r1cs_error.rs` |

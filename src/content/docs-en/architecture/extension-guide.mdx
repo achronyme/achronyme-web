@@ -68,7 +68,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 6. Compile to R1CS
 
-In `compiler/src/r1cs_backend.rs`, add a match arm in `compile_ir`:
+In `zkc/src/r1cs_backend.rs`, add a match arm in `compile_ir`:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -81,7 +81,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 7. Compile to Plonkish
 
-In `compiler/src/plonkish_backend.rs`, add a match arm in `compile_ir`:
+In `zkc/src/plonkish_backend.rs`, add a match arm in `compile_ir`:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -93,7 +93,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 8. Add witness generation
 
-If the instruction allocates intermediate variables, record a `WitnessOp` in `compiler/src/witness_gen.rs`.
+If the instruction allocates intermediate variables, record a `WitnessOp` in `zkc/src/r1cs_witness.rs`.
 
 ## Adding a Circuit Builtin
 
@@ -217,7 +217,7 @@ pub const MY_OP: u8 = /* next available number */;
 
 ### 2. Emit in the bytecode compiler
 
-In `compiler/src/compiler.rs`, emit the opcode during compilation:
+In `akronc/src/codegen.rs`, emit the opcode during compilation:
 
 ```rust
 // In the appropriate compilation method
@@ -257,7 +257,7 @@ When adding a new instruction or builtin, verify:
 - [ ] `ir/src/passes/const_fold.rs` — fold on constants (if applicable)
 - [ ] `ir/src/passes/dce.rs` — mark as eliminable or conservative
 - [ ] `ir/src/passes/bool_prop.rs` — propagate boolean-ness (if applicable)
-- [ ] `compiler/src/r1cs_backend.rs` — R1CS constraint generation
-- [ ] `compiler/src/plonkish_backend.rs` — Plonkish gate emission
-- [ ] `compiler/src/witness_gen.rs` — witness computation (if intermediate wires)
+- [ ] `zkc/src/r1cs_backend.rs` — R1CS constraint generation
+- [ ] `zkc/src/plonkish_backend.rs` — Plonkish gate emission
+- [ ] `zkc/src/r1cs_witness.rs` — witness computation (if intermediate wires)
 - [ ] Tests in all relevant crates

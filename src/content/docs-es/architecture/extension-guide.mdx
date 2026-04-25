@@ -68,7 +68,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 6. Compilar a R1CS
 
-En `compiler/src/r1cs_backend.rs`, agrega un brazo de match en `compile_ir`:
+En `zkc/src/r1cs_backend.rs`, agrega un brazo de match en `compile_ir`:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -81,7 +81,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 7. Compilar a Plonkish
 
-En `compiler/src/plonkish_backend.rs`, agrega un brazo de match en `compile_ir`:
+En `zkc/src/plonkish_backend.rs`, agrega un brazo de match en `compile_ir`:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -93,7 +93,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 8. Agregar generación de testigos
 
-Si la instrucción asigna variables intermedias, registra un `WitnessOp` en `compiler/src/witness_gen.rs`.
+Si la instrucción asigna variables intermedias, registra un `WitnessOp` en `zkc/src/r1cs_witness.rs`.
 
 ## Agregar una Función Integrada de Circuito
 
@@ -217,7 +217,7 @@ pub const MY_OP: u8 = /* siguiente número disponible */;
 
 ### 2. Emitir en el compilador de bytecode
 
-En `compiler/src/compiler.rs`, emite el opcode durante la compilación:
+En `akronc/src/codegen.rs`, emite el opcode durante la compilación:
 
 ```rust
 // En el método de compilación apropiado
@@ -257,7 +257,7 @@ Al agregar una nueva instrucción o función integrada, verifica:
 - [ ] `ir/src/passes/const_fold.rs` — plegar sobre constantes (si aplica)
 - [ ] `ir/src/passes/dce.rs` — marcar como eliminable o conservadora
 - [ ] `ir/src/passes/bool_prop.rs` — propagar booleano (si aplica)
-- [ ] `compiler/src/r1cs_backend.rs` — generación de restricciones R1CS
-- [ ] `compiler/src/plonkish_backend.rs` — emisión de puertas Plonkish
-- [ ] `compiler/src/witness_gen.rs` — computación de testigo (si hay cables intermedios)
+- [ ] `zkc/src/r1cs_backend.rs` — generación de restricciones R1CS
+- [ ] `zkc/src/plonkish_backend.rs` — emisión de puertas Plonkish
+- [ ] `zkc/src/r1cs_witness.rs` — computación de testigo (si hay cables intermedios)
 - [ ] Pruebas en todos los crates relevantes

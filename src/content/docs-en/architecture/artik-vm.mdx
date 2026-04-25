@@ -215,7 +215,7 @@ See [Witness Generation](./witness-generation) for the full trace replay model.
 
 ## Design decisions
 
-- **Side-channel via `Instruction::WitnessCall`, not a separate side-table on `IrProgram`.** Keeps witness programs in instruction order so the prover's witness-gen loop naturally interleaves them between other `WitnessOp` replays. Cost: ~8 exhaustive match sites extended across `ir` + `compiler`.
+- **Side-channel via `Instruction::WitnessCall`, not a separate side-table on `IrProgram`.** Keeps witness programs in instruction order so the prover's witness-gen loop naturally interleaves them between other `WitnessOp` replays. Cost: ~8 exhaustive match sites extended across `ir` + `zkc`.
 - **Primary output = `outputs[0]`, extras via `extra_result_vars`.** Array-returning lifts expose secondary witness slots this way. Non-empty invariant enforced by the lift.
 - **Public outputs win over fresh witness wires.** Instantiate reuses `output_pub_vars[name]` when the binding name matches a public output signal, so Artik writes directly into the public-output wire.
 - **BN-family check via `F::PRIME_ID`, not `type_name`.** Cleaner and catches Goldilocks as unsupported rather than silently accepting.
@@ -250,5 +250,5 @@ See [Witness Generation](./witness-generation) for the full trace replay model.
 | Builder API (used by lift) | `artik/src/builder.rs` |
 | Circom lift | `circom/src/lowering/artik_lift.rs` |
 | IR dispatch | `ir/src/eval/mod.rs::dispatch_witness_call` |
-| R1CS dispatch | `compiler/src/witness_gen.rs::dispatch_artik_call` |
+| R1CS dispatch | `zkc/src/r1cs_witness.rs::dispatch_artik_call` |
 | IR variant | `ir/src/types.rs` — `Instruction::WitnessCall` |
