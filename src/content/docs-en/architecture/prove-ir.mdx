@@ -1,0 +1,233 @@
+---
+title: "ProveIR"
+description: "Pre-compiled circuit template format: types, pipeline phases, and serialization."
+---
+
+## Overview
+
+ProveIR is the **pre-compiled circuit template format** that decouples compile-time circuit definition from runtime circuit instantiation. `prove {…}` blocks and Circom templates both produce ProveIR; both feed into the same instantiation → IR-SSA → backend pipeline.
+
+Key crates:
+
+- `ir-forge` — ProveIR data types, AST→ProveIR compiler, Lysis lift
+- `ir` — orchestrates ProveIR, hosts `CircomLibraryHandle` trait, owns the module loader
+- `ir-core` — leaf SSA types (`Instruction<F>`, `SsaVar`) shared by `ir` and `ir-forge`
+
+## Why pre-compile templates
+
+- Avoids re-parsing/re-typechecking every prove invocation.
+- Lets bytecode embed circuit definitions in the constant pool (`TAG_BYTES`).
+- Allows Circom and `.ach` to share a single instantiation/optimization stack.
+- Permits structural deduplication via the [Lysis VM](/docs/architecture/lysis-vm/) (in-progress).
+
+## Pipeline phases (A–H)
+
+| Phase | Name | Input | Output |
+|-------|------|-------|--------|
+| A | Compile | AST `prove {}` block + outer scope | `ProveIR` (typed circuit expressions) |
+| B | Serialize | `ProveIR` | Bytes (stored in bytecode constant pool, `TAG_BYTES`) |
+| C | Deserialize | Bytes (at VM runtime) | `ProveIR` |
+| D | Instantiate | `ProveIR` + captured scope values | SSA `IrProgram<F>` |
+| E | Optimize | `IrProgram<F>` | Optimized `IrProgram<F>` |
+| F | Backend | `IrProgram<F>` | R1CS or Plonkish constraints |
+| G | Witness | Captured values + constraint trace | Witness vector |
+| H | Prove | Witness + constraints | Cryptographic proof |
+
+Phases A–B run at **compile time**; C–H run at **runtime** (VM mode) or directly in `ach circuit` mode (skipping serialize/deserialize).
+
+## Container types
+
+`ProveIR` (file: `crates/ir-forge/src/types/prove_ir.rs:17-43`):
+
+```rust
+pub struct ProveIR {
+    pub name: Option<String>,
+    pub public_inputs: Vec<ProveInputDecl>,
+    pub witness_inputs: Vec<ProveInputDecl>,
+    pub captures: Vec<CaptureDef>,
+    pub body: Vec<CircuitNode>,
+    pub capture_arrays: Vec<CaptureArrayDef>,
+}
+
+pub const PROVE_IR_MAGIC: &[u8; 4] = b"ACHP";
+pub const PROVE_IR_FORMAT_VERSION: u8 = 5;
+```
+
+Serialization layout:
+
+```text
+[MAGIC: 4 = "ACHP"][VERSION: 1][PRIME_ID: 1][BINCODE_PAYLOAD]
+```
+
+Version history (only v5 is currently accepted):
+
+- v2 — added `capture_arrays`
+- v3 — added `message` to `CircuitNode::AssertEq`
+- v4 — added `PrimeId` byte (multi-prime)
+- v5 — `CircuitExpr::Const` switched to `FieldConst` (32-byte canonical LE)
+
+## CircuitExpr (expression tree)
+
+File: `crates/ir-forge/src/types/expressions.rs:14-132`.
+
+**Leaves:**
+
+| Variant | Meaning |
+|---------|---------|
+| `Const(FieldConst)` | Field constant (32-byte canonical LE) |
+| `Input(name)` | Public or witness input by name |
+| `Capture(name)` | Captured outer-scope value |
+| `Var(name)` | Local SSA-like variable |
+| `ArrayLen(name)` | Array length lookup |
+| `ArrayIndex { array, index }` | Element access |
+
+**Arithmetic:**
+
+| Variant | Notes |
+|---------|-------|
+| `BinOp { op, lhs, rhs }` | `op ∈ {Add, Sub, Mul, Div}` |
+| `UnaryOp { op, operand }` | `op ∈ {Neg, Not}` |
+| `Pow { base, exp: u64 }` | Literal exponent only |
+
+**Comparison:**
+
+| Variant | Notes |
+|---------|-------|
+| `Comparison { op, lhs, rhs }` | `op ∈ {Eq, Neq, Lt, Le, Gt, Ge}` |
+
+**Signed-range semantics** — comparisons treat operands as signed values in (−p/2, p/2).
+
+**Boolean:**
+
+| Variant | Notes |
+|---------|-------|
+| `BoolOp { op, lhs, rhs }` | `op ∈ {And, Or}` |
+| `Mux { cond, if_true, if_false }` | Branch selection |
+
+**Crypto:**
+
+| Variant | Notes |
+|---------|-------|
+| `PoseidonHash { left, right }` | 2-input Poseidon |
+| `PoseidonMany(Vec<CircuitExpr>)` | Variadic Poseidon |
+| `MerkleVerify { root, leaf, path, indices }` | Membership proof |
+| `RangeCheck { value, bits }` | `value ∈ [0, 2^bits)` |
+
+**Integer ops:**
+
+| Variant | Notes |
+|---------|-------|
+| `IntDiv { lhs, rhs, max_bits }` | Bounded integer division |
+| `IntMod { lhs, rhs, max_bits }` | Bounded integer modulo |
+
+**Bitwise:**
+
+| Variant | Notes |
+|---------|-------|
+| `BitAnd`, `BitOr`, `BitXor`, `BitNot` | Each carries `num_bits` |
+| `ShiftR`, `ShiftL` | Carry `num_bits`; accept `CircuitExpr` shift amounts (not just constants), enabling `in >> i` in unrolled loops |
+
+## CircuitNode (statement-level)
+
+File: `crates/ir-forge/src/types/nodes.rs:17-159`.
+
+```rust
+pub enum CircuitNode {
+    Let { name, value: CircuitExpr, span },
+    LetArray { name, elements: Vec<CircuitExpr>, span },
+    AssertEq { lhs, rhs, message: Option<String>, span },
+    Assert { expr, message, span },
+    For { var, range: ForRange, body: Vec<CircuitNode>, span },
+    If { cond, then_body, else_body, span },
+    Expr { expr, span },                                                   // builtin call w/ side effect
+    Decompose { name, value, num_bits: u32, span },
+    WitnessHint { name, hint: CircuitExpr, span },
+    LetIndexed { array, index, value, span },                              // arr[i] = expr
+    WitnessHintIndexed { array, index, hint, span },                       // arr[i] <-- expr
+    WitnessCall { output_bindings, input_signals, program_bytes, span },   // Artik dispatch
+}
+
+pub enum ForRange {
+    Literal { start: u64, end: u64 },
+    WithCapture { start: u64, end_capture: String },                       // bound is a template param
+    WithExpr { start: u64, end_expr: Box<CircuitExpr> },                   // computed bound (e.g., n+1)
+    Array(String),                                                          // iterate by name
+}
+```
+
+`Decompose` is the bit-decomposition primitive: `name` is bound as a length-`num_bits` array of bool signals, with witness hints derived from `value`.
+
+`WitnessCall` carries an embedded Artik bytecode blob — see [Artik Witness VM](/docs/architecture/artik-vm/).
+
+## Captures
+
+A `prove {}` block captures variables from the enclosing scope; Circom templates capture their parameters. Both use the same `CaptureDef` machinery:
+
+```rust
+pub struct CaptureDef {
+    pub name: String,
+    pub value: FieldConst,    // resolved at instantiation, not compile
+}
+
+pub struct CaptureArrayDef {
+    pub name: String,
+    pub elements: Vec<FieldConst>,
+}
+```
+
+Captures stay symbolic in ProveIR (the `Capture(name)` leaf). They are bound at instantiation by `ProveIR::instantiate(captures, ...)`.
+
+## Compiler entry point
+
+File: `crates/ir-forge/src/ast_lower/api.rs`.
+
+```rust
+ProveIrCompiler::compile_prove_block(
+    block: &Block,
+    outer_scope: &OuterScope,
+    resolver_state: &ResolverState,
+) -> Result<ProveIR, ProveIrError>
+```
+
+Submodules:
+
+- `ast_lower/exprs.rs` — `CircuitExpr` lowering (literals, ops, calls)
+- `ast_lower/calls.rs` — function/component dispatch (resolves through `BuiltinRegistry` + module loader)
+- `ast_lower/stmts.rs` — `CircuitNode` lowering (let, mut, for, if, assert)
+- `ast_lower/methods.rs` — method desugaring (`x.abs()` → builtin-call)
+- `ast_lower/state.rs` — compiler state (scope, witness auto-inference)
+
+## Instantiation
+
+`ProveIR::instantiate(captures, public_values, witness_values)` walks the ProveIR body and emits SSA IR. Loop unrolling, capture substitution, and array index resolution all happen here.
+
+For Circom templates, instantiation is driven by the `circom` crate's `instantiate.rs` which knows about component composition and parameter passing.
+
+## ExtendedInstruction (Lysis bridge)
+
+File: `crates/ir-forge/src/extended.rs:63-112`.
+
+```rust
+pub enum ExtendedInstruction<F: FieldBackend = Bn254Fr> {
+    Plain(Instruction<F>),
+    TemplateBody { id: TemplateId, frame_size: u8, n_params: u8, body: Vec<ExtendedInstruction<F>> },
+    TemplateCall { template_id: TemplateId, captures: Vec<SsaVar>, outputs: Vec<SsaVar> },
+    LoopUnroll { iter_var: SsaVar, start: i64, end: i64, body: Vec<ExtendedInstruction<F>> },
+}
+```
+
+This wrapper layer enables the [Lysis VM](/docs/architecture/lysis-vm/) walker to lift loops and templates without inlining them in IR — a prerequisite for structural deduplication via the interner.
+
+## Source files
+
+| Component | File |
+|-----------|------|
+| ProveIR types | `crates/ir-forge/src/types/prove_ir.rs` |
+| `CircuitExpr` | `crates/ir-forge/src/types/expressions.rs` |
+| `CircuitNode` | `crates/ir-forge/src/types/nodes.rs` |
+| Compiler API | `crates/ir-forge/src/ast_lower/api.rs` |
+| Instantiation | `crates/ir/src/prove_ir/instantiate.rs` |
+| ExtendedInstruction | `crates/ir-forge/src/extended.rs` |
+| Format constants | `crates/ir-forge/src/types/prove_ir.rs:17-43` |
+
+See [Pipeline Overview](/docs/architecture/pipeline/) for the full compile path. See [IR & Optimization](/docs/architecture/ir-and-optimization/) for what runs after instantiation. See [Circom Frontend](/docs/architecture/circom-frontend/) for how .circom files reach ProveIR.
