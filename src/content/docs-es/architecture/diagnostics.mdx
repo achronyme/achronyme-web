@@ -1,0 +1,156 @@
+---
+title: "Diagnósticos"
+description: "El sistema de diagnósticos de Achronyme: códigos, severidad, sugerencias y renderizado estilo rustc."
+---
+
+## Visión general
+
+Un sistema de diagnósticos unificado abarca el parser, lowering de IR, compilador de ProveIR, frontend de Circom y CLI. Los diagnósticos son valores de primera clase — cada frontend produce un `Vec<Diagnostic>` en lugar de lanzar excepciones.
+
+Crate: `diagnostics` (cero dependencias del workspace). Usado por todos los demás crates. Archivo: `crates/diagnostics/src/lib.rs`.
+
+## Tipos núcleo
+
+```rust
+pub struct Diagnostic {
+    pub severity: Severity,
+    pub message: String,
+    pub span: Option<SpanRange>,
+    pub labels: Vec<Label>,
+    pub suggestions: Vec<Suggestion>,
+    pub code: Option<String>,
+}
+
+pub enum Severity { Error, Warning, Note }
+
+pub struct Label {
+    pub span: SpanRange,
+    pub message: String,
+    pub style: LabelStyle,    // Primary | Secondary
+}
+
+pub struct Suggestion {
+    pub message: String,
+    pub replacement: String,
+    pub span: SpanRange,
+    pub applicability: Applicability,    // MachineApplicable | MaybeIncorrect | HasPlaceholders
+}
+
+pub struct Span {
+    pub byte_start: usize,
+    pub byte_end: usize,
+    pub line_start: usize,
+    pub col_start: usize,
+    pub line_end: usize,
+    pub col_end: usize,
+}
+
+pub struct SpanRange { pub start: Span, pub end: Span }
+```
+
+Patrón builder: `Diagnostic::error("…").with_code("E212").with_span(...).with_suggestion(...)`.
+
+## Rangos de códigos de error
+
+| Rango | Dominio | Crate |
+|-------|---------|-------|
+| E001–E099 | Parser (Achronyme) | `achronyme-parser` |
+| E100–E102 | Parser (Circom) | `circom` |
+| W101–W103 | Warnings (Circom) | `circom` |
+| E200–E211 | Lowering de Circom | `circom` |
+| E300–E306 | Análisis de constraints de Circom | `circom` |
+| E400–E499 | Lowering de IR / ProveIR | `ir`, `ir-forge` |
+| E500–E599 | Backend de constraints (R1CS / Plonkish) | `zkc` |
+| W001–W002 | Warnings de Achronyme (no usado, shadow) | `ir`, `resolve` |
+
+Los códigos son estables a través de releases — un código que aparece en salida de cara al usuario está documentado y testeado.
+
+## Diagnósticos seleccionados
+
+### E212 — cuerpo de función no inlineable con argumentos de señal en runtime
+
+El frontend de Circom dispara este cuando un cuerpo `function` tiene control de flujo dependiente de señales que no puede plegarse a `CircuitExpr`. Resolución: hacer lift a bytecode Artik vía `circom::lowering::artik_lift`. Actualmente es el **trigger** de la ruta de la VM de testigos.
+
+### W103 — DoubleSignalAssignment
+
+Una señal `<--` dos veces. Permitido (debido a la cobertura de ramas if-else donde cada rama setea la señal exactamente una vez en su ruta), pero marcado. Era error duro E101 antes de beta.20.
+
+### E300 — UnderConstrained
+
+Un input de testigo fluye sin llegar a ninguna aserción. Surfaceado por el pase de IR `taint`.
+
+### Sugerencias "Did you mean?"
+
+Archivo: `crates/diagnostics/src/suggest.rs`. Búsqueda por distancia de Levenshtein contra una lista de identificadores válidos (nombres de builtins, variables en alcance, nombres de plantillas). Umbral: distancia ≤ 2 y >= 50% de similitud.
+
+## Política de severidad
+
+- **Error** — la compilación se detiene al final del pase actual; los pases posteriores no corren.
+- **Warning** — la compilación continúa. El CLI sale no-cero solo con `--strict`.
+- **Note** — informacional, emparejado con errores/warnings como labels de soporte.
+
+## Renderer
+
+Archivo: `crates/diagnostics/src/renderer.rs`.
+
+```rust
+pub struct DiagnosticRenderer {
+    pub color_mode: ColorMode,
+    pub source_lines: HashMap<String, Vec<String>>,
+}
+
+impl DiagnosticRenderer {
+    pub fn render(&self, diag: &Diagnostic, source_path: &str) -> String;
+    pub fn render_json(&self, diag: &Diagnostic) -> serde_json::Value;
+}
+
+pub enum ColorMode { Auto, Force, Never }
+```
+
+La salida imita rustc:
+
+- Ruta del archivo + ancla de línea/col en la parte superior
+- Extracto de código fuente con carets apuntando al span
+- Labels inline para spans primarios + secundarios
+- Bloques de sugerencia con líneas `+` / `-` para fixes `MachineApplicable`
+
+## Integración con CLI
+
+- `--error-format=human` (default) — renderizado ANSI con color
+- `--error-format=json` — JSON delimitado por líneas para integraciones de editor
+- `--error-format=short` — resúmenes de una sola línea
+- `--no-color` — deshabilita ANSI incluso en modo tty
+
+El LSP (`ach-lsp`) consume diagnósticos vía `--error-format=json` y los expone a través de `textDocument/publishDiagnostics` del LSP.
+
+## Recuperación de errores
+
+El parser usa sincronización en límites `;` y `}` para seguir produciendo placeholders `Stmt::Error` / `Expr::Error`, así que un solo pase produce múltiples diagnósticos. Ver `crates/achronyme-parser/src/parser/core.rs`.
+
+## Agregar un nuevo diagnóstico
+
+1. Elegir un código en el rango correcto (o extender el rango si se introduce un nuevo dominio).
+2. Construir vía el builder:
+   ```rust
+   Diagnostic::error("circuit cannot use mut bindings")
+       .with_code("E412")
+       .with_span(stmt.span)
+       .with_suggestion(Suggestion::from_replacement("let", stmt.span, Applicability::MachineApplicable))
+   ```
+3. Emitir a través del canal de error local que sea (`Vec<Diagnostic>` o `Result<_, Diagnostic>`).
+4. Agregar un test bajo `tests/diagnostics_*.rs` en el crate productor.
+5. Si es de cara al usuario, agregar una fila al índice de diagnósticos en `/docs/language/diagnostics/` (achronyme-web).
+
+## Archivos fuente
+
+| Componente | Archivo |
+|------------|---------|
+| Tipo `Diagnostic` | `crates/diagnostics/src/lib.rs` |
+| `Span` / `SpanRange` | `crates/diagnostics/src/span.rs` |
+| Renderer | `crates/diagnostics/src/renderer.rs` |
+| `Suggestion` + applicability | `crates/diagnostics/src/suggest.rs` |
+| Diagnósticos del parser | `crates/achronyme-parser/src/parser/core.rs` |
+| Diagnósticos de Circom | `crates/circom/src/diagnostics.rs` |
+| Diagnósticos de IR | `crates/ir/src/diagnostics.rs` |
+
+Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para dónde dispara cada fase de diagnósticos. Ver [Guía de Extensión](/docs/architecture/extension-guide/) para cómo registrar un nuevo código en el pase correspondiente.
