@@ -13,7 +13,10 @@ const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
 ---
 
 <nav class="hidden md:block w-[260px] shrink-0 border-r border-subtle/30">
-  <div class="sticky top-[92px] max-h-[calc(100vh-92px)] overflow-y-auto py-6 pl-6 pr-4 doc-scroll">
+  <div
+    data-sidebar-scroll
+    class="sticky top-[92px] max-h-[calc(100vh-92px)] overflow-y-auto py-6 pl-6 pr-4 doc-scroll"
+  >
     {sidebar.map((group, gi) => (
       <div class:list={['pb-4', gi > 0 && 'pt-4 border-t border-subtle/20']}>
         <h3 class="text-[14px] font-bold text-text-primary pb-2 select-none">
@@ -43,3 +46,47 @@ const { sidebar, currentSlug, locale, baseUrl } = Astro.props;
     ))}
   </div>
 </nav>
+
+<script is:inline>
+  // Restore docs sidebar scroll position before the browser paints, so navigating
+  // between docs pages doesn't reset the user's place in the table of contents.
+  (() => {
+    const KEY = 'docs-sidebar-scroll';
+    const saved = sessionStorage.getItem(KEY);
+    if (saved === null) return;
+    const sidebar = document.querySelector('[data-sidebar-scroll]');
+    if (sidebar instanceof HTMLElement) {
+      sidebar.scrollTop = parseInt(saved, 10) || 0;
+    }
+  })();
+</script>
+
+<script>
+  // Persist the docs sidebar scroll position so it survives full-page navigations.
+  // sessionStorage scopes per-tab; cleared automatically on tab close.
+  const sidebar = document.querySelector<HTMLElement>('[data-sidebar-scroll]');
+  if (sidebar) {
+    const KEY = 'docs-sidebar-scroll';
+    let raf = 0;
+    const save = () => {
+      sessionStorage.setItem(KEY, String(sidebar.scrollTop));
+    };
+    sidebar.addEventListener(
+      'scroll',
+      () => {
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(save);
+      },
+      { passive: true },
+    );
+    // Capture clicks on sidebar links so the scroll snapshot is up to date even
+    // if the user navigates faster than the throttled scroll handler can fire.
+    sidebar.addEventListener('click', event => {
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest('a')) save();
+    });
+    // Pagehide is the modern, BFCache-aware unload event. Ensures the snapshot
+    // is also captured when the user navigates via Prev/Next or browser back.
+    window.addEventListener('pagehide', save);
+  }
+</script>
