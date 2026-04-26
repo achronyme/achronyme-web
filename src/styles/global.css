@@ -9,9 +9,9 @@
   --color-proof-light: #C084FC;
   --color-proof-dim: #7C3AED;
 
-  --color-text-primary: #F5F5FA;
-  --color-text-secondary: #B0B0C4;
-  --color-text-muted: #808096;
+  --color-text-primary: #FBFBFE;
+  --color-text-secondary: #D2D2E0;
+  --color-text-muted: #9C9CB0;
 
   --color-valid: #34D399;
   --color-error: #F87171;
@@ -184,7 +184,7 @@
 .doc-prose {
   font-size: 1.0625rem;
   line-height: 1.75;
-  color: #c4c4d4;
+  color: #DCDCE6;
 }
 
 /* Headings */
