@@ -69,9 +69,11 @@ const machines = [
       <!-- Akron (2 cols) -->
       <div class="reveal lg:col-span-2">
         <div class="rounded-[1.5rem] bg-white/[0.025] ring-1 ring-white/[0.06] p-2 h-full">
-          <div class="rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] h-full p-6 sm:p-8 flex flex-col">
-            <div class="flex items-center gap-3 mb-5">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-proof/10 ring-1 ring-proof/20 text-proof-light text-sm font-bold">
+          <div class="relative overflow-hidden rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] h-full p-6 sm:p-8 flex flex-col">
+            <div class="absolute inset-0 opacity-55 pointer-events-none bg-cover bg-center" style="background-image: url('/wallpapers/akron.webp')"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-void/65 via-void/55 to-void/75 pointer-events-none"></div>
+            <div class="relative flex items-center gap-3 mb-5">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-proof/15 ring-1 ring-proof/25 text-proof-light text-sm font-bold backdrop-blur-sm">
                 A
               </span>
               <div>
@@ -79,12 +81,12 @@ const machines = [
                 <span class="block text-xs text-proof-light uppercase tracking-[0.15em] font-medium">{tri.akron.role}</span>
               </div>
             </div>
-            <p class="text-[15px] leading-relaxed text-text-secondary flex-1">
+            <p class="relative text-[15px] leading-relaxed text-text-secondary flex-1">
               {tri.akron.desc}
             </p>
-            <div class="mt-6 flex flex-wrap gap-2">
+            <div class="relative mt-6 flex flex-wrap gap-2">
               {tri.akron.capabilities.map((cap: string) => (
-                <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] font-medium text-text-muted">
+                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-sm">
                   {cap}
                 </span>
               ))}
@@ -96,9 +98,11 @@ const machines = [
       <!-- Artik (3 cols) -->
       <div class="reveal lg:col-span-3">
         <div class="rounded-[1.5rem] bg-white/[0.025] ring-1 ring-white/[0.06] p-2 h-full">
-          <div class="rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] h-full p-6 sm:p-8 flex flex-col">
-            <div class="flex items-center gap-3 mb-5">
-              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-valid/10 ring-1 ring-valid/20 text-valid text-sm font-bold">
+          <div class="relative overflow-hidden rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] h-full p-6 sm:p-8 flex flex-col">
+            <div class="absolute inset-0 opacity-55 pointer-events-none bg-cover bg-center" style="background-image: url('/wallpapers/artik.webp')"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-void/65 via-void/55 to-void/75 pointer-events-none"></div>
+            <div class="relative flex items-center gap-3 mb-5">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-valid/15 ring-1 ring-valid/25 text-valid text-sm font-bold backdrop-blur-sm">
                 A
               </span>
               <div>
@@ -106,12 +110,12 @@ const machines = [
                 <span class="block text-xs text-valid uppercase tracking-[0.15em] font-medium">{tri.artik.role}</span>
               </div>
             </div>
-            <p class="text-[15px] leading-relaxed text-text-secondary flex-1">
+            <p class="relative text-[15px] leading-relaxed text-text-secondary flex-1">
               {tri.artik.desc}
             </p>
-            <div class="mt-6 flex flex-wrap gap-2">
+            <div class="relative mt-6 flex flex-wrap gap-2">
               {tri.artik.capabilities.map((cap: string) => (
-                <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] font-medium text-text-muted">
+                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-sm">
                   {cap}
                 </span>
               ))}
@@ -123,9 +127,11 @@ const machines = [
       <!-- Lysis (5 cols, full width) -->
       <div class="reveal lg:col-span-5">
         <div class="rounded-[1.5rem] bg-white/[0.025] ring-1 ring-white/[0.06] p-2">
-          <div class="rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-10">
-            <div class="flex items-center gap-4 lg:w-72 shrink-0">
-              <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-info/10 ring-1 ring-info/20 text-info text-base font-bold">
+          <div class="relative overflow-hidden rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-10">
+            <div class="absolute inset-0 opacity-55 pointer-events-none bg-cover bg-center" style="background-image: url('/wallpapers/lysis.webp')"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-void/65 via-void/55 to-void/75 pointer-events-none"></div>
+            <div class="relative flex items-center gap-4 lg:w-72 shrink-0">
+              <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-info/15 ring-1 ring-info/25 text-info text-base font-bold backdrop-blur-sm">
                 L
               </span>
               <div>
@@ -133,12 +139,12 @@ const machines = [
                 <span class="block text-xs text-info uppercase tracking-[0.15em] font-medium">{tri.lysis.role}</span>
               </div>
             </div>
-            <p class="text-[15px] leading-relaxed text-text-secondary lg:flex-1 lg:max-w-2xl">
+            <p class="relative text-[15px] leading-relaxed text-text-secondary lg:flex-1 lg:max-w-2xl">
               {tri.lysis.desc}
             </p>
-            <div class="flex flex-wrap gap-2 lg:justify-end">
+            <div class="relative flex flex-wrap gap-2 lg:justify-end">
               {tri.lysis.capabilities.map((cap: string) => (
-                <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] font-medium text-text-muted">
+                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-sm">
                   {cap}
                 </span>
               ))}
