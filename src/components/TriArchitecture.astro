@@ -1,0 +1,152 @@
+---
+import type { Locale } from '../i18n';
+import { t } from '../i18n';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const tri = s.triArch;
+
+const machines = [
+  {
+    key: 'akron',
+    accent: 'proof',
+    accentLight: 'proof-light',
+    accentDim: 'proof-dim',
+    border: 'ring-proof/15',
+    bg: 'bg-proof/[0.06]',
+  },
+  {
+    key: 'artik',
+    accent: 'valid',
+    accentLight: 'text-valid',
+    accentDim: 'text-valid/70',
+    border: 'ring-valid/15',
+    bg: 'bg-valid/[0.06]',
+  },
+  {
+    key: 'lysis',
+    accent: 'info',
+    accentLight: 'text-info',
+    accentDim: 'text-info/70',
+    border: 'ring-info/15',
+    bg: 'bg-info/[0.06]',
+  },
+] as const;
+---
+
+<section
+  id="tri-architecture"
+  class="border-b border-subtle/77 relative"
+>
+  <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+  <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+
+  <!-- Header -->
+  <div class="px-8 lg:px-10 pt-16 lg:pt-24 pb-10 lg:pb-14">
+    <div class="reveal">
+      <span
+        class="inline-flex items-center rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-[10px] uppercase tracking-[0.25em] font-medium text-text-secondary"
+      >
+        {tri.eyebrow}
+      </span>
+      <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
+        {tri.title}
+      </h2>
+      <p class="mt-4 text-text-secondary text-lg lg:text-xl max-w-xl">
+        {tri.subtitle}
+      </p>
+    </div>
+  </div>
+
+  <!-- Bento Grid: Akron + Artik on top, Lysis full-width below -->
+  <div class="px-6 sm:px-8 lg:px-10 pb-16 lg:pb-24">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-5">
+
+      <!-- Akron (2 cols) -->
+      <div class="reveal lg:col-span-2">
+        <div class="rounded-[1.5rem] bg-white/[0.025] ring-1 ring-white/[0.06] p-2 h-full">
+          <div class="rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] h-full p-6 sm:p-8 flex flex-col">
+            <div class="flex items-center gap-3 mb-5">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-proof/10 ring-1 ring-proof/20 text-proof-light text-sm font-bold">
+                A
+              </span>
+              <div>
+                <span class="block text-sm font-semibold text-text-primary">{tri.akron.name}</span>
+                <span class="block text-xs text-proof-light uppercase tracking-[0.15em] font-medium">{tri.akron.role}</span>
+              </div>
+            </div>
+            <p class="text-[15px] leading-relaxed text-text-secondary flex-1">
+              {tri.akron.desc}
+            </p>
+            <div class="mt-6 flex flex-wrap gap-2">
+              {tri.akron.capabilities.map((cap: string) => (
+                <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] font-medium text-text-muted">
+                  {cap}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Artik (3 cols) -->
+      <div class="reveal lg:col-span-3">
+        <div class="rounded-[1.5rem] bg-white/[0.025] ring-1 ring-white/[0.06] p-2 h-full">
+          <div class="rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] h-full p-6 sm:p-8 flex flex-col">
+            <div class="flex items-center gap-3 mb-5">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-valid/10 ring-1 ring-valid/20 text-valid text-sm font-bold">
+                A
+              </span>
+              <div>
+                <span class="block text-sm font-semibold text-text-primary">{tri.artik.name}</span>
+                <span class="block text-xs text-valid uppercase tracking-[0.15em] font-medium">{tri.artik.role}</span>
+              </div>
+            </div>
+            <p class="text-[15px] leading-relaxed text-text-secondary flex-1">
+              {tri.artik.desc}
+            </p>
+            <div class="mt-6 flex flex-wrap gap-2">
+              {tri.artik.capabilities.map((cap: string) => (
+                <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] font-medium text-text-muted">
+                  {cap}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lysis (5 cols, full width) -->
+      <div class="reveal lg:col-span-5">
+        <div class="rounded-[1.5rem] bg-white/[0.025] ring-1 ring-white/[0.06] p-2">
+          <div class="rounded-[calc(1.5rem-0.5rem)] bg-surface/40 ring-1 ring-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-10">
+            <div class="flex items-center gap-4 lg:w-72 shrink-0">
+              <span class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-info/10 ring-1 ring-info/20 text-info text-base font-bold">
+                L
+              </span>
+              <div>
+                <span class="block text-base font-semibold text-text-primary">{tri.lysis.name}</span>
+                <span class="block text-xs text-info uppercase tracking-[0.15em] font-medium">{tri.lysis.role}</span>
+              </div>
+            </div>
+            <p class="text-[15px] leading-relaxed text-text-secondary lg:flex-1 lg:max-w-2xl">
+              {tri.lysis.desc}
+            </p>
+            <div class="flex flex-wrap gap-2 lg:justify-end">
+              {tri.lysis.capabilities.map((cap: string) => (
+                <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] px-2.5 py-1 text-[11px] font-medium text-text-muted">
+                  {cap}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

@@ -14,12 +14,18 @@
       <path d="M704 576L448 832L192 576L448 320L704 576Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
       <path d="M643.052 576L448 768L256 576L448 384L643.052 576Z" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
     </g>
+    <text id="LabelVM" class="chip-label" x="448" y="305" fill="currentColor" font-size="16" font-weight="600" text-anchor="middle" opacity="0" style="font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;">Artik</text>
+
     <g id="ChipCompiler" class="chip">
       <path d="M256 768L128 640L0 768L128 896L256 768Z" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
+    <text id="LabelCompiler" class="chip-label" x="128" y="935" fill="currentColor" font-size="16" font-weight="600" text-anchor="middle" opacity="0" style="font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;">Akron</text>
+
     <g id="ChipBackend" class="chip">
       <path d="M576 128L448 256L320 128L448 2.9966L576 128Z" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
+    <text id="LabelBackend" class="chip-label" x="448" y="-12" fill="currentColor" font-size="16" font-weight="600" text-anchor="middle" opacity="0" style="font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;">Lysis</text>
+
     <path id="ChipDeco1" class="chip" d="M768 384L832 448L896 384L832 320L768 384Z" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 
     <!-- Wires -->
@@ -98,40 +104,49 @@
     const svg = document.getElementById('hero-svg');
     if (!svg) return;
 
-    // -- Chip pulse (glow on nodes) --
     const chips = svg.querySelectorAll('.chip');
-    chips.forEach((chip, i) => {
-      gsap.to(chip, {
-        opacity: 0.6,
-        duration: 2 + i * 0.5,
-        repeat: -1,
-        yoyo: true,
-        ease: 'power1.inOut',
-        delay: i * 1.2,
-      });
-    });
-
-    // -- Wire current flow (opacity pulse per group) --
+    const labels = svg.querySelectorAll('.chip-label');
     const wireGroups = svg.querySelectorAll('.wire-group');
-    wireGroups.forEach((group, gi) => {
-      const wires = group.querySelectorAll('path');
-      wires.forEach((wire, wi) => {
-        gsap.fromTo(wire,
-          { opacity: 0.4 },
-          {
-            opacity: 1,
-            duration: 1.5,
-            repeat: -1,
-            yoyo: true,
-            ease: 'power1.inOut',
-            delay: wi * 0.08 + gi * 1.5,
-          }
-        );
-      });
+
+    // Set initial states
+    gsap.set(chips, { opacity: 0.25 });
+    gsap.set(labels, { opacity: 0 });
+    gsap.set(wireGroups, { opacity: 0.25 });
+
+    // Narrative timeline: Akron -> Artik -> Lysis -> Wires
+    const tl = gsap.timeline({ repeat: -1, repeatDelay: 3 });
+
+    // Akron (Compiler) appears
+    tl.to('#ChipCompiler', { opacity: 0.85, duration: 0.7, ease: 'power2.out' })
+      .to('#LabelCompiler', { opacity: 1, duration: 0.5, ease: 'power2.out' }, '<0.2');
+
+    // Artik (VM) appears
+    tl.to('#ChipVM', { opacity: 0.85, duration: 0.7, ease: 'power2.out' }, '+=0.4')
+      .to('#LabelVM', { opacity: 1, duration: 0.5, ease: 'power2.out' }, '<0.2');
+
+    // Lysis (Prover) appears
+    tl.to('#ChipBackend', { opacity: 0.85, duration: 0.7, ease: 'power2.out' }, '+=0.4')
+      .to('#LabelBackend', { opacity: 1, duration: 0.5, ease: 'power2.out' }, '<0.2');
+
+    // Wires pulse in sequence
+    tl.to(wireGroups, {
+      opacity: 0.75,
+      duration: 0.6,
+      stagger: 0.1,
+      ease: 'power2.inOut'
+    }, '-=0.3');
+
+    // Hold the full state
+    tl.to({}, { duration: 2.5 });
+
+    // Gentle fade out to restart
+    tl.to([chips, labels, wireGroups], {
+      opacity: 0.25,
+      duration: 1.2,
+      ease: 'power2.inOut'
     });
   }
 
-  // Run after DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initHeroCircuit);
   } else {

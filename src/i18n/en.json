@@ -8,15 +8,41 @@
   },
   "hero": {
     "badge": "v0.1.0-beta.19 — Public beta",
-    "headline1": "Write code.",
-    "headline2": "Generate proofs.",
-    "subtitle": "A zero-knowledge language. Same syntax runs in a VM or compiles to arithmetic circuits.",
+    "eyebrow": "The Tri-Architecture",
+    "headline1": "Three machines.",
+    "headline2": "One language.",
+    "headline3": "Zero trust.",
+    "subtitle": "Three bytecode VMs. Akron runs your code. Artik computes witnesses. Lysis builds the circuit.",
     "cta": "Get Started",
+    "ctaSecondary": "Meet the Machines",
     "github": "View on GitHub"
   },
   "ecosystem": {
     "title": "Built with Rust. Outputs everywhere.",
     "outputs": [".r1cs", ".wtns", ".sol", "Groth16", "PlonK"]
+  },
+  "triArch": {
+    "eyebrow": "The Tri-Architecture",
+    "title": "Meet the Machines",
+    "subtitle": "Three bytecode VMs. Three layers of the pipeline.",
+    "akron": {
+      "name": "Akron",
+      "role": "The Surface VM",
+      "desc": "Runs Achronyme as a real language. Variables, closures, mark-sweep GC, 40 opcodes. The same code you test with ach run is the code that gets compiled. No translation gap.",
+      "capabilities": ["40 opcodes", "Tagged values", "prove {} blocks", "Circom interop"]
+    },
+    "artik": {
+      "name": "Artik",
+      "role": "The Witness VM",
+      "desc": "Computes witnesses for circuits where Circom hits a wall. No heap, no GC, pure field arithmetic. Runs inside the R1CS backend to close the E212 gap.",
+      "capabilities": ["25 opcodes", "Field arithmetic", "E212 closure", "Multi-prime"]
+    },
+    "lysis": {
+      "name": "Lysis",
+      "role": "The Instantiation VM",
+      "desc": "Expands templates into constraints without memory explosions. Hash-consing collapses identical sub-graphs. Turns eager expansions from gigabytes into lean IR.",
+      "capabilities": ["29 opcodes", "Hash-consing", "Loop unrolling", "IR emission"]
+    }
   },
   "sectionDual": {
     "title": "Dual execution engine",
@@ -143,7 +169,7 @@
     "next": "Next"
   },
   "footer": {
-    "tagline": "A zero-knowledge DSL. Write code, generate proofs.",
+    "tagline": "Three machines. One language. Zero trust.",
     "resources": "Resources",
     "community": "Community",
     "github": "GitHub",
@@ -152,6 +178,10 @@
     "discussions": "Discussions",
     "issues": "Issues",
     "builtWith": "Built with Rust",
-    "license": "Apache-2.0 License"
+    "license": "Apache-2.0 License",
+    "architecture": "Architecture",
+    "akron": "Akron",
+    "artik": "Artik",
+    "lysis": "Lysis"
   }
 }

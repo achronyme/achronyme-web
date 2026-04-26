@@ -8,15 +8,41 @@
   },
   "hero": {
     "badge": "v0.1.0-beta.19 — Beta publica",
-    "headline1": "Escribe codigo.",
-    "headline2": "Genera pruebas.",
-    "subtitle": "Un lenguaje zero-knowledge. La misma sintaxis se ejecuta en una VM o compila a circuitos aritmeticos.",
+    "eyebrow": "La Tri-Arquitectura",
+    "headline1": "Tres maquinas.",
+    "headline2": "Un lenguaje.",
+    "headline3": "Cero confianza.",
+    "subtitle": "Tres VMs de bytecode. Akron ejecuta tu codigo. Artik calcula witnesses. Lysis construye el circuito.",
     "cta": "Comenzar",
+    "ctaSecondary": "Conoce las Maquinas",
     "github": "Ver en GitHub"
   },
   "ecosystem": {
     "title": "Construido con Rust. Exporta a todo.",
     "outputs": [".r1cs", ".wtns", ".sol", "Groth16", "PlonK"]
+  },
+  "triArch": {
+    "eyebrow": "La Tri-Arquitectura",
+    "title": "Conoce las Maquinas",
+    "subtitle": "Tres VMs de bytecode. Tres capas del pipeline.",
+    "akron": {
+      "name": "Akron",
+      "role": "La VM de Superficie",
+      "desc": "Ejecuta Achronyme como lenguaje real. Variables, closures, GC mark-sweep, 40 opcodes. El mismo codigo que pruebas con ach run es el que se compila. Sin brecha de traduccion.",
+      "capabilities": ["40 opcodes", "Tagged values", "Bloques prove {}", "Interop Circom"]
+    },
+    "artik": {
+      "name": "Artik",
+      "role": "La VM de Witness",
+      "desc": "Calcula witnesses donde Circom se estanca. Sin heap, sin GC, aritmetica pura de campo. Corre dentro del backend R1CS para cerrar el gap E212.",
+      "capabilities": ["25 opcodes", "Aritmetica de campo", "Cierre E212", "Multi-curva"]
+    },
+    "lysis": {
+      "name": "Lysis",
+      "role": "La VM de Instanciacion",
+      "desc": "Expande templates a constraints sin explosiones de memoria. Hash-consing colapsa sub-grafos identicos. Convierte expansiones eager de gigabytes en IR optimo.",
+      "capabilities": ["29 opcodes", "Hash-consing", "Loop unrolling", "Emision de IR"]
+    }
   },
   "sectionDual": {
     "title": "Motor de doble ejecucion",
@@ -143,7 +169,7 @@
     "next": "Siguiente"
   },
   "footer": {
-    "tagline": "Un DSL de zero-knowledge. Escribe codigo, genera pruebas.",
+    "tagline": "Tres maquinas. Un lenguaje. Cero confianza.",
     "resources": "Recursos",
     "community": "Comunidad",
     "github": "GitHub",
@@ -152,6 +178,10 @@
     "discussions": "Discusiones",
     "issues": "Issues",
     "builtWith": "Construido con Rust",
-    "license": "Licencia Apache-2.0"
+    "license": "Licencia Apache-2.0",
+    "architecture": "Arquitectura",
+    "akron": "Akron",
+    "artik": "Artik",
+    "lysis": "Lysis"
   }
 }
