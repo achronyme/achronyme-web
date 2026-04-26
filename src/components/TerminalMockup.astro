@@ -35,12 +35,12 @@ const badgeBg = bgMap[badgeColor] || bgMap['text-proof'];
         <span class="ml-3 text-xs text-text-muted">{filename}</span>
       </div>
       {badge && (
-        <span class:list={['rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ring-white/5', badgeColor]} style={`background: ${badgeBg}`}>
+        <span class:list={['rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-white/5', badgeColor]} style={`background: ${badgeBg}`}>
           {badge}
         </span>
       )}
     </div>
-    <div class="p-5 text-[13px] leading-relaxed font-mono overflow-x-auto">
+    <div class="p-5 text-sm leading-relaxed font-mono overflow-x-auto">
       <slot />
     </div>
   </div>

@@ -23,7 +23,7 @@ const r = t(locale).roadmap;
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
 
     <div class="reveal">
-      <span class="inline-flex items-center gap-2 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-text-secondary">
+      <span class="inline-flex items-center gap-2 rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs uppercase tracking-[0.2em] font-medium text-text-secondary">
         <span class="h-1.5 w-1.5 rounded-full bg-proof animate-pulse"></span>
         {r.livingPill}
       </span>
@@ -36,31 +36,31 @@ const r = t(locale).roadmap;
       <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
           <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">{r.metrics.startedValue}</span>
-          <span class="mt-1 block text-[10px] text-text-muted uppercase tracking-[0.2em]">{r.metrics.started}</span>
+          <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.started}</span>
         </div>
       </div>
       <div class="rounded-2xl bg-proof/[0.05] ring-1 ring-proof/15 p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
           <span class="block text-base sm:text-lg font-bold font-mono tracking-tight text-proof-light">v0.1.0-beta.19</span>
-          <span class="mt-1 block text-[10px] text-text-muted uppercase tracking-[0.2em]">{r.metrics.version}</span>
+          <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.version}</span>
         </div>
       </div>
       <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
           <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">11</span>
-          <span class="mt-1 block text-[10px] text-text-muted uppercase tracking-[0.2em]">{r.metrics.crates}</span>
+          <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.crates}</span>
         </div>
       </div>
       <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
           <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">2,700+</span>
-          <span class="mt-1 block text-[10px] text-text-muted uppercase tracking-[0.2em]">{r.metrics.tests}</span>
+          <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.tests}</span>
         </div>
       </div>
       <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
           <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">0</span>
-          <span class="mt-1 block text-[10px] text-text-muted uppercase tracking-[0.2em]">{r.metrics.deps}</span>
+          <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.deps}</span>
         </div>
       </div>
     </div>
@@ -81,7 +81,7 @@ const r = t(locale).roadmap;
 
       <header class="reveal px-6 sm:px-8 md:pl-20 md:pr-16 pt-10 pb-6">
         <div class="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <span class="inline-flex items-center rounded-full bg-valid/10 ring-1 ring-valid/25 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-valid">
+          <span class="inline-flex items-center rounded-full bg-valid/10 ring-1 ring-valid/25 px-3 py-1 text-xs uppercase tracking-[0.2em] font-medium text-valid">
             {r.status.shipped}
           </span>
           <span class="font-mono text-sm text-text-primary">{r.phases.now.anchor}</span>
@@ -97,8 +97,8 @@ const r = t(locale).roadmap;
         <article class="reveal lg:col-span-12 rounded-2xl bg-valid/[0.04] ring-1 ring-valid/15 shadow-[inset_0_1px_0_rgba(52,211,153,0.06)] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6 lg:p-8">
             <h3 class="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">{r.items.multiPrime}</h3>
-            <p class="mt-3 text-[15px] sm:text-base text-text-secondary leading-relaxed max-w-3xl">{r.items.multiPrimeDesc}</p>
-            <div class="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] font-mono text-text-muted items-center">
+            <p class="mt-3 text-base sm:text-base text-text-secondary leading-relaxed max-w-3xl">{r.items.multiPrimeDesc}</p>
+            <div class="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm font-mono text-text-muted items-center">
               <span><span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> {r.receipts.released} v0.1.0-beta.19</span>
               <span class="text-text-muted/60">·</span>
               <span>+43 commits</span>
@@ -118,7 +118,7 @@ const r = t(locale).roadmap;
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.proveIR}</h3>
             <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.proveIRDesc}</p>
-            <div class="mt-4 text-[12px] font-mono text-text-muted">
+            <div class="mt-4 text-xs font-mono text-text-muted">
               <span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> beta.14 · 186+ tests
             </div>
           </div>
@@ -127,7 +127,7 @@ const r = t(locale).roadmap;
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.08] p-5 lg:p-6 h-full flex flex-col">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.solidity}</h3>
             <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.solidityDesc}</p>
-            <div class="mt-4 text-[12px] font-mono text-text-muted">
+            <div class="mt-4 text-xs font-mono text-text-muted">
               <span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> Groth16 verifier
             </div>
           </div>
@@ -140,7 +140,7 @@ const r = t(locale).roadmap;
               <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.r1csOptimizer}</h3>
               <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.r1csOptimizerDesc}</p>
             </div>
-            <div class="mt-4 sm:mt-0 shrink-0 text-[12px] font-mono text-text-muted">
+            <div class="mt-4 sm:mt-0 shrink-0 text-xs font-mono text-text-muted">
               <span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> 3.6x perf gain
             </div>
           </div>
@@ -156,7 +156,7 @@ const r = t(locale).roadmap;
 
       <header class="reveal px-6 sm:px-8 md:pl-20 md:pr-16 pt-10 pb-6">
         <div class="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-proof/15 ring-1 ring-proof/30 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-proof-light">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-proof/15 ring-1 ring-proof/30 px-3 py-1 text-xs uppercase tracking-[0.2em] font-medium text-proof-light">
             <span class="h-1.5 w-1.5 rounded-full bg-proof animate-pulse"></span>
             {r.status.inProgress}
           </span>
@@ -172,15 +172,15 @@ const r = t(locale).roadmap;
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden grid lg:grid-cols-5">
             <div class="lg:col-span-3 p-6 lg:p-8">
               <h3 class="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">{r.items.circomFrontend}</h3>
-              <p class="mt-3 text-[15px] sm:text-base text-text-secondary leading-relaxed">{r.items.circomFrontendDesc}</p>
+              <p class="mt-3 text-base sm:text-base text-text-secondary leading-relaxed">{r.items.circomFrontendDesc}</p>
               <div class="mt-5 flex flex-wrap gap-1.5">
-                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">Poseidon <span class="ms-icon ms-icon-sm">check</span></span>
-                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">MiMCSponge <span class="ms-icon ms-icon-sm">check</span></span>
-                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">EscalarMulAny <span class="ms-icon ms-icon-sm">check</span></span>
-                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-[10px] font-mono text-valid">BabyJubjub <span class="ms-icon ms-icon-sm">check</span></span>
-                <span class="rounded-md bg-warn/10 ring-1 ring-warn/20 px-2 py-0.5 text-[10px] font-mono text-warn">EdDSA · pending</span>
+                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">Poseidon <span class="ms-icon ms-icon-sm">check</span></span>
+                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">MiMCSponge <span class="ms-icon ms-icon-sm">check</span></span>
+                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">EscalarMulAny <span class="ms-icon ms-icon-sm">check</span></span>
+                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">BabyJubjub <span class="ms-icon ms-icon-sm">check</span></span>
+                <span class="rounded-md bg-warn/10 ring-1 ring-warn/20 px-2 py-0.5 text-xs font-mono text-warn">EdDSA · pending</span>
               </div>
-              <div class="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-mono text-text-muted items-center">
+              <div class="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-mono text-text-muted items-center">
                 <span><span class="ms-icon ms-icon-sm text-proof-light">bolt</span> {r.receipts.branch}: main</span>
                 <span class="text-text-muted/60">·</span>
                 <span>180+ circom commits</span>
@@ -192,7 +192,7 @@ const r = t(locale).roadmap;
               </div>
             </div>
             <div class="lg:col-span-2 relative bg-[#08080D] border-t lg:border-t-0 lg:border-l border-white/[0.06] p-5 lg:p-6 flex items-center">
-              <pre class="text-[11px] lg:text-[12px] font-mono leading-relaxed overflow-x-auto w-full"><code><span class="text-text-muted">// import circomlib directly</span>
+              <pre class="text-xs lg:text-xs font-mono leading-relaxed overflow-x-auto w-full"><code><span class="text-text-muted">// import circomlib directly</span>
 <span class="text-proof-light">use</span> circom <span class="text-warn">"poseidon.circom"</span>
 
 <span class="text-proof-light">let</span> hash <span class="text-text-muted">=</span> <span class="text-info">Poseidon</span>(<span class="text-warn">2</span>)
@@ -217,7 +217,7 @@ const r = t(locale).roadmap;
               <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.adversarialTests}</h3>
               <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.adversarialTestsDesc}</p>
             </div>
-            <div class="mt-4 sm:mt-0 shrink-0 text-[12px] font-mono text-text-muted">
+            <div class="mt-4 sm:mt-0 shrink-0 text-xs font-mono text-text-muted">
               <span class="ms-icon ms-icon-sm text-proof-light">bolt</span> 4 forge-attempt tests
             </div>
           </div>
@@ -233,7 +233,7 @@ const r = t(locale).roadmap;
 
       <header class="reveal px-6 sm:px-8 md:pl-20 md:pr-16 pt-10 pb-6">
         <div class="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <span class="inline-flex items-center rounded-full bg-info/10 ring-1 ring-info/25 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-info">{r.status.planned}</span>
+          <span class="inline-flex items-center rounded-full bg-info/10 ring-1 ring-info/25 px-3 py-1 text-xs uppercase tracking-[0.2em] font-medium text-info">{r.status.planned}</span>
           <span class="font-mono text-sm text-text-primary">{r.phases.next.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.next.desc}</span>
         </div>
@@ -244,8 +244,8 @@ const r = t(locale).roadmap;
         <article class="reveal rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] p-6 h-full flex flex-col">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.playground}</h3>
-            <p class="mt-2 text-[13.5px] text-text-secondary leading-relaxed flex-1">{r.items.playgroundDesc}</p>
-            <div class="mt-4 text-[12px] font-mono text-text-muted">
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.playgroundDesc}</p>
+            <div class="mt-4 text-xs font-mono text-text-muted">
               <span class="ms-icon ms-icon-sm text-info">radio_button_unchecked</span> WASM feasibility verified · beta.16
             </div>
           </div>
@@ -253,8 +253,8 @@ const r = t(locale).roadmap;
         <article class="reveal rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] p-6 h-full flex flex-col">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.multiFieldVM}</h3>
-            <p class="mt-2 text-[13.5px] text-text-secondary leading-relaxed flex-1">{r.items.multiFieldVMDesc}</p>
-            <div class="mt-4 text-[12px] font-mono text-text-muted">
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.multiFieldVMDesc}</p>
+            <div class="mt-4 text-xs font-mono text-text-muted">
               <span class="ms-icon ms-icon-sm text-info">radio_button_unchecked</span> blocked by VM single-field assumption
             </div>
           </div>
@@ -270,7 +270,7 @@ const r = t(locale).roadmap;
 
       <header class="reveal px-6 sm:px-8 md:pl-20 md:pr-16 pt-10 pb-6">
         <div class="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <span class="inline-flex items-center rounded-full bg-text-muted/10 ring-1 ring-text-muted/20 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-text-muted">{r.status.exploratory}</span>
+          <span class="inline-flex items-center rounded-full bg-text-muted/10 ring-1 ring-text-muted/20 px-3 py-1 text-xs uppercase tracking-[0.2em] font-medium text-text-muted">{r.status.exploratory}</span>
           <span class="font-mono text-sm text-text-secondary">{r.phases.later.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.later.desc}</span>
         </div>
@@ -282,19 +282,19 @@ const r = t(locale).roadmap;
         <article class="reveal lg:col-span-7 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
           <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.starkBackend}</h3>
           <p class="mt-2 text-sm text-text-muted leading-relaxed flex-1">{r.items.starkBackendDesc}</p>
-          <div class="mt-4 text-[12px] font-mono text-text-muted/70 flex items-center gap-1"><span class="ms-icon ms-icon-sm">radio_button_unchecked</span> research scoped · Plonky3</div>
+          <div class="mt-4 text-xs font-mono text-text-muted/70 flex items-center gap-1"><span class="ms-icon ms-icon-sm">radio_button_unchecked</span> research scoped · Plonky3</div>
         </article>
         <article class="reveal lg:col-span-5 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col">
           <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.noirFrontend}</h3>
           <p class="mt-2 text-sm text-text-muted leading-relaxed flex-1">{r.items.noirFrontendDesc}</p>
-          <div class="mt-4 text-[12px] font-mono text-text-muted/70 flex items-center gap-1"><span class="ms-icon ms-icon-sm">radio_button_unchecked</span> post-Circom</div>
+          <div class="mt-4 text-xs font-mono text-text-muted/70 flex items-center gap-1"><span class="ms-icon ms-icon-sm">radio_button_unchecked</span> post-Circom</div>
         </article>
         <article class="reveal lg:col-span-12 rounded-2xl border border-dashed border-white/[0.10] p-6 bg-transparent flex flex-col sm:flex-row sm:items-center sm:gap-6">
           <div class="flex-1">
             <h3 class="text-sm font-semibold text-text-secondary tracking-tight">{r.items.rustSDK}</h3>
             <p class="mt-2 text-sm text-text-muted leading-relaxed">{r.items.rustSDKDesc}</p>
           </div>
-          <div class="mt-4 sm:mt-0 shrink-0 text-[12px] font-mono text-text-muted/70 flex items-center gap-1"><span class="ms-icon ms-icon-sm">radio_button_unchecked</span> 3-phase plan</div>
+          <div class="mt-4 sm:mt-0 shrink-0 text-xs font-mono text-text-muted/70 flex items-center gap-1"><span class="ms-icon ms-icon-sm">radio_button_unchecked</span> 3-phase plan</div>
         </article>
       </div>
     </section>
@@ -307,7 +307,7 @@ const r = t(locale).roadmap;
 
       <header class="reveal px-6 sm:px-8 md:pl-20 md:pr-16 pt-10 pb-6">
         <div class="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-          <span class="inline-flex items-center rounded-full bg-gradient-to-r from-proof/15 to-info/15 ring-1 ring-proof/30 px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium text-proof-light">{r.status.target}</span>
+          <span class="inline-flex items-center rounded-full bg-gradient-to-r from-proof/15 to-info/15 ring-1 ring-proof/30 px-3 py-1 text-xs uppercase tracking-[0.2em] font-medium text-proof-light">{r.status.target}</span>
           <span class="font-mono text-sm text-text-primary">{r.phases.target.anchor}</span>
           <span class="text-sm text-text-muted">· {r.phases.target.desc}</span>
         </div>
@@ -318,7 +318,7 @@ const r = t(locale).roadmap;
         <article class="reveal rounded-2xl bg-gradient-to-br from-proof/[0.06] to-info/[0.04] ring-1 ring-proof/15 p-1.5 max-w-2xl">
           <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-6">
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.apiFreeze}</h3>
-            <p class="mt-2 text-[13.5px] text-text-secondary leading-relaxed">{r.items.apiFreezeDesc}</p>
+            <p class="mt-2 text-sm text-text-secondary leading-relaxed">{r.items.apiFreezeDesc}</p>
           </div>
         </article>
       </div>

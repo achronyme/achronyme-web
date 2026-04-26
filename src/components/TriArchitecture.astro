@@ -49,7 +49,7 @@ const machines = [
   <div class="px-8 lg:px-10 pt-16 lg:pt-24 pb-10 lg:pb-14">
     <div class="reveal">
       <span
-        class="inline-flex items-center rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-[10px] uppercase tracking-[0.25em] font-medium text-text-secondary"
+        class="inline-flex items-center rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs uppercase tracking-[0.25em] font-medium text-text-secondary"
       >
         {tri.eyebrow}
       </span>
@@ -81,12 +81,12 @@ const machines = [
                 <span class="block text-xs text-proof-light uppercase tracking-[0.15em] font-medium">{tri.akron.role}</span>
               </div>
             </div>
-            <p class="relative text-[15px] leading-relaxed text-text-secondary flex-1">
+            <p class="relative text-base leading-relaxed text-text-secondary flex-1">
               {tri.akron.desc}
             </p>
             <div class="relative mt-6 flex flex-wrap gap-2">
               {tri.akron.capabilities.map((cap: string) => (
-                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-sm">
+                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-xs font-medium text-text-secondary backdrop-blur-sm">
                   {cap}
                 </span>
               ))}
@@ -110,12 +110,12 @@ const machines = [
                 <span class="block text-xs text-valid uppercase tracking-[0.15em] font-medium">{tri.artik.role}</span>
               </div>
             </div>
-            <p class="relative text-[15px] leading-relaxed text-text-secondary flex-1">
+            <p class="relative text-base leading-relaxed text-text-secondary flex-1">
               {tri.artik.desc}
             </p>
             <div class="relative mt-6 flex flex-wrap gap-2">
               {tri.artik.capabilities.map((cap: string) => (
-                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-sm">
+                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-xs font-medium text-text-secondary backdrop-blur-sm">
                   {cap}
                 </span>
               ))}
@@ -139,12 +139,12 @@ const machines = [
                 <span class="block text-xs text-info uppercase tracking-[0.15em] font-medium">{tri.lysis.role}</span>
               </div>
             </div>
-            <p class="relative text-[15px] leading-relaxed text-text-secondary lg:flex-1 lg:max-w-2xl">
+            <p class="relative text-base leading-relaxed text-text-secondary lg:flex-1 lg:max-w-2xl">
               {tri.lysis.desc}
             </p>
             <div class="relative flex flex-wrap gap-2 lg:justify-end">
               {tri.lysis.capabilities.map((cap: string) => (
-                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-[11px] font-medium text-text-secondary backdrop-blur-sm">
+                <span class="rounded-full bg-white/[0.06] ring-1 ring-white/[0.10] px-2.5 py-1 text-xs font-medium text-text-secondary backdrop-blur-sm">
                   {cap}
                 </span>
               ))}

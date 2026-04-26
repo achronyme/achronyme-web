@@ -11,7 +11,7 @@ const filtered = headings.filter(h => h.depth === 2 || h.depth === 3);
 {filtered.length > 0 && (
   <aside class="hidden xl:block w-[220px] shrink-0 border-l border-subtle/30">
     <nav class="sticky top-[92px] max-h-[calc(100vh-92px)] overflow-y-auto py-8 pl-5 pr-4 doc-scroll">
-      <p class="flex items-center gap-1.5 text-[14px] text-text-secondary font-semibold mb-4">
+      <p class="flex items-center gap-1.5 text-sm text-text-secondary font-semibold mb-4">
         <svg class="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
         </svg>
@@ -23,7 +23,7 @@ const filtered = headings.filter(h => h.depth === 2 || h.depth === 3);
             <a
               href={`#${h.slug}`}
               class:list={[
-                'toc-link block py-1.5 text-[14px] leading-snug transition-all duration-150',
+                'toc-link block py-1.5 text-sm leading-snug transition-all duration-150',
                 'text-text-muted hover:text-text-primary',
                 h.depth === 3 ? 'pl-3' : '',
               ]}
