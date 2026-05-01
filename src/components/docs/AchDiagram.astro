@@ -1,0 +1,49 @@
+---
+/**
+ * Build-time SVG diagram wrapper.
+ *
+ * Receives a fully-rendered SVG string from the @achronyme/diagrams library
+ * (rendered at Astro build time, not in the browser). The component just
+ * styles the surrounding panel and forwards a11y metadata.
+ */
+interface Props {
+  svg: string;
+  ariaLabel?: string;
+  align?: 'left' | 'center';
+}
+
+const { svg, ariaLabel, align = 'center' } = Astro.props;
+---
+
+<div class:list={['ach-diagram', `align-${align}`]} role="figure" aria-label={ariaLabel}>
+  <Fragment set:html={svg} />
+</div>
+
+<style>
+  .ach-diagram {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: var(--ach-diag-panel-bg, #111114);
+    border: 1px solid var(--ach-diag-panel-border, #1f1f24);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+
+  .ach-diagram.align-center {
+    display: flex;
+    justify-content: center;
+  }
+
+  .ach-diagram :global(svg) {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  @media (prefers-color-scheme: light) {
+    .ach-diagram {
+      background: var(--ach-diag-panel-bg, #ffffff);
+      border-color: var(--ach-diag-panel-border, #e4e4e7);
+    }
+  }
+</style>

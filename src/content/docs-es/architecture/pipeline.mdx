@@ -3,52 +3,14 @@ title: "Visión General del Pipeline"
 description: "El pipeline de compilación desde el código fuente hasta las pruebas."
 ---
 
-import Mermaid from '../../../components/docs/Mermaid.astro';
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { compilePipelineSvgEs } from '../../../lib/diagrams/compile-pipeline';
 
 Achronyme compila código fuente a través de cuatro caminos distintos: **Modo VM** para ejecución general, **Modo circuito** para generación de restricciones vía `ach circuit`, **Modo prove** para generación de pruebas en línea vía bloques `prove {}`, y **Modo Circom** para compilar archivos `.circom` a través del mismo pipeline de backend.
 
 ## Diagrama del Pipeline
 
-<Mermaid chart={`graph TD
-    SRC["Fuente (.ach)"] --> PARSER["Parser<br/><small>Pratt + descenso recursivo</small>"]
-    PARSER --> AST["AST"]
-
-    CIRCOM_SRC["Fuente (.circom)"] --> CIRCOM_PARSER["Parser Circom<br/><small>Pratt escrito a mano</small>"]
-    CIRCOM_PARSER --> CIRCOM_AST["AST Circom"]
-    CIRCOM_AST --> ANALYSIS["Análisis de Constraints<br/><small>&lt;-- sin === = error</small>"]
-    ANALYSIS --> CIRCOM_LOWER["Lowering Circom<br/><small>signals · expresiones · statements</small>"]
-    CIRCOM_LOWER --> PROVEIR2["ProveIR"]
-
-    AST --> BC["Compilador de Bytecode"]
-    BC --> OPT_BC["Optimizador de Bytecode<br/><small>peephole · const fold · dead store</small>"]
-    OPT_BC --> VM["VM<br/><small>basada en registros, 43 opcodes</small>"]
-
-    AST --> PROVEIR["Compilador ProveIR<br/><small>plantillas de circuito pre-compiladas</small>"]
-    PROVEIR --> BYTES["Bytes serializados<br/><small>constant pool TAG_BYTES</small>"]
-    BYTES --> VM
-
-    VM -->|"bloque prove { }"| INST["ProveIR Instanciar<br/><small>capturar valores del scope</small>"]
-    INST --> IR["SSA IR"]
-    PROVEIR2 -->|"ach circom"| INST
-
-    AST -->|"ach circuit"| LOWER["Bajada a IR"]
-    LOWER --> IR
-
-    IR --> OPT["Optimizar<br/><small>const fold · bound inference · CSE · DCE</small>"]
-    OPT --> TAINT["Análisis de Taint<br/><small>warnings sub-restringidos</small>"]
-    TAINT --> BOOL["Propagación Booleana<br/><small>omitir enforcement redundante</small>"]
-
-    BOOL --> R1CS["Backend R1CS"]
-    BOOL --> PLONK["Backend Plonkish"]
-
-    R1CS --> GROTH["Groth16<br/><small>ark-groth16 + ark-bn254</small>"]
-    R1CS --> EXPORT[".r1cs + .wtns<br/><small>compatible con snarkjs</small>"]
-    PLONK --> HALO["PlonK<br/><small>halo2 KZG (fork PSE)</small>"]
-
-    GROTH --> PROOF["Prueba"]
-    HALO --> PROOF
-    PROOF --> SOL["Verificador Solidity<br/><small>verificación on-chain</small>"]
-`} />
+<AchDiagram svg={compilePipelineSvgEs} ariaLabel="Pipeline de compilación de Achronyme" />
 
 ## Etapa 1: Parseo
 
