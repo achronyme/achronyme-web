@@ -3,6 +3,9 @@ title: "Crate Map"
 description: "Workspace crate dependencies and responsibilities."
 ---
 
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { crateMapSvgEn } from '../../../lib/diagrams/crate-map';
+
 The Achronyme workspace contains **19 crates**. All share the same version and Rust edition. The post-cleanup layering (closed 2026-04-24) groups them into four tiers: leaves with no workspace dependencies, vocabulary crates, IR/compiler stack, and top-level orchestration.
 
 ## Crate overview
@@ -110,37 +113,7 @@ User-facing binary. Dispatches `ach run`, `ach circuit`, `ach circom`, `ach prov
 
 ## Dependency graph
 
-```text
-diagnostics ─── lysis-types ─── ach-macros        (Tier 0 leaves)
-    │                                  │
-    ├── achronyme-parser               │
-    │       │                          │
-    │       └── resolve                │
-    │              │                   │
-    ├── memory ────┼── constraints     │
-    │              │       │           │
-    │              ├── ir-core         │
-    │              │       │           │
-    │              ├── ir-forge ◀──────┴── (uses lysis-types)
-    │              │       │
-    │              ├── ir ─┘
-    │              │
-    │              ├── zkc
-    │              │
-    │              ├── circom
-    │              │
-    │              ├── akronc
-    │              │
-    │              ├── akron
-    │              │       │
-    │              ├── artik
-    │              │       │
-    │              └── lysis ◀───── (uses artik, lysis-types)
-    │
-    ├── proving
-    ├── achronyme-std
-    └── cli ◀── (uses everything)
-```
+<AchDiagram svg={crateMapSvgEn} ariaLabel="Achronyme crate dependency graph" />
 
 ## Key entry points
 

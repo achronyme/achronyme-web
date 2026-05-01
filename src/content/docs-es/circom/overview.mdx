@@ -3,7 +3,8 @@ title: Descripcion General de Interop con Circom
 description: Reutiliza templates y circuitos completos de Circom dentro de programas y pruebas Achronyme.
 ---
 
-import Mermaid from '../../../components/docs/Mermaid.astro';
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { circomOverviewSvgEs } from '../../../lib/diagrams/circom-overview';
 
 Achronyme compila archivos `.circom` a traves del mismo pipeline backend que sus propios circuitos `.ach`. Esto significa que puedes reutilizar gadgets probados de [circomlib](https://github.com/iden3/circomlib) — Poseidon, MiMC, EdDSA, BabyJubjub, Num2Bits, comparadores — sin reescribirlos en Achronyme.
 
@@ -31,31 +32,7 @@ La primera forma reemplaza el circuito Achronyme completo con el de Circom. Las 
 
 ## Pipeline de un Vistazo
 
-<Mermaid chart={`graph LR
-    CIRCOM[".circom source"]:::input
-    ACH[".ach source"]:::input
-
-    CIRCOM --> PARSER["Circom Parser<br/><small>circom/src/parser</small>"]
-    ACH --> APARSER["Achronyme Parser"]
-
-    PARSER --> ANALYSIS["Constraint Analysis<br/><small>E100-E102, W101-W103</small>"]
-    ANALYSIS --> LOWER["Lowering<br/><small>signals, expressions, statements</small>"]
-    LOWER --> PROVEIR["ProveIR"]
-
-    APARSER --> ACOMP["Achronyme Compiler"]
-    ACOMP -->|"prove { } block"| PROVEIR
-    ACOMP -->|"imported templates"| PROVEIR
-
-    PROVEIR --> INST["Instantiate<br/><small>capture scope values</small>"]
-    INST --> IR["SSA IR"]
-    IR --> OPT["Optimize"]
-    OPT --> R1CS["R1CS"]
-    OPT --> PLONK["Plonkish"]
-    R1CS --> GROTH["Groth16"]
-    PLONK --> HALO["PlonK (halo2)"]
-
-    classDef input fill:#1e293b,stroke:#64748b,color:#e2e8f0
-`} />
+<AchDiagram svg={circomOverviewSvgEs} ariaLabel="Pipeline de interop con Circom" />
 
 Ambos lenguajes fuente convergen en `ProveIR` antes de que ocurra cualquier optimizacion o trabajo de backend. Los templates de Circom se convierten en nodos regulares de circuito que optimizan, deduplican y prueban junto al codigo Achronyme nativo.
 

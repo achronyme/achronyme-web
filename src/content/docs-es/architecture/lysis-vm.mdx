@@ -3,6 +3,9 @@ title: "Lysis VM (en progreso)"
 description: "Tercera VM: instanciación estructural de plantillas con hash-consing. Estado: Fase 3.B entregada."
 ---
 
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { lysisArchitectureSvgEs } from '../../../lib/diagrams/lysis-architecture';
+
 ## Estado
 
 Lysis está **en progreso**. Las fases 0–2 + 3.A + 3.B + 3.C.6 P1 + P1.5 están entregadas (al 2026-04-24). La Fase 3.C (oracle gate, 7 fixtures × 3 fields, 38 E2E de circom vía la ruta Lysis, HARD GATE de SHA-256(64)) es el siguiente entregable.
@@ -17,24 +20,7 @@ Concretamente: el legacy `ir::prove_ir::instantiate` (~3,025 LOC) expande planti
 
 ## Dónde se ubica Lysis
 
-```text
-ProveIR
-  │
-  ▼
-ir-forge::lysis_lift::walker  ── BTA + extract + diff + symbolic ──▶  Lysis bytecode (.lysis)
-                                                                              │
-                                                                              ▼
-                                                              lysis::execute (interpreter)
-                                                                              │
-                                                                              ▼
-                                                              InterningSink (hash-cons)
-                                                                              │
-                                                                              ▼
-                                                              Vec<Instruction<F>>  (IR-SSA)
-                                                                              │
-                                                                              ▼
-                                                                          R1CS / Plonkish
-```
+<AchDiagram svg={lysisArchitectureSvgEs} ariaLabel="Ubicación de Lysis VM en el pipeline" />
 
 El walker es el **lifter del lado IR**: consume `ExtendedInstruction<F>` (de `ir-forge`) y produce bytecode Lysis. El ejecutor es el **lado VM**: corre ese bytecode y emite SSA vía un sink.
 

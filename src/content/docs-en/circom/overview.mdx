@@ -3,7 +3,8 @@ title: Circom Interop Overview
 description: Reuse Circom templates and full circuits inside Achronyme programs and proofs.
 ---
 
-import Mermaid from '../../../components/docs/Mermaid.astro';
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { circomOverviewSvgEn } from '../../../lib/diagrams/circom-overview';
 
 Achronyme compiles `.circom` files through the same backend pipeline as its own `.ach` circuits. This means you can reuse battle-tested gadgets from [circomlib](https://github.com/iden3/circomlib) — Poseidon, MiMC, EdDSA, BabyJubjub, Num2Bits, comparators — without rewriting them in Achronyme.
 
@@ -31,31 +32,7 @@ The first form replaces the entire Achronyme circuit with the Circom one. The ot
 
 ## Pipeline at a Glance
 
-<Mermaid chart={`graph LR
-    CIRCOM[".circom source"]:::input
-    ACH[".ach source"]:::input
-
-    CIRCOM --> PARSER["Circom Parser<br/><small>circom/src/parser</small>"]
-    ACH --> APARSER["Achronyme Parser"]
-
-    PARSER --> ANALYSIS["Constraint Analysis<br/><small>E100-E102, W101-W103</small>"]
-    ANALYSIS --> LOWER["Lowering<br/><small>signals, expressions, statements</small>"]
-    LOWER --> PROVEIR["ProveIR"]
-
-    APARSER --> ACOMP["Achronyme Compiler"]
-    ACOMP -->|"prove { } block"| PROVEIR
-    ACOMP -->|"imported templates"| PROVEIR
-
-    PROVEIR --> INST["Instantiate<br/><small>capture scope values</small>"]
-    INST --> IR["SSA IR"]
-    IR --> OPT["Optimize"]
-    OPT --> R1CS["R1CS"]
-    OPT --> PLONK["Plonkish"]
-    R1CS --> GROTH["Groth16"]
-    PLONK --> HALO["PlonK (halo2)"]
-
-    classDef input fill:#1e293b,stroke:#64748b,color:#e2e8f0
-`} />
+<AchDiagram svg={circomOverviewSvgEn} ariaLabel="Circom interop pipeline" />
 
 Both source languages converge on `ProveIR` before any optimization or backend work happens. Circom templates become regular circuit nodes that optimize, deduplicate, and prove alongside Achronyme-native code.
 

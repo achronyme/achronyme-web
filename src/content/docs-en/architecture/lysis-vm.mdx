@@ -3,6 +3,9 @@ title: "Lysis VM (in-progress)"
 description: "Third VM: structural template instantiation with hash-consing. Status: Phase 3.B shipped."
 ---
 
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { lysisArchitectureSvgEn } from '../../../lib/diagrams/lysis-architecture';
+
 ## Status
 
 Lysis is **in-progress**. Phases 0–2 + 3.A + 3.B + 3.C.6 P1 + P1.5 are shipped (as of 2026-04-24). Phase 3.C (oracle gate, 7 fixtures × 3 fields, 38 circom E2E via Lysis path, SHA-256(64) HARD GATE) is the next deliverable.
@@ -17,24 +20,7 @@ Concretely: the legacy `ir::prove_ir::instantiate` (~3,025 LOC) eagerly expands 
 
 ## Where Lysis sits
 
-```text
-ProveIR
-  │
-  ▼
-ir-forge::lysis_lift::walker  ── BTA + extract + diff + symbolic ──▶  Lysis bytecode (.lysis)
-                                                                              │
-                                                                              ▼
-                                                              lysis::execute (interpreter)
-                                                                              │
-                                                                              ▼
-                                                              InterningSink (hash-cons)
-                                                                              │
-                                                                              ▼
-                                                              Vec<Instruction<F>>  (IR-SSA)
-                                                                              │
-                                                                              ▼
-                                                                          R1CS / Plonkish
-```
+<AchDiagram svg={lysisArchitectureSvgEn} ariaLabel="Lysis VM placement in the pipeline" />
 
 The walker is the **IR-side lifter**: it consumes `ExtendedInstruction<F>` (from `ir-forge`) and produces Lysis bytecode. The executor is the **VM side**: it runs that bytecode and emits SSA via a sink.
 

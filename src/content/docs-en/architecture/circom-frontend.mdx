@@ -3,6 +3,9 @@ title: "Circom Frontend"
 description: "How .circom files reach ProveIR: lexer, parser, analysis, lowering, and component composition."
 ---
 
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { circomFrontendSvgEn } from '../../../lib/diagrams/circom-frontend';
+
 ## Overview
 
 The `circom` crate is the Achronyme implementation of the Circom 2.x compiler — frontend only. Circuit semantics are lowered to ProveIR, then handed off to the same instantiation → IR → backend pipeline as `prove {}` blocks.
@@ -11,27 +14,7 @@ For user-facing usage (importing templates, calling them from `.ach`), see the [
 
 ## Pipeline
 
-```
-.circom source
-    │
-    ▼  circom::lexer
-Tokens
-    │
-    ▼  circom::parser
-Circom AST
-    │
-    ▼  circom::analysis
-Validated AST + diagnostics
-    │
-    ▼  circom::lowering
-ProveIR + Artik bytecode (for non-inlinable functions)
-    │
-    ▼  ProveIR instantiate
-SSA IR
-    │
-    ▼  R1CS backend
-Constraints
-```
+<AchDiagram svg={circomFrontendSvgEn} ariaLabel="Circom frontend pipeline" />
 
 Entry point: `compile_to_prove_ir(source: &str) -> Result<CircomCompileResult, CircomError>` (file: `crates/circom/src/lib.rs`).
 
