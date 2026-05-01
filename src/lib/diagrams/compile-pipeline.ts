@@ -7,7 +7,7 @@
  * custom properties for theming.
  */
 
-import { flowchart } from '@achronyme/diagrams';
+import { flowchart } from '@achronyme/achdiagrams';
 
 interface Labels {
   src: string;

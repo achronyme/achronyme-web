@@ -5,7 +5,7 @@
  * docs-{en,es}/architecture/circom-frontend.mdx.
  */
 
-import { flowchart } from '@achronyme/diagrams';
+import { flowchart } from '@achronyme/achdiagrams';
 
 interface Labels {
   source: string;

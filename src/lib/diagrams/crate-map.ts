@@ -12,7 +12,7 @@
  * tier-leaf annotations differ between EN and ES.
  */
 
-import { flowchart } from '@achronyme/diagrams';
+import { flowchart } from '@achronyme/achdiagrams';
 
 interface Labels {
   tier0: string;

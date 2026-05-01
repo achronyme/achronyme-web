@@ -4,7 +4,7 @@
  * Migrated from the Mermaid `graph LR` in docs-{en,es}/circom/overview.mdx.
  */
 
-import { flowchart } from '@achronyme/diagrams';
+import { flowchart } from '@achronyme/achdiagrams';
 
 interface Labels {
   circom: string;

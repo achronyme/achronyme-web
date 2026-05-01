@@ -4,7 +4,7 @@
  * Migrated from the ASCII art in docs-{en,es}/architecture/lysis-vm.mdx.
  */
 
-import { flowchart } from '@achronyme/diagrams';
+import { flowchart } from '@achronyme/achdiagrams';
 
 interface Labels {
   proveir: string;
