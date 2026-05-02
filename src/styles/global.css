@@ -11,12 +11,16 @@
 
   --color-text-primary: #FBFBFE;
   --color-text-secondary: #D2D2E0;
-  --color-text-muted: #9C9CB0;
+  --color-text-muted: #A6A6BC;
 
   --color-valid: #34D399;
+  --color-valid-light: #6EE7B7;
   --color-error: #F87171;
+  --color-error-light: #FCA5A5;
   --color-warn: #FBBF24;
+  --color-warn-light: #FCD34D;
   --color-info: #60A5FA;
+  --color-info-light: #93C5FD;
 
   --font-mono: "Geist Mono Variable", "JetBrains Mono Variable", ui-monospace, monospace;
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
@@ -169,7 +173,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--color-proof) 50%, var(--color-subtle));
+  background: color-mix(in srgb, var(--color-proof) 70%, var(--color-subtle));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-proof) 35%, transparent);
 }
 
 /* ── Documentation scrollbars ────────────────────────── */

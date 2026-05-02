@@ -97,9 +97,18 @@ const s = t(locale);
     <div class="reveal flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <span class="text-sm text-text-muted">{s.ecosystem.title}</span>
       <div class="flex flex-wrap gap-2">
-        {s.ecosystem.outputs.map((item: string) => (
-          <span class="rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs font-medium text-proof-light">{item}</span>
-        ))}
+        {s.ecosystem.outputs.map((item: string, i: number) => {
+          const ecoClasses = [
+            'bg-proof/8 ring-proof/20 text-proof-light',
+            'bg-valid/8 ring-valid/20 text-valid',
+            'bg-info/8 ring-info/20 text-info',
+            'bg-warn/8 ring-warn/20 text-warn',
+          ];
+          const cls = ecoClasses[i % ecoClasses.length];
+          return (
+            <span class={`rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs font-medium ${cls}`}>{item}</span>
+          );
+        })}
       </div>
     </div>
   </div>
@@ -116,11 +125,11 @@ const s = t(locale);
   <div id="features-wrapper">
   <!-- Sticky feature nav — docks under the main header.
        Geometry: banner (36px) + header (56px) = 92px -->
-  <nav id="feature-nav" class="sticky top-[92px] z-40 bg-void/80 backdrop-blur-xl border-b border-white/[0.06] flex">
-    <a href="#feat-vm" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-vm">VM</a>
-    <a href="#feat-circuit" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-circuit">Circuit</a>
-    <a href="#feat-deploy" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-deploy">Deploy</a>
-    <a href="#feat-prove" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary" data-target="feat-prove">Prove</a>
+  <nav id="feature-nav" class="sticky top-[92px] z-40 bg-void/80 backdrop-blur-xl border-b border-white/[0.08] flex">
+    <a href="#feat-vm" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary border-b-2 border-transparent" data-target="feat-vm" data-color="valid">VM</a>
+    <a href="#feat-circuit" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary border-b-2 border-transparent" data-target="feat-circuit" data-color="info">Circuit</a>
+    <a href="#feat-deploy" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary border-b-2 border-transparent" data-target="feat-deploy" data-color="warn">Deploy</a>
+    <a href="#feat-prove" class="feature-tab flex-1 px-4 py-4 text-center text-sm font-medium text-text-muted transition-colors hover:text-text-primary border-b-2 border-transparent" data-target="feat-prove" data-color="proof">Prove</a>
   </nav>
 
   <!-- VM Section -->
@@ -260,7 +269,7 @@ const s = t(locale);
     <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal">
-      <span class="inline-flex items-center rounded-full bg-white/[0.04] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs uppercase tracking-[0.25em] font-medium text-text-secondary">vs Circom</span>
+      <span class="inline-flex items-center rounded-full bg-info/8 ring-1 ring-info/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] px-3 py-1 text-xs uppercase tracking-[0.25em] font-medium text-info-light">vs Circom</span>
       <h2 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{s.comparison.title}</h2>
       <p class="mt-4 text-text-secondary text-lg lg:text-xl max-w-2xl mx-auto">{s.comparison.subtitle}</p>
     </div>
@@ -351,16 +360,15 @@ const s = t(locale);
     <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
     <div class="reveal grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
       {[
-        { value: '2,700+', label: 'tests' },
-        { value: '2', label: 'proof backends' },
-        { value: '50', label: 'methods' },
-        { value: '0', label: 'JS deps' },
+        { value: '2,700+', label: 'tests', color: 'valid' },
+        { value: '2', label: 'proof backends', color: 'info' },
+        { value: '50', label: 'methods', color: 'proof' },
+        { value: '0', label: 'JS deps', color: 'warn' },
       ].map((stat) => (
-        <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-5 px-4 text-center">
-            <span class="block text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">{stat.value}</span>
-            <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{stat.label}</span>
-          </div>
+        <div class="rounded-xl bg-[#0C0C12] border border-white/[0.10] pt-4 pb-5 px-4 text-center relative overflow-hidden">
+          <div class={`absolute top-0 left-0 right-0 h-[2px] bg-${stat.color}`}></div>
+          <span class="block text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">{stat.value}</span>
+          <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{stat.label}</span>
         </div>
       ))}
     </div>
@@ -384,20 +392,27 @@ const s = t(locale);
   // -- Feature nav: scroll-driven active tab --
   const featureTabs = document.querySelectorAll('.feature-tab');
   const featureSections = document.querySelectorAll('[id^="feat-"]');
-  const activeClass = 'text-proof-light';
-  const borderClass = 'border-b-2';
-  const borderColorClass = 'border-proof';
+  const colorMap = {
+    'feat-vm': 'valid',
+    'feat-circuit': 'info',
+    'feat-deploy': 'warn',
+    'feat-prove': 'proof'
+  };
 
   function setActiveTab(id) {
+    const color = colorMap[id] || 'proof';
     featureTabs.forEach((tab) => {
       const isActive = tab.getAttribute('data-target') === id;
-      tab.classList.toggle(activeClass, isActive);
-      tab.classList.toggle(borderClass, isActive);
-      tab.classList.toggle(borderColorClass, isActive);
+      const tabColor = tab.getAttribute('data-color') || 'proof';
+
+      // Reset all color variants
+      tab.classList.remove('text-valid-light', 'text-info-light', 'text-warn-light', 'text-proof-light', 'text-text-muted');
+      tab.classList.remove('border-valid', 'border-info', 'border-warn', 'border-proof', 'border-transparent');
+
       if (isActive) {
-        tab.classList.remove('text-text-muted');
+        tab.classList.add(`text-${color}-light`, 'border-b-2', `border-${color}`);
       } else {
-        tab.classList.add('text-text-muted');
+        tab.classList.add('text-text-muted', 'border-transparent');
       }
     });
   }
