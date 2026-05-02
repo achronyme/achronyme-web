@@ -15,7 +15,7 @@ interface Props {
 const { svg, ariaLabel, align = 'center' } = Astro.props;
 ---
 
-<div class:list={['ach-diagram', `align-${align}`]} role="figure" aria-label={ariaLabel}>
+<div class="ach-diagram" role="figure" aria-label={ariaLabel} data-align={align}>
   <Fragment set:html={svg} />
 </div>
 
@@ -26,21 +26,22 @@ const { svg, ariaLabel, align = 'center' } = Astro.props;
     background: var(--ach-diag-panel-bg, #111114);
     border: 1px solid var(--ach-diag-panel-border, #1f1f24);
     border-radius: 12px;
-    overflow-x: auto;
-  }
-
-  .ach-diagram.align-center {
-    display: flex;
-    justify-content: center;
+    /* Scroll in both axes when the SVG is bigger than the panel — vertical
+       for tall TB pipelines, horizontal for wide LR overviews. */
+    overflow: auto;
+    max-height: 80vh;
   }
 
   .ach-diagram :global(svg) {
     display: block;
     margin: 0 auto;
+    /* Stretch up to fill the panel when the natural SVG is narrower
+       (no more wasted horizontal margins on tall+narrow diagrams), but
+       never shrink below the natural width — wider diagrams overflow into
+       horizontal scroll instead of squashing their nodes. */
     width: 100%;
+    min-width: max-content;
     height: auto;
-    max-width: 100%;
-    max-height: 70vh;
   }
 
   @media (prefers-color-scheme: light) {
