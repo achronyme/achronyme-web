@@ -58,13 +58,13 @@ Achronyme has two execution modes from the same source:
 
 **Circuit mode** (`ach circuit`) — Compiles to arithmetic constraints over a configurable prime field (BN254, BLS12-381, or Goldilocks via `--prime`). No loops at runtime, no I/O — everything is unrolled and flattened into a constraint system for zero-knowledge proofs.
 
-The `prove` block bridges both: it compiles its body as a circuit via ProveIR at compile time, captures variables from scope, and produces a cryptographic proof at runtime — all in one expression. Witnesses are auto-inferred; only public inputs need to be declared.
+The `prove` block bridges both: it compiles its body as a circuit via ProveIR at compile time, captures variables from scope, and produces a cryptographic proof at runtime, all in one expression. Witnesses are auto-inferred; only public inputs need to be declared.
 
 <AchDiagram svg={introPipelineSvgEn} ariaLabel="Achronyme execution modes overview" />
 
 ## Status
 
-- 2,543 unit tests + 162 E2E integration tests
+- 3,695 unit tests + 162 E2E integration tests
 - Cross-validated against snarkjs (independent constraint verification)
 - 2 ZK backends: R1CS/Groth16 + Plonkish/KZG-PlonK
 - Native in-process proof generation (no external tools)

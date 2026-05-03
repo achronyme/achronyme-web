@@ -54,17 +54,17 @@ print(proof_json(p))  // Prueba Groth16, verificable on-chain
 
 Achronyme tiene dos modos de ejecución desde el mismo código fuente:
 
-**Modo VM** (`ach run`) — Lenguaje completo: closures, recursión, GC, arrays, maps, strings, E/S. El código se ejecuta como cualquier lenguaje de scripting.
+**Modo VM** (`ach run`): Lenguaje completo: closures, recursión, GC, arrays, maps, strings, E/S. El código se ejecuta como cualquier lenguaje de scripting.
 
-**Modo circuito** (`ach circuit`) — Compila a restricciones aritméticas sobre un campo primo configurable (BN254, BLS12-381 o Goldilocks via `--prime`). Sin bucles en tiempo de ejecución, sin E/S — todo se desenrolla y aplana en un sistema de restricciones para pruebas de conocimiento cero.
+**Modo circuito** (`ach circuit`): Compila a restricciones aritméticas sobre un campo primo configurable (BN254, BLS12-381 o Goldilocks via `--prime`). Sin bucles en tiempo de ejecución, sin E/S; todo se desenrolla y aplana en un sistema de restricciones para pruebas de conocimiento cero.
 
-El bloque `prove {}` conecta ambos: se ejecuta dentro de la VM, compila su cuerpo como un circuito, genera un testigo a partir de variables capturadas y produce una prueba criptográfica — todo en una sola expresión.
+El bloque `prove {}` conecta ambos: se ejecuta dentro de la VM, compila su cuerpo como un circuito, genera un testigo a partir de variables capturadas y produce una prueba criptográfica, todo en una sola expresión.
 
 <AchDiagram svg={introPipelineSvgEs} ariaLabel="Vista general de los modos de ejecución de Achronyme" />
 
 ## Estado
 
-- 2,543 pruebas unitarias + 162 pruebas E2E de integración
+- 3,695 pruebas unitarias + 162 pruebas E2E de integración
 - Cross-validado contra snarkjs (verificación independiente de constraints)
 - 2 backends ZK: R1CS/Groth16 + Plonkish/KZG-PlonK
 - Generación de pruebas nativa en proceso (sin herramientas externas)

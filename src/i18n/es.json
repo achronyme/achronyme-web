@@ -77,7 +77,7 @@
     "achSteps": "6 lineas, 1 archivo"
   },
   "stats": {
-    "tests": "2,000+ tests",
+    "tests": "4,000+ tests",
     "backends": "2 proof backends",
     "natives": "50 metodos",
     "deps": "0 JS deps"

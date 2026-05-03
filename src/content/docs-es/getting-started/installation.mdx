@@ -34,13 +34,13 @@ El binario se encuentra en `target/release/ach`.
 ### Verificar la compilación
 
 ```bash
-cargo test --workspace     # 2,543 pruebas unitarias
+cargo test --workspace     # 3,695 pruebas unitarias
 bash test/run_tests.sh     # 162 pruebas E2E de integración
 ```
 
 ## Opcional: Compatibilidad con snarkjs
 
-Achronyme incluye backends nativos de Groth16 (ark-groth16) y PlonK (halo2-KZG) — no se necesitan herramientas externas. Las pruebas se generan en proceso.
+Achronyme incluye backends nativos de Groth16 (ark-groth16) y PlonK (halo2-KZG), no se necesitan herramientas externas. Las pruebas se generan en proceso.
 
 Los archivos `.r1cs` y `.wtns` generados también son compatibles con snarkjs para flujos de trabajo externos:
 

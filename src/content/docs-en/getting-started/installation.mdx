@@ -34,13 +34,13 @@ The binary is at `target/release/ach`.
 ### Verify the build
 
 ```bash
-cargo test --workspace     # 2,543 unit tests
+cargo test --workspace     # 3,695 unit tests
 bash test/run_tests.sh     # 162 E2E integration tests
 ```
 
 ## Optional: snarkjs Compatibility
 
-Achronyme includes native Groth16 (ark-groth16) and PlonK (halo2-KZG) backends — no external tools needed. Proofs are generated in-process.
+Achronyme includes native Groth16 (ark-groth16) and PlonK (halo2-KZG) backends, no external tools needed. Proofs are generated in-process.
 
 The output `.r1cs` and `.wtns` files are also compatible with snarkjs for external workflows:
 
