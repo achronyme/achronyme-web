@@ -5,6 +5,13 @@
  * Receives a fully-rendered SVG string from the @achronyme/achdiagrams library
  * (rendered at Astro build time, not in the browser). The component just
  * styles the surrounding panel and forwards a11y metadata.
+ *
+ * Sizing policy:
+ *  - The SVG keeps its natural width and height — never rescaled.
+ *  - The panel grows vertically to fit (no `max-height`, no vertical scroll).
+ *  - When the SVG is wider than the panel, a thin horizontal scrollbar appears
+ *    styled with the same tokens as `.doc-scroll` and `.doc-prose pre` in
+ *    `src/styles/global.css`.
  */
 interface Props {
   svg: string;
@@ -26,22 +33,43 @@ const { svg, ariaLabel, align = 'center' } = Astro.props;
     background: var(--ach-diag-panel-bg, #111114);
     border: 1px solid var(--ach-diag-panel-border, #1f1f24);
     border-radius: 12px;
-    /* Scroll in both axes when the SVG is bigger than the panel — vertical
-       for tall TB pipelines, horizontal for wide LR overviews. */
-    overflow: auto;
-    max-height: 80vh;
+    /* Horizontal scroll only — let the panel grow to whatever vertical
+       space the SVG needs. */
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-subtle, #303038) transparent;
   }
 
   .ach-diagram :global(svg) {
+    /* Natural size — no rescaling. The SVG carries its own width/height
+       attributes from the layout engine. Centering is done with auto
+       margins so the diagram sits in the middle when it's narrower than
+       the panel; wider diagrams overflow into the horizontal scroll. */
     display: block;
     margin: 0 auto;
-    /* Stretch up to fill the panel when the natural SVG is narrower
-       (no more wasted horizontal margins on tall+narrow diagrams), but
-       never shrink below the natural width — wider diagrams overflow into
-       horizontal scroll instead of squashing their nodes. */
-    width: 100%;
-    min-width: max-content;
-    height: auto;
+  }
+
+  .ach-diagram[data-align='left'] :global(svg) {
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  /* Webkit scrollbar — matches `.doc-scroll` / `.doc-prose pre`. */
+  .ach-diagram::-webkit-scrollbar {
+    height: 6px;
+  }
+  .ach-diagram::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0 10px;
+  }
+  .ach-diagram::-webkit-scrollbar-thumb {
+    background: var(--color-subtle, #303038);
+    border-radius: 3px;
+  }
+  .ach-diagram::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted, #A6A6BC);
   }
 
   @media (prefers-color-scheme: light) {
