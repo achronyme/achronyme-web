@@ -3,6 +3,9 @@ title: Introducción
 description: Qué es Achronyme y por qué existe.
 ---
 
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { introPipelineSvgEs } from '../../../lib/diagrams/intro-pipeline';
+
 Achronyme es un lenguaje de programación para circuitos de conocimiento cero.
 
 Escribe código legible. Decide qué se demuestra. El mismo lenguaje para ejecución general y compilación de circuitos ZK.
@@ -57,30 +60,7 @@ Achronyme tiene dos modos de ejecución desde el mismo código fuente:
 
 El bloque `prove {}` conecta ambos: se ejecuta dentro de la VM, compila su cuerpo como un circuito, genera un testigo a partir de variables capturadas y produce una prueba criptográfica — todo en una sola expresión.
 
-```ach
-Fuente (.ach)
-    │
-    ├─► Parser (PEG) → AST
-    │       │
-    │       ├─► Bytecode → VM          (modo ejecución)
-    │       │
-    │       └─► SSA IR → Optimizar
-    │               │
-    │           ┌───┴───┐
-    │           ▼       ▼
-    │        R1CS    Plonkish
-    │      (Groth16) (KZG-PlonK)
-    │           │       │
-    │           ▼       ▼
-    │       .r1cs    Gates/Lookups
-    │       .wtns    Copy constraints
-    │           │       │
-    │           └───┬───┘
-    │               ▼
-    │         Prueba nativa
-    │
-    └─► prove { } → compilar + testigo + verificar + prueba (en línea)
-```
+<AchDiagram svg={introPipelineSvgEs} ariaLabel="Vista general de los modos de ejecución de Achronyme" />
 
 ## Estado
 

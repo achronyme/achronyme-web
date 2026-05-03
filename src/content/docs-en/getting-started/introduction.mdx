@@ -3,6 +3,9 @@ title: Introduction
 description: What is Achronyme and why it exists.
 ---
 
+import AchDiagram from '../../../components/docs/AchDiagram.astro';
+import { introPipelineSvgEn } from '../../../lib/diagrams/intro-pipeline';
+
 Achronyme is a programming language for zero-knowledge circuits.
 
 Write readable code. Decide what gets proven. Same language for general execution and ZK circuit compilation.
@@ -57,30 +60,7 @@ Achronyme has two execution modes from the same source:
 
 The `prove` block bridges both: it compiles its body as a circuit via ProveIR at compile time, captures variables from scope, and produces a cryptographic proof at runtime — all in one expression. Witnesses are auto-inferred; only public inputs need to be declared.
 
-```ach
-Source (.ach)
-    │
-    ├─► Parser (PEG) → AST
-    │       │
-    │       ├─► Bytecode → VM          (run mode)
-    │       │
-    │       └─► SSA IR → Optimize
-    │               │
-    │           ┌───┴───┐
-    │           ▼       ▼
-    │        R1CS    Plonkish
-    │      (Groth16) (KZG-PlonK)
-    │           │       │
-    │           ▼       ▼
-    │       .r1cs    Gates/Lookups
-    │       .wtns    Copy constraints
-    │           │       │
-    │           └───┬───┘
-    │               ▼
-    │         Native proof
-    │
-    └─► prove { } → compile + witness + verify + proof (inline)
-```
+<AchDiagram svg={introPipelineSvgEn} ariaLabel="Achronyme execution modes overview" />
 
 ## Status
 
