@@ -235,7 +235,7 @@ See [Witness Generation](./witness-generation) for the full trace replay model.
 | SHA-256 `sigma0` | lift -> R1CS -> witness (end-to-end verified) |
 | Pedersen_old(8) | field-aware BigVal + lift -> R1CS |
 | EdDSaMiMCVerifier | lift + R1CS with `enabled=0` |
-| Fuzz (180s / target) | 62M runs / 0 crashes after Fase 6 hardening |
+| Fuzz (10M-iter soak) | clean exit on bytecode decode + execute targets |
 
 ## Source files
 

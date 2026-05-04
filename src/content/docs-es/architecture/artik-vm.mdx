@@ -235,7 +235,7 @@ Ver [Generación de Testigos](./witness-generation) para el modelo completo de r
 | SHA-256 `sigma0` | lift -> R1CS -> witness (verificado end-to-end) |
 | Pedersen_old(8) | BigVal field-aware + lift -> R1CS |
 | EdDSaMiMCVerifier | lift + R1CS con `enabled=0` |
-| Fuzz (180s / target) | 62M runs / 0 crashes tras hardening de Fase 6 |
+| Fuzz (soak de 10M iter) | salida limpia en los targets de decode + execute |
 
 ## Archivos Fuente
 
