@@ -7,7 +7,7 @@ description: "Token kinds, operator precedence, and EBNF grammar for the Achrony
 
 Hand-written single-pass byte scanner. No external dependency (no `pest`, no `logos`).
 
-- File: `crates/achronyme-parser/src/lexer.rs`
+- File: `achronyme-parser/src/lexer.rs`
 - Entry: `Lexer::tokenize(source: &str) -> Result<Vec<Token>, ParseError>`
 - Handles UTF-8 multibyte input via `advance_multibyte()`; tracks `(line, col, byte_offset)` for every produced token so downstream diagnostics can render carets at the correct visual column even when the source contains non-ASCII identifiers.
 - Comments are stripped at lex time:
@@ -21,7 +21,7 @@ Hand-written single-pass byte scanner. No external dependency (no `pest`, no `lo
 
 ## Token kinds
 
-The full `TokenKind` enum lives in `crates/achronyme-parser/src/token.rs`. Below it is grouped by role. A token is `(kind, span, lexeme)`; `lexeme` is borrowed from the source for cheap identifier comparison.
+The full `TokenKind` enum lives in `achronyme-parser/src/token.rs`. Below it is grouped by role. A token is `(kind, span, lexeme)`; `lexeme` is borrowed from the source for cheap identifier comparison.
 
 ### Literals
 
@@ -97,7 +97,7 @@ pub enum TokenKind {
 
 ## Operator precedence
 
-Pratt parser. Source: `crates/achronyme-parser/src/parser/tables.rs`. The Pratt loop reads `left_bp` and `right_bp` from `infix_binding_power(token)` and recurses while `right_bp >= caller_bp`.
+Pratt parser. Source: `achronyme-parser/src/parser/tables.rs`. The Pratt loop reads `left_bp` and `right_bp` from `infix_binding_power(token)` and recurses while `right_bp >= caller_bp`.
 
 | Level | Operators                           | Associativity |
 |-------|-------------------------------------|---------------|
@@ -242,17 +242,17 @@ The hand-written parser uses synchronization on `;` and `}` boundaries to keep e
 2. Emit `Stmt::Error { span }` covering the swallowed range.
 3. Resume parsing the next statement.
 
-For expression errors inside a statement, the parser returns `Expr::Error { id, span }` and lets the statement-level recovery catch the rest. See `crates/achronyme-parser/src/parser/core.rs` for the `synchronize()` helper.
+For expression errors inside a statement, the parser returns `Expr::Error { id, span }` and lets the statement-level recovery catch the rest. See `achronyme-parser/src/parser/core.rs` for the `synchronize()` helper.
 
 ## Source files
 
 | Component                     | File |
 |-------------------------------|------|
-| Lexer                         | `crates/achronyme-parser/src/lexer.rs` |
-| Tokens                        | `crates/achronyme-parser/src/token.rs` |
-| Parser core (Pratt)           | `crates/achronyme-parser/src/parser/core.rs` |
-| Expression parsing            | `crates/achronyme-parser/src/parser/exprs.rs` |
-| Statement parsing             | `crates/achronyme-parser/src/parser/stmts.rs` |
-| Precedence + dispatch tables  | `crates/achronyme-parser/src/parser/tables.rs` |
+| Lexer                         | `achronyme-parser/src/lexer.rs` |
+| Tokens                        | `achronyme-parser/src/token.rs` |
+| Parser core (Pratt)           | `achronyme-parser/src/parser/core.rs` |
+| Expression parsing            | `achronyme-parser/src/parser/exprs.rs` |
+| Statement parsing             | `achronyme-parser/src/parser/stmts.rs` |
+| Precedence + dispatch tables  | `achronyme-parser/src/parser/tables.rs` |
 
 See [AST Reference](/docs/architecture/ast-reference/) for the data structure produced by the parser.

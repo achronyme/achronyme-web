@@ -20,7 +20,7 @@ El walker es el **lifter del lado IR**: consume `ExtendedInstruction<F>` (de `ir
 
 ## Pipeline de lift (ir-forge::lysis_lift)
 
-Archivo: `crates/ir-forge/src/lysis_lift/mod.rs`. Cinco etapas:
+Archivo: `ir-forge/src/lysis_lift/mod.rs`. Cinco etapas:
 
 | Etapa | Módulo | Entregable |
 |-------|--------|------------|
@@ -62,7 +62,7 @@ Cada slot del heap está gobernado por un **invariante de single-static-store**:
 
 ## Tabla de opcodes (36 opcodes)
 
-Archivo: `crates/lysis/src/bytecode/opcode.rs`.
+Archivo: `lysis/src/bytecode/opcode.rs`.
 
 | Código | Mnemónico | Operandos | Semántica |
 |--------|-----------|-----------|-----------|
@@ -114,7 +114,7 @@ El despachador escribe los opcodes que emiten IR en un trait object `IrSink`. Ex
 
 ## Loop del despachador
 
-Archivo: `crates/lysis/src/execute/mod.rs`. Loop externo sobre frames + paso interno:
+Archivo: `lysis/src/execute/mod.rs`. Loop externo sobre frames + paso interno:
 
 ```rust
 loop {
@@ -137,7 +137,7 @@ Sin GC. Los registros del frame viven en la struct del frame. El interner usa in
 
 ## Salida del lift → walker
 
-Archivo: `crates/ir-forge/src/lysis_lift/walker.rs`. Driver que consume `Vec<ExtendedInstruction<F>>`:
+Archivo: `ir-forge/src/lysis_lift/walker.rs`. Driver que consume `Vec<ExtendedInstruction<F>>`:
 
 | Variante | Acción del walker |
 |----------|-------------------|
@@ -162,21 +162,21 @@ Cuando un body es demasiado ancho para mantener sus valores en la ventana de 256
 
 | Componente | Archivo |
 |------------|---------|
-| Opcodes de bytecode | `crates/lysis/src/bytecode/opcode.rs` |
-| Codificación | `crates/lysis/src/bytecode/encoding.rs` |
-| Validador | `crates/lysis/src/bytecode/validate.rs` |
-| Pool de constantes | `crates/lysis/src/bytecode/const_pool.rs` |
-| Encabezado (v1/v2) | `crates/lysis/src/header.rs` |
-| Despachador | `crates/lysis/src/execute/mod.rs` |
-| Frame | `crates/lysis/src/execute/frame.rs` |
-| Heap | `crates/lysis/src/execute/heap.rs` |
-| Sink interning | `crates/lysis/src/execute/interning_sink.rs` |
-| Interner | `crates/lysis/src/intern/interner.rs` |
-| Builder | `crates/lysis/src/builder.rs` |
-| Walker (lift) | `crates/ir-forge/src/lysis_lift/walker.rs` |
-| Clasificador BTA | `crates/ir-forge/src/lysis_lift/bta.rs` |
-| Árbol simbólico | `crates/ir-forge/src/lysis_lift/symbolic.rs` |
-| Diff estructural | `crates/ir-forge/src/lysis_lift/diff.rs` |
-| Extracción de plantillas | `crates/ir-forge/src/lysis_lift/extract.rs` |
+| Opcodes de bytecode | `lysis/src/bytecode/opcode.rs` |
+| Codificación | `lysis/src/bytecode/encoding.rs` |
+| Validador | `lysis/src/bytecode/validate.rs` |
+| Pool de constantes | `lysis/src/bytecode/const_pool.rs` |
+| Encabezado (v1/v2) | `lysis/src/header.rs` |
+| Despachador | `lysis/src/execute/mod.rs` |
+| Frame | `lysis/src/execute/frame.rs` |
+| Heap | `lysis/src/execute/heap.rs` |
+| Sink interning | `lysis/src/execute/interning_sink.rs` |
+| Interner | `lysis/src/intern/interner.rs` |
+| Builder | `lysis/src/builder.rs` |
+| Walker (lift) | `ir-forge/src/lysis_lift/walker.rs` |
+| Clasificador BTA | `ir-forge/src/lysis_lift/bta.rs` |
+| Árbol simbólico | `ir-forge/src/lysis_lift/symbolic.rs` |
+| Diff estructural | `ir-forge/src/lysis_lift/diff.rs` |
+| Extracción de plantillas | `ir-forge/src/lysis_lift/extract.rs` |
 
 Ver [ProveIR](/docs/architecture/prove-ir/) para la capa que alimenta a Lysis. Ver [Akron VM](/docs/architecture/akron-vm/) y [Artik Witness VM](/docs/architecture/artik-vm/) para las otras dos VMs.

@@ -6,8 +6,8 @@ description: "Achronyme abstract syntax tree: enums, fields, and span tracking."
 ## Overview
 
 - Owned, hand-built AST. No `rowan`, no `Rc`, no interning at this layer.
-- File: `crates/achronyme-parser/src/ast.rs`
-- Every node carries a `Span`. Re-exported from `crates/diagnostics/src/span.rs`.
+- File: `achronyme-parser/src/ast.rs`
+- Every node carries a `Span`. Re-exported from `diagnostics/src/span.rs`.
 - Each `Expr` carries an `ExprId(u32)` — dense, unique within a `Program`. Used by the resolver to attach `SymbolId` via a parallel `HashMap<ExprId, SymbolId>` instead of mutating the AST.
 - Synthetic compile-generated expressions use `ExprId::SYNTHETIC = 0`. Real parser-allocated IDs start at 1.
 - The AST is **immutable after parsing**. Lowering passes (ProveIR, bytecode) read the tree and emit new IRs; they never rewrite nodes.
@@ -44,7 +44,7 @@ A `Program` is the unit of parsing. Each input file becomes one `Program`; modul
 
 ## `Stmt` enum
 
-From `crates/achronyme-parser/src/ast.rs:52-141`:
+From `achronyme-parser/src/ast.rs:52-141`:
 
 | Variant | Fields | Purpose |
 |---------|--------|---------|
@@ -69,7 +69,7 @@ From `crates/achronyme-parser/src/ast.rs:52-141`:
 
 ## `Expr` enum
 
-From `crates/achronyme-parser/src/ast.rs:188-331`. Every variant carries `id: ExprId` and `span: Span` in addition to the listed fields.
+From `achronyme-parser/src/ast.rs:188-331`. Every variant carries `id: ExprId` and `span: Span` in addition to the listed fields.
 
 ### Literals
 
@@ -214,17 +214,17 @@ pub enum BaseType {
 - Dense `u32` IDs, allocated by the parser as it walks the source.
 - The whole `Program` is the ID arena; cross-program comparisons are not meaningful (e.g. `ExprId(42)` in `foo.ach` and `ExprId(42)` in `bar.ach` are unrelated).
 - `ExprId::SYNTHETIC = 0` is reserved for compiler-generated nodes (mainly inside the Circom lowering and the ProveIR compiler when synthesising auxiliary expressions during template instantiation).
-- The resolver pass annotates each `ExprId` with a `SymbolId` in `SymbolTable`. See `crates/resolve/src/annotate.rs`. The resolver does **not** mutate the AST — it builds a side table keyed by `ExprId`.
+- The resolver pass annotates each `ExprId` with a `SymbolId` in `SymbolTable`. See `resolve/src/annotate.rs`. The resolver does **not** mutate the AST — it builds a side table keyed by `ExprId`.
 - This shape (immutable AST + side-table annotations) is what makes the LSP cheap: the resolver runs in microseconds and discards its tables when the AST is invalidated.
 
 ## Source files
 
 | Component             | File |
 |-----------------------|------|
-| AST types             | `crates/achronyme-parser/src/ast.rs` |
-| Span                  | `crates/diagnostics/src/span.rs` |
-| Parser entry          | `crates/achronyme-parser/src/lib.rs` |
-| Resolver annotation   | `crates/resolve/src/annotate.rs` |
-| Symbol table          | `crates/resolve/src/table.rs` |
+| AST types             | `achronyme-parser/src/ast.rs` |
+| Span                  | `diagnostics/src/span.rs` |
+| Parser entry          | `achronyme-parser/src/lib.rs` |
+| Resolver annotation   | `resolve/src/annotate.rs` |
+| Symbol table          | `resolve/src/table.rs` |
 
 See [Grammar & Lexer](/docs/architecture/grammar/) for the surface syntax. See [Pipeline Overview](/docs/architecture/pipeline/) for what happens after parsing.

@@ -12,25 +12,25 @@ El workspace de Achronyme contiene **19 crates**. Todos comparten la misma versi
 
 | Crate | Ruta | Propósito |
 |-------|------|-----------|
-| `diagnostics` | `crates/diagnostics/` | Spans, errores, sugerencias, renderer estilo rustc (hoja sin dependencias) |
-| `memory` | `crates/memory/` | `FieldElement<F>` (BN254/BLS12-381/Goldilocks), trait `FieldBackend`, arenas de heap, GC |
-| `ach-macros` | `crates/ach-macros/` | Proc macros: `#[ach_native]`, `#[ach_module]` |
-| `achronyme-parser` | `crates/achronyme-parser/` | Lexer, parser Pratt+descenso recursivo, tipos AST con propiedad |
-| `resolve` | `crates/resolve/` | Tabla de símbolos, registro de builtins, resolver unificado de dispatch (Movimiento 2) |
-| `lysis-types` | `crates/lysis-types/` | `InstructionKind<F>`, `NodeId` compartidos con la [Lysis VM](/docs/architecture/lysis-vm/) |
-| `constraints` | `crates/constraints/` | `Variable`, `LinearCombination`, sistemas R1CS + Plonkish, Poseidon, exportación binaria |
-| `ir-core` | `crates/ir-core/` | Hoja SSA: `Instruction<F>`, `SsaVar`, `Visibility`, `IrType` |
-| `ir-forge` | `crates/ir-forge/` | Plantillas ProveIR, compilador AST→ProveIR, walker del lift de Lysis |
-| `ir` | `crates/ir/` | Pases de IR (DCE, CSE, const-fold, taint), module loader, inspector, orquestación de ProveIR |
-| `zkc` | `crates/zkc/` | Compilador de constraints: backend R1CS, backend Plonkish, witness ops, andamiaje del oracle |
-| `akronc` | `crates/akronc/` | Compilador de bytecode para la [Akron VM](/docs/architecture/akron-vm/) (antes `compiler`) |
-| `akron` | `crates/akron/` | VM de bytecode de propósito general basada en registros (antes `vm`) |
-| `artik` | `crates/artik/` | VM SSA de cómputo de testigos (antes `witness`) — ver [Artik](/docs/architecture/artik-vm/) |
-| `lysis` | `crates/lysis/` | Tercera VM, instanciador estructural de plantillas con hash-consing — **en progreso** |
-| `circom` | `crates/circom/` | Frontend de Circom 2.x: lexer, parser, análisis, lowering — ver [Frontend de Circom](/docs/architecture/circom-frontend/) |
-| `proving` | `crates/proving/` | Groth16 (arkworks), PlonK (halo2-KZG), generación de verificadores Solidity |
-| `achronyme-std` | `crates/std/` | Biblioteca estándar vía el trait `NativeModule` |
-| `cli` | `crates/cli/` | Interfaz de línea de comandos, orquestación de pruebas |
+| `diagnostics` | `diagnostics/` | Spans, errores, sugerencias, renderer estilo rustc (hoja sin dependencias) |
+| `memory` | `memory/` | `FieldElement<F>` (BN254/BLS12-381/Goldilocks), trait `FieldBackend`, arenas de heap, GC |
+| `ach-macros` | `ach-macros/` | Proc macros: `#[ach_native]`, `#[ach_module]` |
+| `achronyme-parser` | `achronyme-parser/` | Lexer, parser Pratt+descenso recursivo, tipos AST con propiedad |
+| `resolve` | `resolve/` | Tabla de símbolos, registro de builtins, resolver unificado de dispatch (Movimiento 2) |
+| `lysis-types` | `lysis-types/` | `InstructionKind<F>`, `NodeId` compartidos con la [Lysis VM](/docs/architecture/lysis-vm/) |
+| `constraints` | `constraints/` | `Variable`, `LinearCombination`, sistemas R1CS + Plonkish, Poseidon, exportación binaria |
+| `ir-core` | `ir-core/` | Hoja SSA: `Instruction<F>`, `SsaVar`, `Visibility`, `IrType` |
+| `ir-forge` | `ir-forge/` | Plantillas ProveIR, compilador AST→ProveIR, walker del lift de Lysis |
+| `ir` | `ir/` | Pases de IR (DCE, CSE, const-fold, taint), module loader, inspector, orquestación de ProveIR |
+| `zkc` | `zkc/` | Compilador de constraints: backend R1CS, backend Plonkish, witness ops, andamiaje del oracle |
+| `akronc` | `akronc/` | Compilador de bytecode para la [Akron VM](/docs/architecture/akron-vm/) (antes `compiler`) |
+| `akron` | `akron/` | VM de bytecode de propósito general basada en registros (antes `vm`) |
+| `artik` | `artik/` | VM SSA de cómputo de testigos (antes `witness`) — ver [Artik](/docs/architecture/artik-vm/) |
+| `lysis` | `lysis/` | Tercera VM, instanciador estructural de plantillas con hash-consing — **en progreso** |
+| `circom` | `circom/` | Frontend de Circom 2.x: lexer, parser, análisis, lowering — ver [Frontend de Circom](/docs/architecture/circom-frontend/) |
+| `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), generación de verificadores Solidity |
+| `achronyme-std` | `std/` | Biblioteca estándar vía el trait `NativeModule` |
+| `cli` | `cli/` | Interfaz de línea de comandos, orquestación de pruebas |
 
 ## Renombramientos de crates (post-limpieza)
 
