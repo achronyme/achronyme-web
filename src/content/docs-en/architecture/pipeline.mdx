@@ -30,7 +30,7 @@ Operator precedence (high to low):
 
 **Entry point:** `akronc::Compiler::compile()`
 
-For `ach run`, the AST is compiled to bytecode for the register-based VM (37 opcodes). A 3-pass bytecode optimizer runs after compilation:
+For `ach run`, the AST is compiled to bytecode for the register-based VM (42 opcodes). A 3-pass bytecode optimizer runs after compilation:
 
 - **Peephole** — fuses common instruction sequences
 - **Constant folding** — evaluates arithmetic on known constants

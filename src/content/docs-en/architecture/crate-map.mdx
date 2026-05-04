@@ -6,7 +6,7 @@ description: "Workspace crate dependencies and responsibilities."
 import AchDiagram from '../../../components/docs/AchDiagram.astro';
 import { crateMapSvgEn } from '../../../lib/diagrams/crate-map';
 
-The Achronyme workspace contains **19 crates**. All share the same version and Rust edition. The post-cleanup layering (closed 2026-04-24) groups them into four tiers: leaves with no workspace dependencies, vocabulary crates, IR/compiler stack, and top-level orchestration.
+The Achronyme workspace contains **19 crates**. All share the same version and Rust edition. They are organised into four tiers: leaves with no workspace dependencies, vocabulary crates, IR/compiler stack, and top-level orchestration.
 
 ## Crate overview
 
@@ -34,7 +34,7 @@ The Achronyme workspace contains **19 crates**. All share the same version and R
 
 ## Crate renames (post-cleanup)
 
-The structural cleanup of 2026-04-18 → 2026-04-24 renamed three crates and split `ir` into three:
+A structural cleanup renamed three crates and split `ir` into three:
 
 | Old name | New name | Reason |
 |----------|----------|--------|
@@ -87,7 +87,7 @@ Bytecode compiler for the Akron VM. Owns the bytecode optimizer (peephole, const
 
 `akron` (depends on `memory`, `constraints`, `ir`, `ir-forge`)
 
-Register-based general-purpose VM. 43 opcodes, mark-sweep tri-color GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Hosts `prove {}` execution at runtime via the `ProveHandler` trait.
+Register-based general-purpose VM. 42 opcodes, mark-sweep tri-color GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Hosts `prove {}` execution at runtime via the `ProveHandler` trait.
 
 `artik` (depends on `memory`)
 

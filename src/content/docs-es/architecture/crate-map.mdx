@@ -6,7 +6,7 @@ description: "Dependencias y responsabilidades de los crates del workspace."
 import AchDiagram from '../../../components/docs/AchDiagram.astro';
 import { crateMapSvgEs } from '../../../lib/diagrams/crate-map';
 
-El workspace de Achronyme contiene **19 crates**. Todos comparten la misma versión y edición de Rust. La organización por capas posterior a la limpieza (cerrada el 2026-04-24) los agrupa en cuatro niveles: hojas sin dependencias del workspace, crates de vocabulario, pila de IR/compilador, y orquestación de alto nivel.
+El workspace de Achronyme contiene **19 crates**. Todos comparten la misma versión y edición de Rust. Están organizados en cuatro niveles: hojas sin dependencias del workspace, crates de vocabulario, pila de IR/compilador, y orquestación de alto nivel.
 
 ## Resumen de crates
 
@@ -34,7 +34,7 @@ El workspace de Achronyme contiene **19 crates**. Todos comparten la misma versi
 
 ## Renombramientos de crates (post-limpieza)
 
-La limpieza estructural del 2026-04-18 → 2026-04-24 renombró tres crates y dividió `ir` en tres:
+Una limpieza estructural renombró tres crates y dividió `ir` en tres:
 
 | Nombre antiguo | Nombre nuevo | Razón |
 |----------------|--------------|-------|
@@ -87,7 +87,7 @@ Compilador de bytecode para la Akron VM. Aloja el optimizador de bytecode (peeph
 
 `akron` (depende de `memory`, `constraints`, `ir`, `ir-forge`)
 
-VM de propósito general basada en registros. 43 opcodes, GC tri-color de marcado y barrido, valores etiquetados (tagged values) de 64 bits. Carga archivos `.achb` vía `akron::loader`. Aloja la ejecución de `prove {}` en runtime vía el trait `ProveHandler`.
+VM de propósito general basada en registros. 42 opcodes, GC tri-color de marcado y barrido, valores etiquetados (tagged values) de 64 bits. Carga archivos `.achb` vía `akron::loader`. Aloja la ejecución de `prove {}` en runtime vía el trait `ProveHandler`.
 
 `artik` (depende de `memory`)
 
