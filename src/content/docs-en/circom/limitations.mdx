@@ -62,7 +62,7 @@ The following circomlib primitives have been compiled end-to-end, run through R1
 | `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combined) | — | ✓ R1CS verified |
 | `EscalarMulFix(253)` | 11 | 11 | ✓ Matches circom O2 |
 | `EscalarMulAny(254)` | 2310 | 2310 | ✓ Matches circom O2 |
-| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (41,136 IR nodes, 263,709 VM instructions); R1CS E2E pending test run |
+| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (31,685 IR nodes → 22,271 instructions after optimisation); R1CS test passes with `enabled=0` |
 | Mux, gates, bitify, comparators | — | — | ✓ Used transitively by the above |
 
 End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` and `EscalarMulAny(254)`.
