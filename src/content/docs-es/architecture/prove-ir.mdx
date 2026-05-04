@@ -37,7 +37,7 @@ Las fases A–B corren en **tiempo de compilación**; C–H corren en **runtime*
 
 ## Tipos contenedores
 
-`ProveIR` (archivo: `crates/ir-forge/src/types/prove_ir.rs:17-43`):
+`ProveIR` (archivo: `ir-forge/src/types/prove_ir.rs:17-43`):
 
 ```rust
 pub struct ProveIR {
@@ -68,7 +68,7 @@ Historial de versiones (solo v5 está actualmente aceptada):
 
 ## CircuitExpr (árbol de expresiones)
 
-Archivo: `crates/ir-forge/src/types/expressions.rs:14-132`.
+Archivo: `ir-forge/src/types/expressions.rs:14-132`.
 
 **Hojas:**
 
@@ -129,7 +129,7 @@ Archivo: `crates/ir-forge/src/types/expressions.rs:14-132`.
 
 ## CircuitNode (nivel de sentencia)
 
-Archivo: `crates/ir-forge/src/types/nodes.rs:17-159`.
+Archivo: `ir-forge/src/types/nodes.rs:17-159`.
 
 ```rust
 pub enum CircuitNode {
@@ -179,7 +179,7 @@ Las capturas permanecen simbólicas en ProveIR (la hoja `Capture(name)`). Se enl
 
 ## Punto de entrada del compilador
 
-Archivo: `crates/ir-forge/src/ast_lower/api.rs`.
+Archivo: `ir-forge/src/ast_lower/api.rs`.
 
 ```rust
 ProveIrCompiler::compile_prove_block(
@@ -205,7 +205,7 @@ Para plantillas de Circom, la instanciación es manejada por `instantiate.rs` de
 
 ## ExtendedInstruction (puente a Lysis)
 
-Archivo: `crates/ir-forge/src/extended.rs:63-112`.
+Archivo: `ir-forge/src/extended.rs:63-112`.
 
 ```rust
 pub enum ExtendedInstruction<F: FieldBackend = Bn254Fr> {
@@ -222,12 +222,12 @@ Esta capa wrapper habilita al walker de la [Lysis VM](/docs/architecture/lysis-v
 
 | Componente | Archivo |
 |------------|---------|
-| Tipos de ProveIR | `crates/ir-forge/src/types/prove_ir.rs` |
-| `CircuitExpr` | `crates/ir-forge/src/types/expressions.rs` |
-| `CircuitNode` | `crates/ir-forge/src/types/nodes.rs` |
-| API del compilador | `crates/ir-forge/src/ast_lower/api.rs` |
-| Instanciación | `crates/ir/src/prove_ir/instantiate.rs` |
-| ExtendedInstruction | `crates/ir-forge/src/extended.rs` |
-| Constantes de formato | `crates/ir-forge/src/types/prove_ir.rs:17-43` |
+| Tipos de ProveIR | `ir-forge/src/types/prove_ir.rs` |
+| `CircuitExpr` | `ir-forge/src/types/expressions.rs` |
+| `CircuitNode` | `ir-forge/src/types/nodes.rs` |
+| API del compilador | `ir-forge/src/ast_lower/api.rs` |
+| Instanciación | `ir/src/prove_ir/instantiate.rs` |
+| ExtendedInstruction | `ir-forge/src/extended.rs` |
+| Constantes de formato | `ir-forge/src/types/prove_ir.rs:17-43` |
 
 Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para la ruta completa de compilación. Ver [IR y Optimización](/docs/architecture/ir-and-optimization/) para qué corre después de la instanciación. Ver [Frontend de Circom](/docs/architecture/circom-frontend/) para cómo los archivos .circom llegan a ProveIR.

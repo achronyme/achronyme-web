@@ -62,7 +62,7 @@ Las siguientes primitivas de circomlib han sido compiladas end-to-end, pasadas p
 | `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combinado) | — | ✓ R1CS verificado |
 | `EscalarMulFix(253)` | 11 | 11 | ✓ Iguala circom O2 |
 | `EscalarMulAny(254)` | 2310 | 2310 | ✓ Iguala circom O2 |
-| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate verificados (41,136 nodos IR, 263,709 instrucciones VM); E2E R1CS pendiente de run de test |
+| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate verificados (31,685 nodos IR → 22,271 instrucciones tras optimización); el test R1CS pasa con `enabled=0` |
 | Mux, gates, bitify, comparadores | — | — | ✓ Usados transitivamente por los anteriores |
 
 La verificacion end-to-end de pruebas Groth16 se ha hecho on-chain para `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` y `EscalarMulAny(254)`.
@@ -99,7 +99,7 @@ Si alguna de estas esta bloqueando un circuito real para ti, por favor abre un i
 
 ## Limitaciones del Modo VM
 
-El modo VM (llamar templates desde codigo no-`prove` bajo `ach run`) es mas angosto que el modo circuito. Restricciones de Phase 4:
+El modo VM (llamar templates desde codigo no-`prove` bajo `ach run`) es mas angosto que el modo circuito. Restricciones actuales:
 
 - **Los template arguments deben ser literales enteros.** `let N = 8; Num2Bits(N)(x)` es rechazado — usa `Num2Bits(8)(x)` directamente hasta que aterrice el constant folder de tiempo de compilacion para el modo VM.
 - **Solo signal inputs escalares.** Templates con `signal input in[n]` no pueden llamarse desde modo VM.
@@ -112,18 +112,7 @@ Ve [Modo VM](/docs/circom/vm-mode/) para la semantica de llamada y por que exist
 
 Trabajo planeado, en orden de prioridad aproximado:
 
-### Phase 5 — Integracion con el manifest (enviado)
-
-La seccion `[circom]` en `achronyme.toml` ya esta en produccion:
-
-```toml
-[circom]
-libs = ["vendor/circomlib/circuits"]
-```
-
-`ach run`, `ach circuit` y `ach circom` consumen `[circom].libs` automaticamente, y las banderas CLI `-l/--lib` se suman a la lista en lugar de reemplazarla. Ver [Configuracion del Proyecto](/es/docs/cli/project-config/#circom--rutas-de-busqueda-de-bibliotecas-circom).
-
-### Phase 6 — Docs y ejemplos (en progreso)
+### Tutoriales y guias de migracion (en progreso)
 
 Enviado:
 
@@ -136,7 +125,7 @@ Pendiente:
 - Benchmarks cross-tool comparando Achronyme + circomlib importado vs circom plano.
 - Guia de migracion para equipos moviendo proyectos circom existentes.
 
-### Follow-ups de Phase 4 (modo VM)
+### Follow-ups del modo VM
 
 - **Constant folding de tiempo de compilacion** para que los template args del modo VM puedan ser variables mientras pleguen.
 - **Signal inputs de array** extendiendo el opcode `CallCircomTemplate` para aceptar arrays de input.

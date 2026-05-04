@@ -6,8 +6,8 @@ description: "Árbol sintáctico abstracto de Achronyme: enums, campos y rastreo
 ## Visión general
 
 - AST con propiedad, construido a mano. Sin `rowan`, sin `Rc`, sin interning en esta capa.
-- Archivo: `crates/achronyme-parser/src/ast.rs`
-- Cada nodo lleva un `Span`. Re-exportado desde `crates/diagnostics/src/span.rs`.
+- Archivo: `achronyme-parser/src/ast.rs`
+- Cada nodo lleva un `Span`. Re-exportado desde `diagnostics/src/span.rs`.
 - Cada `Expr` lleva un `ExprId(u32)` — denso, único dentro de un `Program`. Usado por el resolver para adjuntar `SymbolId` vía un `HashMap<ExprId, SymbolId>` paralelo en lugar de mutar el AST.
 - Las expresiones sintéticas generadas por el compilador usan `ExprId::SYNTHETIC = 0`. Los IDs reales asignados por el parser comienzan en 1.
 - El AST es **inmutable después del parseo**. Los pases de lowering (ProveIR, bytecode) leen el árbol y emiten nuevos IRs; nunca reescriben nodos.
@@ -44,7 +44,7 @@ Un `Program` es la unidad de parseo. Cada archivo de entrada se convierte en un 
 
 ## Enum `Stmt`
 
-De `crates/achronyme-parser/src/ast.rs:52-141`:
+De `achronyme-parser/src/ast.rs:52-141`:
 
 | Variante | Campos | Propósito |
 |----------|--------|-----------|
@@ -69,7 +69,7 @@ De `crates/achronyme-parser/src/ast.rs:52-141`:
 
 ## Enum `Expr`
 
-De `crates/achronyme-parser/src/ast.rs:188-331`. Cada variante lleva `id: ExprId` y `span: Span` además de los campos listados.
+De `achronyme-parser/src/ast.rs:188-331`. Cada variante lleva `id: ExprId` y `span: Span` además de los campos listados.
 
 ### Literales
 
@@ -214,17 +214,17 @@ pub enum BaseType {
 - IDs `u32` densos, asignados por el parser a medida que recorre el código fuente.
 - El `Program` completo es la arena de IDs; las comparaciones cross-program no son significativas (p.ej., `ExprId(42)` en `foo.ach` y `ExprId(42)` en `bar.ach` no están relacionados).
 - `ExprId::SYNTHETIC = 0` está reservado para nodos generados por el compilador (principalmente dentro del lowering de Circom y el compilador de ProveIR cuando sintetiza expresiones auxiliares durante la instanciación de plantillas).
-- El pase del resolver anota cada `ExprId` con un `SymbolId` en `SymbolTable`. Ver `crates/resolve/src/annotate.rs`. El resolver **no** muta el AST — construye una tabla lateral indexada por `ExprId`.
+- El pase del resolver anota cada `ExprId` con un `SymbolId` en `SymbolTable`. Ver `resolve/src/annotate.rs`. El resolver **no** muta el AST — construye una tabla lateral indexada por `ExprId`.
 - Esta forma (AST inmutable + anotaciones de tabla lateral) es lo que hace barato al LSP: el resolver corre en microsegundos y descarta sus tablas cuando el AST es invalidado.
 
 ## Archivos fuente
 
 | Componente            | Archivo |
 |-----------------------|---------|
-| Tipos del AST         | `crates/achronyme-parser/src/ast.rs` |
-| Span                  | `crates/diagnostics/src/span.rs` |
-| Entrada del parser    | `crates/achronyme-parser/src/lib.rs` |
-| Anotación del resolver | `crates/resolve/src/annotate.rs` |
-| Tabla de símbolos     | `crates/resolve/src/table.rs` |
+| Tipos del AST         | `achronyme-parser/src/ast.rs` |
+| Span                  | `diagnostics/src/span.rs` |
+| Entrada del parser    | `achronyme-parser/src/lib.rs` |
+| Anotación del resolver | `resolve/src/annotate.rs` |
+| Tabla de símbolos     | `resolve/src/table.rs` |
 
 Ver [Gramática y Lexer](/docs/architecture/grammar/) para la sintaxis de superficie. Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para qué pasa después del parseo.

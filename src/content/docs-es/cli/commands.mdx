@@ -10,23 +10,72 @@ Estas banderas aplican a todos los subcomandos:
 | Bandera | Descripción |
 |------|-------------|
 | `--error-format <fmt>` | Formato de salida de diagnósticos: `human` (predeterminado), `json`, o `short`. Ver [Diagnósticos y Advertencias](/es/docs/language/diagnostics/#formatos-de-salida) |
+| `--prime <name>` | Campo primo para el backend de constraints: `bn254` (predeterminado), `bls12-381`, o `goldilocks` |
+| `--no-config` | Deshabilita la carga de `achronyme.toml`. Todos los valores vienen de banderas CLI y defaults |
 
 ---
 
-## `run` — Ejecutar un programa
+## `init` — Crear un proyecto nuevo
 
-Ejecuta un archivo fuente de Achronyme (`.ach`) o un binario compilado (`.achb`).
+Genera un proyecto Achronyme nuevo con `achronyme.toml`, directorio de fuentes, y `.gitignore`.
 
 ```bash
-ach run script.ach
-ach run script.achb
+ach init my-circuit
+ach init my-app --template vm
 ```
+
+### Argumentos
+
+| Argumento | Descripción |
+|----------|-------------|
+| `<name>` | Nombre del proyecto (debe coincidir con `[a-zA-Z_][a-zA-Z0-9_-]*`) |
 
 ### Banderas
 
 | Bandera | Descripción |
 |------|-------------|
-| `--stress-gc` | Ejecutar GC en cada asignación (para pruebas) |
+| `--template <tpl>` | Plantilla del proyecto: `circuit` (predeterminado), `vm`, o `prove` |
+
+### Plantillas
+
+- **`circuit`** — Un circuito independiente con declaraciones `public`/`witness` y `assert_eq`
+- **`vm`** — Un programa de propósito general con `print()`
+- **`prove`** — Un programa mixto con un bloque inline `prove {}`
+
+### Estructura generada
+
+```
+my-circuit/
+├── achronyme.toml
+├── src/
+│   └── main.ach
+└── .gitignore
+```
+
+Ver [Configuración del Proyecto](/es/docs/cli/project-config) para la referencia de `achronyme.toml`.
+
+---
+
+## `run` — Ejecutar un programa
+
+Corre un archivo fuente Achronyme (`.ach`) o binario compilado (`.achb`).
+
+```bash
+ach run script.ach
+ach run script.achb
+ach run                # usa [project].entry de achronyme.toml
+```
+
+Si se omite `<path>`, el CLI resuelve el archivo de entrada desde `[project].entry` en `achronyme.toml`.
+
+### Banderas
+
+| Bandera | Descripción |
+|------|-------------|
+| `--stress-gc` | Ejecuta GC en cada alocación (para tests). Ver [Modo Stress GC](/es/docs/architecture/memory-and-gc/#modo-stress-gc) |
+| `--max-heap <size>` | Establece el tamaño máximo del heap (ej. `256M`, `1G`, `512K`). Lanza `HeapLimitExceeded` si se excede |
+| `--gc-stats` | Imprime estadísticas del GC en stderr tras la ejecución. Ver [Estadísticas del GC](/es/docs/architecture/memory-and-gc/#estadisticas-del-gc) |
+| `--circuit-stats` | Imprime estadísticas de constraints por cada bloque `prove {}` ejecutado |
 | `--prove-backend <backend>` | Backend para bloques `prove {}`: `r1cs` (predeterminado) o `plonkish` |
 
 ### Ejemplos
@@ -34,48 +83,103 @@ ach run script.achb
 ```bash
 ach run hello.ach
 ach run hello.ach --prove-backend plonkish
+ach run hello.ach --max-heap 256M --gc-stats
+ach run                              # desde un proyecto con achronyme.toml
 ```
 
 ---
 
 ## `circuit` — Compilar un circuito ZK
 
-Compila un archivo fuente de circuito Achronyme en restricciones R1CS/Plonkish y genera un testigo.
+Compila un archivo fuente Achronyme a constraints R1CS/Plonkish y genera un testigo.
 
 ```bash
 ach circuit circuit.ach --inputs "x=42,y=7"
+ach circuit --inputs "x=42,y=7"    # usa entry de achronyme.toml
 ```
 
-Consulta [Opciones de Circuito](/es/docs/cli/circuit-options) para todas las banderas disponibles.
+Ver [Opciones de Circuito](/es/docs/cli/circuit-options) para todas las banderas disponibles.
 
 ---
 
-## `compile` — Compilar a bytecode
+## `circom` — Compilar un archivo `.circom`
 
-Compila un archivo fuente de Achronyme en un binario (`.achb`) que se puede ejecutar con `ach run`.
+Compila un archivo fuente Circom 2.x a través del frontend de Achronyme, produciendo los mismos artefactos `.r1cs`/`.wtns` que `circuit` y opcionalmente una prueba Groth16. Úsalo para correr templates de circomlib (o tus propios proyectos `.circom`) sin salir de la cadena de herramientas Achronyme.
 
 ```bash
-ach compile script.ach --output script.achb
+ach circom poseidon.circom --inputs "in=42"
+ach circom merkle.circom --inputs "root=0x...,leaf=42" --prove --solidity Verifier.sol
+ach circom -l vendor/circomlib/circuits sha256.circom --input-file inputs.toml
 ```
 
 ### Banderas
 
 | Bandera | Descripción |
 |------|-------------|
-| `--output <ruta>` | Ruta del archivo de salida (requerido) |
+| `--inputs <pares>` | `name=value` separados por coma (decimal o hex `0x`) |
+| `--input-file <path>` | Inputs desde un archivo TOML (arrays soportados nativamente) |
+| `-l, --lib <dir>` | Directorio de búsqueda para resolución de `include`. Repetible; los dirs CLI tienen precedencia sobre `[circom].libs` de `achronyme.toml` |
+| `--backend <r1cs\|plonkish>` | Backend de constraints (predeterminado: `r1cs`) |
+| `--prove` | Genera una prueba criptográfica tras la compilación (requiere `--inputs`) |
+| `--r1cs <path>` | Path de salida `.r1cs` (compatible con snarkjs) |
+| `--wtns <path>` | Path de salida `.wtns` |
+| `--solidity <path>` | Emite un contrato verificador Groth16 en Solidity en este path |
+| `--plonkish-json <path>` | Exporta el circuito Plonkish (con testigo si se da `--inputs`) como JSON |
+| `--dump-ir` | Imprime el IR SSA optimizado y sale antes de generar constraints |
+| `--no-optimize` | Deshabilita los pases de optimización del IR |
+| `--circuit-stats` | Imprime el desglose del conteo de constraints |
+
+### Resolución de librerías
+
+El lookup de `include` recorre primero los directorios `--lib`, luego `[circom].libs` del manifest del proyecto, y finalmente el directorio del propio archivo. Ver [Importando Templates](/es/docs/circom/importing) para el modelo de resolución completo.
+
+---
+
+## `compile` — Compilar a bytecode
+
+Compila un archivo fuente Achronyme a un binario (`.achb`) que puede correrse con `ach run`.
+
+```bash
+ach compile script.ach --output script.achb
+ach compile --output script.achb   # usa entry de achronyme.toml
+```
+
+### Banderas
+
+| Bandera | Descripción |
+|------|-------------|
+| `--output <path>` | Path del archivo de salida (opcional — puede ponerse en `[build.output].binary` en `achronyme.toml`) |
 
 ---
 
 ## `disassemble` — Mostrar bytecode
 
-Desensambla un archivo fuente o binario de Achronyme, mostrando las instrucciones de bytecode.
+Desensambla un archivo fuente o binario Achronyme, mostrando las instrucciones de bytecode.
 
 ```bash
 ach disassemble script.ach
+ach disassemble                    # usa entry de achronyme.toml
 ```
 
 ---
 
-## `repl` — Modo interactivo
+## `inspect` — Abrir el inspector de circuitos
 
-Inicia un bucle interactivo de Lectura-Evaluación-Impresión. (Aún no implementado.)
+Compila un circuito (o un bloque `prove {}` con nombre) y sirve una página HTTP local que visualiza el DAG del IR, los valores del testigo y estadísticas de constraints. El UI del inspector (Astro+D3) vive en el repo [achronyme-inspector](https://github.com/achronyme/achronyme-inspector) y se distribuye embebido para uso offline.
+
+```bash
+ach inspect circuit.ach --inputs "x=42"
+ach inspect script.ach --prove main_block --inputs "secret=7"
+ach inspect --bind 127.0.0.1 --port 3000
+```
+
+### Banderas
+
+| Bandera | Descripción |
+|------|-------------|
+| `--inputs <pares>` | Inputs de circuito independiente como `name=value` (separados por coma) |
+| `--input-file <path>` | Inputs de circuito independiente desde un archivo TOML |
+| `--prove <name>` | Inspecciona un bloque `prove {}` con nombre en lugar de un circuito top-level; el programa se corre en la VM para resolver los valores capturados |
+| `--port <u16>` | Puerto HTTP (predeterminado `3000`) |
+| `--bind <addr>` | Dirección de bind (predeterminado `127.0.0.1`). El inspector expone valores del testigo, fuente y estado del DAG sin autenticación — bindear a `0.0.0.0` lo hace visible a cualquier peer en la red |
+| `--no-open` | No auto-abrir el navegador |

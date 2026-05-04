@@ -6,35 +6,35 @@ description: "Workspace crate dependencies and responsibilities."
 import AchDiagram from '../../../components/docs/AchDiagram.astro';
 import { crateMapSvgEn } from '../../../lib/diagrams/crate-map';
 
-The Achronyme workspace contains **19 crates**. All share the same version and Rust edition. The post-cleanup layering (closed 2026-04-24) groups them into four tiers: leaves with no workspace dependencies, vocabulary crates, IR/compiler stack, and top-level orchestration.
+The Achronyme workspace contains **19 crates**. All share the same version and Rust edition. They are organised into four tiers: leaves with no workspace dependencies, vocabulary crates, IR/compiler stack, and top-level orchestration.
 
 ## Crate overview
 
 | Crate | Path | Purpose |
 |-------|------|---------|
-| `diagnostics` | `crates/diagnostics/` | Spans, errors, suggestions, rustc-style renderer (zero-dep leaf) |
-| `memory` | `crates/memory/` | `FieldElement<F>` (BN254/BLS12-381/Goldilocks), `FieldBackend` trait, heap arenas, GC |
-| `ach-macros` | `crates/ach-macros/` | Proc macros: `#[ach_native]`, `#[ach_module]` |
-| `achronyme-parser` | `crates/achronyme-parser/` | Lexer, Pratt+recursive-descent parser, owned AST types |
-| `resolve` | `crates/resolve/` | Symbol table, builtin registry, unified dispatch resolver (Movimiento 2) |
-| `lysis-types` | `crates/lysis-types/` | `InstructionKind<F>`, `NodeId` shared with the [Lysis VM](/docs/architecture/lysis-vm/) |
-| `constraints` | `crates/constraints/` | `Variable`, `LinearCombination`, R1CS + Plonkish system, Poseidon, binary export |
-| `ir-core` | `crates/ir-core/` | SSA leaf: `Instruction<F>`, `SsaVar`, `Visibility`, `IrType` |
-| `ir-forge` | `crates/ir-forge/` | ProveIR templates, AST→ProveIR compiler, Lysis lift walker |
-| `ir` | `crates/ir/` | IR passes (DCE, CSE, const-fold, taint), module loader, inspector, ProveIR orchestration |
-| `zkc` | `crates/zkc/` | Constraint compiler: R1CS backend, Plonkish backend, witness ops, oracle scaffold |
-| `akronc` | `crates/akronc/` | Bytecode compiler for the [Akron VM](/docs/architecture/akron-vm/) (was `compiler`) |
-| `akron` | `crates/akron/` | Register-based general-purpose bytecode VM (was `vm`) |
-| `artik` | `crates/artik/` | Witness-computation SSA VM (was `witness`) — see [Artik](/docs/architecture/artik-vm/) |
-| `lysis` | `crates/lysis/` | Third VM, structural template instantiator with hash-consing — **in progress** |
-| `circom` | `crates/circom/` | Circom 2.x frontend: lexer, parser, analysis, lowering — see [Circom Frontend](/docs/architecture/circom-frontend/) |
-| `proving` | `crates/proving/` | Groth16 (arkworks), PlonK (halo2-KZG), Solidity verifier generation |
-| `achronyme-std` | `crates/std/` | Standard library via `NativeModule` trait |
-| `cli` | `crates/cli/` | Command-line interface, proof orchestration |
+| `diagnostics` | `diagnostics/` | Spans, errors, suggestions, rustc-style renderer (zero-dep leaf) |
+| `memory` | `memory/` | `FieldElement<F>` (BN254/BLS12-381/Goldilocks), `FieldBackend` trait, heap arenas, GC |
+| `ach-macros` | `ach-macros/` | Proc macros: `#[ach_native]`, `#[ach_module]` |
+| `achronyme-parser` | `achronyme-parser/` | Lexer, Pratt+recursive-descent parser, owned AST types |
+| `resolve` | `resolve/` | Symbol table, builtin registry, unified dispatch resolver (Movimiento 2) |
+| `lysis-types` | `lysis-types/` | `InstructionKind<F>`, `NodeId` shared with the [Lysis VM](/docs/architecture/lysis-vm/) |
+| `constraints` | `constraints/` | `Variable`, `LinearCombination`, R1CS + Plonkish system, Poseidon, binary export |
+| `ir-core` | `ir-core/` | SSA leaf: `Instruction<F>`, `SsaVar`, `Visibility`, `IrType` |
+| `ir-forge` | `ir-forge/` | ProveIR templates, AST→ProveIR compiler, Lysis lift walker |
+| `ir` | `ir/` | IR passes (DCE, CSE, const-fold, taint), module loader, inspector, ProveIR orchestration |
+| `zkc` | `zkc/` | Constraint compiler: R1CS backend, Plonkish backend, witness ops, oracle scaffold |
+| `akronc` | `akronc/` | Bytecode compiler for the [Akron VM](/docs/architecture/akron-vm/) (was `compiler`) |
+| `akron` | `akron/` | Register-based general-purpose bytecode VM (was `vm`) |
+| `artik` | `artik/` | Witness-computation SSA VM (was `witness`) — see [Artik](/docs/architecture/artik-vm/) |
+| `lysis` | `lysis/` | Third VM, structural template instantiator with hash-consing — **in progress** |
+| `circom` | `circom/` | Circom 2.x frontend: lexer, parser, analysis, lowering — see [Circom Frontend](/docs/architecture/circom-frontend/) |
+| `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), Solidity verifier generation |
+| `achronyme-std` | `std/` | Standard library via `NativeModule` trait |
+| `cli` | `cli/` | Command-line interface, proof orchestration |
 
 ## Crate renames (post-cleanup)
 
-The structural cleanup of 2026-04-18 → 2026-04-24 renamed three crates and split `ir` into three:
+A structural cleanup renamed three crates and split `ir` into three:
 
 | Old name | New name | Reason |
 |----------|----------|--------|
@@ -73,7 +73,7 @@ IR orchestration: passes (`const_fold`, `cse`, `dce`, `bool_prop`, `taint`, `bou
 
 `zkc` (depends on `ir-core`, `constraints`, `memory`)
 
-The constraint compiler. R1CS backend (`compile_to_r1cs`), Plonkish backend, witness operations (`WitnessOp`), oracle scaffolding for the Lysis Phase 3.C gate.
+The constraint compiler. R1CS backend (`compile_to_r1cs`), Plonkish backend, witness operations (`WitnessOp`), Lysis-vs-circom oracle scaffolding for cross-mode equivalence checks.
 
 `circom` (depends on `achronyme-parser`, `diagnostics`, `ir-forge`, `resolve`)
 
@@ -87,7 +87,7 @@ Bytecode compiler for the Akron VM. Owns the bytecode optimizer (peephole, const
 
 `akron` (depends on `memory`, `constraints`, `ir`, `ir-forge`)
 
-Register-based general-purpose VM. 43 opcodes, mark-sweep tri-color GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Hosts `prove {}` execution at runtime via the `ProveHandler` trait.
+Register-based general-purpose VM. 42 opcodes, mark-sweep tri-color GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Hosts `prove {}` execution at runtime via the `ProveHandler` trait.
 
 `artik` (depends on `memory`)
 

@@ -7,7 +7,7 @@ description: "Achronyme's diagnostic system: codes, severity, suggestions, and r
 
 A unified diagnostic system spans the parser, IR lowering, ProveIR compiler, Circom frontend, and CLI. Diagnostics are first-class values — every frontend produces a `Vec<Diagnostic>` rather than throwing exceptions.
 
-Crate: `diagnostics` (zero workspace dependencies). Used by every other crate. File: `crates/diagnostics/src/lib.rs`.
+Crate: `diagnostics` (zero workspace dependencies). Used by every other crate. File: `diagnostics/src/lib.rs`.
 
 ## Core types
 
@@ -81,7 +81,7 @@ A witness input flows to no assertion. Surfaced by the `taint` IR pass.
 
 ### "Did you mean?" suggestions
 
-File: `crates/diagnostics/src/suggest.rs`. Levenshtein-distance lookup against a list of valid identifiers (builtin names, in-scope variables, template names). Threshold: distance ≤ 2 and >= 50% similarity.
+File: `diagnostics/src/suggest.rs`. Levenshtein-distance lookup against a list of valid identifiers (builtin names, in-scope variables, template names). Threshold: distance ≤ 2 and >= 50% similarity.
 
 ## Severity policy
 
@@ -91,7 +91,7 @@ File: `crates/diagnostics/src/suggest.rs`. Levenshtein-distance lookup against a
 
 ## Renderer
 
-File: `crates/diagnostics/src/renderer.rs`.
+File: `diagnostics/src/renderer.rs`.
 
 ```rust
 pub struct DiagnosticRenderer {
@@ -125,7 +125,7 @@ The LSP (`ach-lsp`) consumes diagnostics via `--error-format=json` and surfaces 
 
 ## Error recovery
 
-The parser uses synchronization on `;` and `}` boundaries to keep producing `Stmt::Error` / `Expr::Error` placeholders, so a single pass yields multiple diagnostics. See `crates/achronyme-parser/src/parser/core.rs`.
+The parser uses synchronization on `;` and `}` boundaries to keep producing `Stmt::Error` / `Expr::Error` placeholders, so a single pass yields multiple diagnostics. See `achronyme-parser/src/parser/core.rs`.
 
 ## Adding a new diagnostic
 
@@ -145,12 +145,12 @@ The parser uses synchronization on `;` and `}` boundaries to keep producing `Stm
 
 | Component | File |
 |-----------|------|
-| `Diagnostic` type | `crates/diagnostics/src/lib.rs` |
-| `Span` / `SpanRange` | `crates/diagnostics/src/span.rs` |
-| Renderer | `crates/diagnostics/src/renderer.rs` |
-| `Suggestion` + applicability | `crates/diagnostics/src/suggest.rs` |
-| Parser diagnostics | `crates/achronyme-parser/src/parser/core.rs` |
-| Circom diagnostics | `crates/circom/src/diagnostics.rs` |
-| IR diagnostics | `crates/ir/src/diagnostics.rs` |
+| `Diagnostic` type | `diagnostics/src/lib.rs` |
+| `Span` / `SpanRange` | `diagnostics/src/span.rs` |
+| Renderer | `diagnostics/src/renderer.rs` |
+| `Suggestion` + applicability | `diagnostics/src/suggest.rs` |
+| Parser diagnostics | `achronyme-parser/src/parser/core.rs` |
+| Circom diagnostics | `circom/src/diagnostics.rs` |
+| IR diagnostics | `ir/src/diagnostics.rs` |
 
 See [Pipeline Overview](/docs/architecture/pipeline/) for where each diagnostic phase fires. See [Extension Guide](/docs/architecture/extension-guide/) for how to register a new code in the matching pass.

@@ -275,7 +275,7 @@ Akron and [Artik](./artik-vm) are sibling VMs with disjoint roles:
 | General-purpose scripting + `prove {}` | Witness computation for circuits |
 | Tagged values, 13+ type tags | Field elements + fixed-width ints only |
 | Mark-sweep GC, typed arenas | No heap, no GC |
-| ~40 opcodes, 3-operand format | ~25 opcodes, typed registers |
+| ~42 opcodes, 3-operand format | ~25 opcodes, typed registers |
 | Invoked by `ach run`, VM mode | Dispatched from R1CS witness-gen (`WitnessOp::ArtikCall`) |
 
 See [Artik Witness VM](./artik-vm) for details on the witness path.

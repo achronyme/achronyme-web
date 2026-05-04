@@ -28,9 +28,9 @@ Precedencia de operadores (de mayor a menor):
 
 ## Etapa 2a: Compilación a Bytecode (Modo VM)
 
-**Punto de entrada:** `compiler::FunctionCompiler::compile()`
+**Punto de entrada:** `akronc::Compiler::compile()`
 
-Para `ach run`, el AST se compila a bytecode para la VM basada en registros (37 opcodes). Un optimizador de bytecode de 3 pases se ejecuta después de la compilación:
+Para `ach run`, el AST se compila a bytecode para la VM basada en registros (42 opcodes). Un optimizador de bytecode de 3 pases se ejecuta después de la compilación:
 
 - **Peephole** — fusiona secuencias de instrucciones comunes
 - **Plegado de constantes** — evalúa aritmética sobre constantes conocidas

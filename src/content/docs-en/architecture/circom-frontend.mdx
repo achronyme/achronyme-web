@@ -16,7 +16,7 @@ For user-facing usage (importing templates, calling them from `.ach`), see the [
 
 <AchDiagram svg={circomFrontendSvgEn} ariaLabel="Circom frontend pipeline" />
 
-Entry point: `compile_to_prove_ir(source: &str) -> Result<CircomCompileResult, CircomError>` (file: `crates/circom/src/lib.rs`).
+Entry point: `compile_to_prove_ir(source: &str) -> Result<CircomCompileResult, CircomError>` (file: `circom/src/lib.rs`).
 
 ```rust
 pub struct CircomCompileResult {
@@ -31,7 +31,7 @@ Multi-file API: `compile_file(path, library_dirs)` resolves `include` chains wit
 
 ## Lexer
 
-File: `crates/circom/src/lexer.rs`. Single-pass byte scanner. Maximal-munch disambiguation for the signal-operator family:
+File: `circom/src/lexer.rs`. Single-pass byte scanner. Maximal-munch disambiguation for the signal-operator family:
 
 | Tokens | Meaning |
 |--------|---------|
@@ -47,7 +47,7 @@ The lexer must commit to the longest match; otherwise `<==` would be lexed as `<
 
 ## Parser
 
-File: `crates/circom/src/parser/`. Hand-written Pratt + recursive descent for Circom 2.x. Produces:
+File: `circom/src/parser/`. Hand-written Pratt + recursive descent for Circom 2.x. Produces:
 
 ```rust
 pub struct CircomProgram {
@@ -79,7 +79,7 @@ Bare-statement form is supported (Circom 2.1+): `for (...) stmt;` without braces
 
 ## Analysis (`circom::analysis`)
 
-File: `crates/circom/src/analysis/`. Runs after parsing:
+File: `circom/src/analysis/`. Runs after parsing:
 
 1. **Constraint pairing check** — every `<--` / `-->` (unconstrained assignment) must have a corresponding `===` constraint over the same signal. Bare `<--` without `===` is the #1 source of under-constrained vulnerabilities — emitted as warning **W103** (downgraded from hard error E101 in beta.20 to allow if-else branching patterns where one branch constrains).
 2. **Include resolution** — DAG-walks `include "file.circom";` chains, detects cycles, deduplicates mutual includes.
@@ -87,7 +87,7 @@ File: `crates/circom/src/analysis/`. Runs after parsing:
 
 ## Lowering (`circom::lowering`)
 
-File: `crates/circom/src/lowering/`. Translates the validated Circom AST into ProveIR.
+File: `circom/src/lowering/`. Translates the validated Circom AST into ProveIR.
 
 Submodules (post-audit split, 21 modules):
 
@@ -179,7 +179,7 @@ Result: Achronyme matches or beats `circom --O2` on every reference template (Nu
 
 ## Adversarial soundness tests
 
-File: `crates/circom/tests/adversarial.rs`. Four tests prove constraint deltas vs circom O2 are LC folding wins, not under-constrained bugs:
+File: `circom/tests/adversarial.rs`. Four tests prove constraint deltas vs circom O2 are LC folding wins, not under-constrained bugs:
 
 1. Forge non-bool bits in `Num2Bits` → assertion fails.
 2. Forge sum violation in `Num2Bits` → assertion fails.
@@ -189,20 +189,20 @@ File: `crates/circom/tests/adversarial.rs`. Four tests prove constraint deltas v
 
 | Component | File |
 |-----------|------|
-| Lexer | `crates/circom/src/lexer.rs` |
-| Parser | `crates/circom/src/parser/` |
-| Analysis | `crates/circom/src/analysis/` |
-| Lowering driver | `crates/circom/src/lowering/mod.rs` |
-| Components | `crates/circom/src/lowering/components.rs` |
-| Signals | `crates/circom/src/lowering/signals.rs` |
-| Expressions | `crates/circom/src/lowering/expressions.rs` |
-| Statements | `crates/circom/src/lowering/statements.rs` |
-| Const fold | `crates/circom/src/lowering/const_fold.rs` |
-| Artik lift | `crates/circom/src/lowering/artik_lift.rs` |
-| Context | `crates/circom/src/lowering/context.rs` |
-| Diagnostics | `crates/circom/src/diagnostics.rs` |
-| Adversarial tests | `crates/circom/tests/adversarial.rs` |
-| E2E tests | `crates/circom/tests/e2e.rs` |
-| Public API | `crates/circom/src/lib.rs` |
+| Lexer | `circom/src/lexer.rs` |
+| Parser | `circom/src/parser/` |
+| Analysis | `circom/src/analysis/` |
+| Lowering driver | `circom/src/lowering/mod.rs` |
+| Components | `circom/src/lowering/components.rs` |
+| Signals | `circom/src/lowering/signals.rs` |
+| Expressions | `circom/src/lowering/expressions.rs` |
+| Statements | `circom/src/lowering/statements.rs` |
+| Const fold | `circom/src/lowering/const_fold.rs` |
+| Artik lift | `circom/src/lowering/artik_lift.rs` |
+| Context | `circom/src/lowering/context.rs` |
+| Diagnostics | `circom/src/diagnostics.rs` |
+| Adversarial tests | `circom/tests/adversarial.rs` |
+| E2E tests | `circom/tests/e2e.rs` |
+| Public API | `circom/src/lib.rs` |
 
 See [Circom Interop](/docs/circom/overview/) for user-facing usage. See [ProveIR](/docs/architecture/prove-ir/) for the format produced by lowering. See [Artik Witness VM](/docs/architecture/artik-vm/) for non-inlinable function bodies.

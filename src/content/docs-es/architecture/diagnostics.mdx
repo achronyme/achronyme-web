@@ -7,7 +7,7 @@ description: "El sistema de diagnósticos de Achronyme: códigos, severidad, sug
 
 Un sistema de diagnósticos unificado abarca el parser, lowering de IR, compilador de ProveIR, frontend de Circom y CLI. Los diagnósticos son valores de primera clase — cada frontend produce un `Vec<Diagnostic>` en lugar de lanzar excepciones.
 
-Crate: `diagnostics` (cero dependencias del workspace). Usado por todos los demás crates. Archivo: `crates/diagnostics/src/lib.rs`.
+Crate: `diagnostics` (cero dependencias del workspace). Usado por todos los demás crates. Archivo: `diagnostics/src/lib.rs`.
 
 ## Tipos núcleo
 
@@ -81,7 +81,7 @@ Un input de testigo fluye sin llegar a ninguna aserción. Surfaceado por el pase
 
 ### Sugerencias "Did you mean?"
 
-Archivo: `crates/diagnostics/src/suggest.rs`. Búsqueda por distancia de Levenshtein contra una lista de identificadores válidos (nombres de builtins, variables en alcance, nombres de plantillas). Umbral: distancia ≤ 2 y >= 50% de similitud.
+Archivo: `diagnostics/src/suggest.rs`. Búsqueda por distancia de Levenshtein contra una lista de identificadores válidos (nombres de builtins, variables en alcance, nombres de plantillas). Umbral: distancia ≤ 2 y >= 50% de similitud.
 
 ## Política de severidad
 
@@ -91,7 +91,7 @@ Archivo: `crates/diagnostics/src/suggest.rs`. Búsqueda por distancia de Levensh
 
 ## Renderer
 
-Archivo: `crates/diagnostics/src/renderer.rs`.
+Archivo: `diagnostics/src/renderer.rs`.
 
 ```rust
 pub struct DiagnosticRenderer {
@@ -125,7 +125,7 @@ El LSP (`ach-lsp`) consume diagnósticos vía `--error-format=json` y los expone
 
 ## Recuperación de errores
 
-El parser usa sincronización en límites `;` y `}` para seguir produciendo placeholders `Stmt::Error` / `Expr::Error`, así que un solo pase produce múltiples diagnósticos. Ver `crates/achronyme-parser/src/parser/core.rs`.
+El parser usa sincronización en límites `;` y `}` para seguir produciendo placeholders `Stmt::Error` / `Expr::Error`, así que un solo pase produce múltiples diagnósticos. Ver `achronyme-parser/src/parser/core.rs`.
 
 ## Agregar un nuevo diagnóstico
 
@@ -145,12 +145,12 @@ El parser usa sincronización en límites `;` y `}` para seguir produciendo plac
 
 | Componente | Archivo |
 |------------|---------|
-| Tipo `Diagnostic` | `crates/diagnostics/src/lib.rs` |
-| `Span` / `SpanRange` | `crates/diagnostics/src/span.rs` |
-| Renderer | `crates/diagnostics/src/renderer.rs` |
-| `Suggestion` + applicability | `crates/diagnostics/src/suggest.rs` |
-| Diagnósticos del parser | `crates/achronyme-parser/src/parser/core.rs` |
-| Diagnósticos de Circom | `crates/circom/src/diagnostics.rs` |
-| Diagnósticos de IR | `crates/ir/src/diagnostics.rs` |
+| Tipo `Diagnostic` | `diagnostics/src/lib.rs` |
+| `Span` / `SpanRange` | `diagnostics/src/span.rs` |
+| Renderer | `diagnostics/src/renderer.rs` |
+| `Suggestion` + applicability | `diagnostics/src/suggest.rs` |
+| Diagnósticos del parser | `achronyme-parser/src/parser/core.rs` |
+| Diagnósticos de Circom | `circom/src/diagnostics.rs` |
+| Diagnósticos de IR | `ir/src/diagnostics.rs` |
 
 Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para dónde dispara cada fase de diagnósticos. Ver [Guía de Extensión](/docs/architecture/extension-guide/) para cómo registrar un nuevo código en el pase correspondiente.

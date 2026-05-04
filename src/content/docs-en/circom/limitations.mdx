@@ -62,7 +62,7 @@ The following circomlib primitives have been compiled end-to-end, run through R1
 | `BabyAdd`, `BabyDbl`, `BabyCheck` | 48 (combined) | — | ✓ R1CS verified |
 | `EscalarMulFix(253)` | 11 | 11 | ✓ Matches circom O2 |
 | `EscalarMulAny(254)` | 2310 | 2310 | ✓ Matches circom O2 |
-| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (41,136 IR nodes, 263,709 VM instructions); R1CS E2E pending test run |
+| `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (31,685 IR nodes → 22,271 instructions after optimisation); R1CS test passes with `enabled=0` |
 | Mux, gates, bitify, comparators | — | — | ✓ Used transitively by the above |
 
 End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` and `EscalarMulAny(254)`.
@@ -99,7 +99,7 @@ If any of these are blocking a real circuit for you, please open an issue with t
 
 ## VM Mode Limitations
 
-VM mode (calling templates from non-`prove` code under `ach run`) is narrower than circuit mode. Phase 4 restrictions:
+VM mode (calling templates from non-`prove` code under `ach run`) is narrower than circuit mode. Current restrictions:
 
 - **Template arguments must be integer literals.** `let N = 8; Num2Bits(N)(x)` is rejected — use `Num2Bits(8)(x)` directly until the VM-mode compile-time constant folder lands.
 - **Scalar signal inputs only.** Templates with `signal input in[n]` cannot be called from VM mode.
@@ -112,18 +112,7 @@ See [VM Mode](/docs/circom/vm-mode/) for the call semantics and why these restri
 
 Planned work, in rough priority order:
 
-### Phase 5 — Manifest integration (shipped)
-
-The `[circom]` section in `achronyme.toml` is live:
-
-```toml
-[circom]
-libs = ["vendor/circomlib/circuits"]
-```
-
-`ach run`, `ach circuit`, and `ach circom` all consume `[circom].libs` automatically, and CLI `-l/--lib` flags append to the list rather than replacing it. See [Project Configuration](/docs/cli/project-config/#circom--circom-library-search-paths).
-
-### Phase 6 — Docs and examples (in progress)
+### Tutorials and migration guides (in progress)
 
 Shipped:
 
@@ -136,7 +125,7 @@ Pending:
 - Cross-tool benchmarks comparing Achronyme + imported circomlib vs plain circom.
 - Migration guide for teams moving existing circom projects.
 
-### Phase 4 follow-ups (VM mode)
+### VM-mode follow-ups
 
 - **Compile-time constant folding** so VM-mode template args can be variables as long as they fold.
 - **Array signal inputs** by extending the `CallCircomTemplate` opcode to accept input arrays.

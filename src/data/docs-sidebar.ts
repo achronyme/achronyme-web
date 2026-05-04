@@ -96,7 +96,7 @@ export const sidebarConfig: SidebarConfig = [
       { label: 'Witness Generation', slug: 'architecture/witness-generation', translations: { es: 'Generacion de Testigos' } },
       { label: 'Akron VM & Bytecode', slug: 'architecture/akron-vm', translations: { es: 'Akron VM y Bytecode' } },
       { label: 'Artik Witness VM', slug: 'architecture/artik-vm', translations: { es: 'VM de Testigos Artik' } },
-      { label: 'Lysis VM (in-progress)', slug: 'architecture/lysis-vm', translations: { es: 'Lysis VM (en progreso)' } },
+      { label: 'Lysis VM', slug: 'architecture/lysis-vm', translations: { es: 'Lysis VM' } },
       { label: 'Memory & GC', slug: 'architecture/memory-and-gc', translations: { es: 'Memoria y GC' } },
       { label: 'Circom Frontend', slug: 'architecture/circom-frontend', translations: { es: 'Frontend de Circom' } },
       { label: 'Diagnostics', slug: 'architecture/diagnostics', translations: { es: 'Diagnosticos' } },

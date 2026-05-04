@@ -138,11 +138,11 @@ The deduplication uses canonical source paths, so different spellings of the sam
 
 ## Project Configuration
 
-Phase 5 will add a `[circom]` section to `achronyme.toml`:
+The `[circom]` section in `achronyme.toml` declares per-project library search paths:
 
 ```toml
 [circom]
 libs = ["vendor/circomlib/circuits"]
 ```
 
-Once that lands, `ach run`, `ach circuit`, and `ach circom` will all consume `[circom].libs` automatically, matching the ergonomics of `[project].entry` and the other manifest-driven defaults. See [Limitations and Roadmap](/docs/circom/limitations/) for the current status.
+`ach run`, `ach circuit`, and `ach circom` consume `[circom].libs` automatically, matching the ergonomics of `[project].entry` and the other manifest-driven defaults. CLI `-l/--lib` flags append to that list rather than replacing it. See [Limitations and Roadmap](/docs/circom/limitations/) for follow-up work in this area.
