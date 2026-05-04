@@ -5,9 +5,9 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
-## 0.1.0-beta.20 — No publicado
+## 0.1.0-beta.20 — 2026-05-03
 
-**Frontend Circom: compila archivos `.circom` a través del pipeline de Achronyme con garantías de seguridad estructural que el compilador original no provee.**
+**Frontend Circom, Lysis (tercera VM), descomposición del workspace en 19 crates, optimizador R1CS iterativo y SHA-256(64) end-to-end. Compila archivos `.circom` a través del pipeline de Achronyme con garantías de seguridad estructural que el compilador de referencia no provee.**
 
 ### Nuevo: comando `ach circom`
 
@@ -325,6 +325,116 @@ El lookup se resuelve completamente en tiempo de compilación — el compilador 
 Las formas antiguas `alias.nombre` / `alias.func(...)` producen un error de migración que apunta al spelling correcto con una sugerencia "did you mean". Aplica tanto a alias de módulos `.ach` como a alias de librerías `.circom`.
 
 Ve [Módulos](/docs/language/modules/) y [Importando Templates de Circom](/docs/circom/importing/) para la referencia completa de sintaxis.
+
+### Nuevo: descomposición del workspace — 19 crates
+
+El código pasó de 10 a 19 crates con un layering coherente:
+
+- **Capa de ejecución** — `akron` (VM de bytecode, renombrado de `vm`), `artik` (VM de testigos), `lysis` (tercera VM, ver abajo).
+- **Pipeline de lowering** — `ir-core` (hoja SSA), `ir-forge` (templates ProveIR + lift de Lysis), `zkc` (compilador de constraints — R1CS, Plonkish, witness, oracle), `akronc` (compilador de bytecode, renombrado de `compiler`).
+- **Frontends** — `achronyme-parser`, `circom`, `resolve` (nuevo grafo de módulos + resolución de símbolos).
+- **Compartidos** — `memory`, `diagnostics`, `lysis-types`, `ach-macros`, `proving`, `cli`, `achronyme-std`.
+
+`compiler` → `akronc`, `vm` → `akron`, `witness` → `artik`. Re-exports mantienen las APIs públicas estables para embedders. El split deja legible el DAG de dependencias: `lysis` solo depende de `{memory, artik, lysis-types}`, el templating de ProveIR ya no arrastra generación de constraints, y el compilador de constraints puede evolucionar sin tocar el IR core.
+
+### Nuevo: Lysis VM — tercera modalidad de ejecución para programas con forma circom
+
+Lysis es una VM basada en registros que ejecuta cuerpos de funciones circom liftados y cuerpos de loops estructuralmente uniformes *como una traza VM*, en lugar de depender del walker para emitir IR por iteración. Esto elimina una clase de bloqueos por desbordamiento de frame que estaban gateando circuitos pesados como SHA-256(64).
+
+- **36 opcodes** incluyendo `EmitDiv`, `EmitAssertEqMsg` y tres variantes con heap (`StoreHeap`, `LoadHeap`, `EmitWitnessCallHeap`).
+- **Heap de spill** con la invariante *single-static-store*: cada slot del heap se escribe exactamente una vez antes de cualquier lectura, y las lecturas caen en la misma región dominador que el store. Validado por un pase de integridad; las violaciones se rechazan en tiempo de lift, no en runtime.
+- **Header v2** con `heap_size_hint` para que el runtime preallocate la arena de spill antes de iniciar la ejecución.
+- **Splits por iteración intermedia** — cuando el cuerpo de una sola iteración excede el presupuesto del frame rolled, el lifter divide a la mitad de la iteración en puntos seguros en lugar de forzar todo el loop a unrolling per-iter. Esto es lo que destraba SHA-256(64).
+- **Profundidad de llamada por defecto** subida de 64 a 8192 para acomodar árboles de inlining de templates profundos.
+
+### Nuevo: Artik VM — cómputo de testigos exclusivo
+
+Artik es la VM del lado del testigo. A diferencia de Akron (que corre programas Achronyme completos con heap + GC), Artik no tiene heap, no tiene GC, ~25 opcodes, y se despacha desde R1CS vía `WitnessOp::ArtikCall`. Esto cierra el gap (anteriormente `E212`) donde los cuerpos de funciones circom que necesitaban evaluación de testigo en runtime tenían que recurrir a heurísticas del intérprete — ahora compilan a bytecode `.artik` y corren como datos.
+
+### Nuevo: crate `resolve` — grafo de módulos + resolución de símbolos
+
+Una capa de resolución dedicada que construye un grafo de módulos, anota el AST del programa y expone un `BuiltinRegistry` poblado con los 21 builtins. Adoptado tanto por el compilador de bytecode como por ProveIR — ya no cargan lógica de resolución de nombres en paralelo. Nuevas formas de diagnóstico: `ProveBlockUnsupportedShape`, `FnAlias`. El operador `::` de este release es la superficie visible al usuario de este trabajo.
+
+### Nuevo: dispatch Circom en modo VM
+
+Un nuevo opcode `CallCircomTemplate` (162) y el value tag `TAG_CIRCOM_HANDLE` permiten que programas `.ach` corriendo bajo `ach run` invoquen templates circom importados como valores:
+
+```ach
+import { Poseidon } from "./circomlib/poseidon.circom"
+
+let h = Poseidon(2)([secret, salt])
+print(h)
+```
+
+Soporta inputs escalares y de array. Los templates compilan a través del mismo frontend circom usado por bloques `prove {}`; luego un `CircomLibraryHandle` mantiene el cuerpo compilado para instanciación en runtime. Ve [Modo VM de Circom](/docs/circom/vm-mode/) para la semántica de llamada y las restricciones actuales.
+
+### Nuevo: sección `[circom]` en `achronyme.toml`
+
+Configura los paths de búsqueda de librerías circom a nivel proyecto:
+
+```toml
+[circom]
+libs = ["node_modules/circomlib/circuits", "vendor/zk-ml"]
+```
+
+Resuelto relativo a la raíz del proyecto y mergeado con los flags `-l/--lib` de `ach circom`. Se propaga a `ach run` y `ach circuit` para que los bloques prove que importan `.circom` tomen los mismos directorios de librería.
+
+### Perf: optimizador R1CS — O1 iterativo con DEDUCE sparse y clustering
+
+El pase O1 ahora se estructura alrededor de iteración y clustering en lugar de un escaneo de una sola pasada:
+
+- **Eliminación lineal Cluster-Gauss** — las constraints se particionan por conectividad de signals y se eliminan por Gauss cluster por cluster, con un picker condicional al tamaño (tamaño ≤ 500: picker de mínima ocurrencia; arriba: greedy fallback). Working sets más pequeños por paso de Gauss, mayor reducción total.
+- **Primitivas in-place** — `simplify_in_place`, `apply_substitution_in_place`. Reduce la presión de allocación del optimizador: runtime completo del benchmark **9.3 s → 6.8 s (−26.5 %)** sin cambiar el output.
+- **DEDUCE sparse** — la eliminación gaussiana sobre la matriz de monomios cuadráticos ahora es sparse, con materialización fila por fila. Cierra ~25 % del gap residual de O2 vs el optimizador circom de referencia.
+- **Heurística de frecuencia, eliminación de lineales tautológicos, manejo de zero-product** — todo preservado del pase O1 inicial.
+
+Impacto concreto: SHA-256(64) post-O1 = 30,113 constraints (≈ circom O2 ± 4 %); LessThan(8) post-O1 = 9 (vs circom O2 = 20); MiMCSponge(2, 220, 1) post-O1 = 1,317 (vs circom O2 = 1,320).
+
+### Nuevo: inferencia de bit-width y plumbing de `Capture(nBits)`
+
+Un nuevo pase IR infiere bounds de bit-width para shifts y descomposiciones, y `Capture(nBits)` se cablea a través de `InferenceCtx::param_values` para que templates parametrizados sobre bit width (Num2Bits, RangeProof, ShR, ops de palabras de SHA-256) narrowen correctamente sin anotaciones manuales. Las operaciones de shift de SHA-256 narrowean a exactamente 10,473 / 10,473 (sin sobre-descomposición).
+
+### Nuevo: SHA-256(64) end-to-end
+
+El circuito SHA-256 completo compila end-to-end a través del frontend circom:
+
+- **Compile** — 1,287 splits intermedios, 207 k instrucciones IR, 50 ms de tiempo de build de Lysis.
+- **Witness** — handler de `LetArray` en `compute_witness_hints_with_captures` materializa los aliases `var outCalc[256] = sha256compression(...)`. El digest es **bit-exacto** versus `sha2::Sha256::digest` (FIPS-180-4) sobre los vectores de prueba elegidos.
+- **R1CS** — 87,391 constraints en hard-gate; 30,113 post-O1 (dentro del 4 % del output de referencia O2 de circom).
+
+### Perf: fix cuadrático en `do_split` del walker
+
+La lógica de split intermedio del walker re-escaneaba el body por cada split (O(n²) en cantidad de iteraciones). Un `last_use_idx: HashMap<SsaVar, usize>` precomputado reemplaza el rescan por split:
+
+- SHA-256(64) instantiate: **7.85 s → 1.87 s (−76 %)**.
+- SHA-256(64) compile total: **20.57 s → 14.65 s (−28.8 %)**.
+- Output R1CS: byte-idéntico (8/8 benchmark + 3/3 cross-mode adversariales).
+
+### Nuevo: suite de soundness adversarial
+
+Evidencia empírica de que los conteos de constraints bajo el baseline O2 de circom no son atajos under-constrained:
+
+- **Num2Bits** — forjar un bit no booleano, el chequeo de witness rechaza.
+- **Num2Bits sum violation** — forjar un patrón de bits cuya suma no concuerda con el input.
+- **LessThan(8)** — forjar el output del comparador en ambas direcciones; ambas falsificaciones rechazadas por el sistema de constraints.
+
+Cada reducción R1CS en la tabla del benchmark está apareada con un test adversarial confirmando que la invariante de soundness sobrevive a la optimización. Esta es la traza de auditoría para "Achronyme O1 ≤ circom O2 — pero sigue siendo sound".
+
+### Nuevo: guardas de profundidad del parser (E300)
+
+El parser Circom ahora capa la recursión de expresión y bloque a 64 niveles, devolviendo `E300` en lugar de hacer stack-overflow ante input adversarial. Surfaceado por el soak de libFuzzer — dos crashes distintos (`[` profundamente anidado, `{` profundamente anidado) ambos arreglados bajo la misma forma de diagnóstico, con tests de regresión para cada uno.
+
+### Hardening: soak de fuzz de 10M iteraciones
+
+Siete targets de fuzz (`fuzz_lysis_decode`, `fuzz_lysis_validate`, `fuzz_artik_decode`, `fuzz_proveir_instantiate`, `fuzz_parser`, `fuzz_circom_parser`, `fuzz_r1cs_preservation`) corren limpios por 10M iteraciones por target. Tres targets restantes (`fuzz_ir_lower`, `fuzz_artik_exec`, `fuzz_r1cs_pipeline`) golpean la política `rss_limit_mb` de libFuzzer con inputs propensos a amplificación; la invariante `no panics` del target se mantiene, y las clases de OOM están trackeadas como follow-ups post-tag.
+
+### Nuevo: validador de integridad SSA por pase
+
+Un validador opt-in (`ACHRONYME_VALIDATE_IR_PASSES=1`) corre tras cada pase IR y atrapa violaciones de invariantes SSA — definiciones duplicadas, usos colgados, mismatches de dominator-frontier — que de otro modo aparecerían como miscompiles silenciosos. Off por default; actívalo cuando estés triajeando miscompiles o desarrollando pases nuevos.
+
+### Mejorado: EdDSAPoseidon end-to-end
+
+Compile + instantiate + verificación R1CS todo en verde: **31,685 nodos IR → 22,271 instrucciones** tras optimización, **3,965 constraints post-optimizador** (2.04× menos que circom `--O1` con 8,086). El test R1CS pasa con `enabled=0`, encima del test Groth16 existente.
 
 ---
 
