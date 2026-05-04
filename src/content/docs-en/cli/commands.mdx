@@ -10,6 +10,7 @@ These flags apply to all subcommands:
 | Flag | Description |
 |------|-------------|
 | `--error-format <fmt>` | Diagnostic output format: `human` (default), `json`, or `short`. See [Diagnostics & Warnings](/docs/language/diagnostics/#output-formats) |
+| `--prime <name>` | Prime field for the constraint backend: `bn254` (default), `bls12-381`, or `goldilocks` |
 | `--no-config` | Disable `achronyme.toml` loading. All values come from CLI flags and defaults |
 
 ---
@@ -74,6 +75,7 @@ If `<path>` is omitted, the CLI resolves the entry file from `[project].entry` i
 | `--stress-gc` | Run GC on every allocation (for testing). See [Stress GC Mode](/docs/architecture/memory-and-gc/#stress-gc-mode) |
 | `--max-heap <size>` | Set maximum heap size (e.g., `256M`, `1G`, `512K`). Raises `HeapLimitExceeded` if exceeded |
 | `--gc-stats` | Print GC statistics to stderr after execution. See [GC Statistics](/docs/architecture/memory-and-gc/#gc-statistics) |
+| `--circuit-stats` | Print circuit constraint stats for each `prove {}` block executed |
 | `--prove-backend <backend>` | Backend for `prove {}` blocks: `r1cs` (default) or `plonkish` |
 
 ### Examples
@@ -97,6 +99,39 @@ ach circuit --inputs "x=42,y=7"    # uses entry from achronyme.toml
 ```
 
 See [Circuit Options](/docs/cli/circuit-options) for all available flags.
+
+---
+
+## `circom` — Compile a `.circom` file
+
+Compiles a Circom 2.x source file through the Achronyme frontend, producing the same `.r1cs`/`.wtns` artefacts as `circuit` and optionally a Groth16 proof. Use this to run circomlib templates (or your own `.circom` projects) without leaving the Achronyme toolchain.
+
+```bash
+ach circom poseidon.circom --inputs "in=42"
+ach circom merkle.circom --inputs "root=0x...,leaf=42" --prove --solidity Verifier.sol
+ach circom -l vendor/circomlib/circuits sha256.circom --inputs-file inputs.toml
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--inputs <pairs>` | Comma-separated `name=value` (decimal or `0x` hex) |
+| `--input-file <path>` | Inputs from a TOML file (arrays supported natively) |
+| `-l, --lib <dir>` | Library search directory for `include` resolution. Repeatable; CLI dirs take precedence over `[circom].libs` from `achronyme.toml` |
+| `--backend <r1cs\|plonkish>` | Constraint backend (default: `r1cs`) |
+| `--prove` | Generate a cryptographic proof after compilation (requires `--inputs`) |
+| `--r1cs <path>` | Output `.r1cs` path (snarkjs-compatible) |
+| `--wtns <path>` | Output `.wtns` path |
+| `--solidity <path>` | Emit a Solidity Groth16 verifier contract at this path |
+| `--plonkish-json <path>` | Export the Plonkish circuit (with witness if `--inputs` is given) as JSON |
+| `--dump-ir` | Print the optimized SSA IR and exit before constraint generation |
+| `--no-optimize` | Disable IR optimization passes |
+| `--circuit-stats` | Print constraint count breakdown |
+
+### Library resolution
+
+`include` lookup walks `--lib` directories first, then `[circom].libs` from the project manifest, then the file's own directory. See [Importing Templates](/docs/circom/importing) for the full resolution model.
 
 ---
 
@@ -128,6 +163,23 @@ ach disassemble                    # uses entry from achronyme.toml
 
 ---
 
-## `repl` — Interactive mode
+## `inspect` — Open the circuit inspector
 
-Starts an interactive Read-Eval-Print loop. (Not yet implemented.)
+Compiles a circuit (or a named `prove {}` block) and serves a local HTTP page that visualises the IR DAG, witness values, and constraint stats. The Astro+D3 inspector UI lives in the [achronyme-inspector](https://github.com/achronyme/achronyme-inspector) repo and ships embedded for offline use.
+
+```bash
+ach inspect circuit.ach --inputs "x=42"
+ach inspect script.ach --prove main_block --inputs "secret=7"
+ach inspect --bind 127.0.0.1 --port 3000
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--inputs <pairs>` | Standalone-circuit inputs as `name=value` (comma-separated) |
+| `--input-file <path>` | Standalone-circuit inputs from a TOML file |
+| `--prove <name>` | Inspect a named `prove {}` block instead of a top-level circuit; the program runs in the VM to resolve captured values |
+| `--port <u16>` | HTTP port (default `3000`) |
+| `--bind <addr>` | Bind address (default `127.0.0.1`). The inspector exposes witness values, source, and DAG state without auth — binding to `0.0.0.0` makes that visible to every peer on the network |
+| `--no-open` | Do not auto-open the browser |
