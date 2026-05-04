@@ -101,7 +101,7 @@ Los errores de dispatch se disparan cuando un archivo `.ach` llama un template C
 | `signal input count mismatch` | `T(args)(in1, in2, in3)` donde `T` declara un numero diferente de inputs. |
 | `template argument must be a compile-time constant` | Pasar una expresion no constante como parametro de template. |
 | `array signal input unsupported in VM mode` | Llamar un template con `signal input in[n]` desde modo VM. |
-| `template argument must be an integer literal` | Restriccion de Phase 4 en llamadas del modo VM. |
+| `template argument must be an integer literal` | Restriccion de las llamadas en modo VM (ver [Limitaciones del Modo VM](/docs/circom/limitations/#limitaciones-del-modo-vm)). |
 
 Cada tipo lleva un source span en el callsite y, para lookups de template/namespace, una sugerencia "did you mean?" cuando existe un nombre similar.
 

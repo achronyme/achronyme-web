@@ -73,7 +73,7 @@ IR orchestration: passes (`const_fold`, `cse`, `dce`, `bool_prop`, `taint`, `bou
 
 `zkc` (depends on `ir-core`, `constraints`, `memory`)
 
-The constraint compiler. R1CS backend (`compile_to_r1cs`), Plonkish backend, witness operations (`WitnessOp`), oracle scaffolding for the Lysis Phase 3.C gate.
+The constraint compiler. R1CS backend (`compile_to_r1cs`), Plonkish backend, witness operations (`WitnessOp`), Lysis-vs-circom oracle scaffolding for cross-mode equivalence checks.
 
 `circom` (depends on `achronyme-parser`, `diagnostics`, `ir-forge`, `resolve`)
 

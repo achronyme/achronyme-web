@@ -52,10 +52,10 @@ En runtime, la VM lee el handle, empaqueta los registros de signal a field eleme
 
 ## Reglas de Template Arguments
 
-Los template arguments siguen la misma regla que el modo circuito, con una restriccion adicional de la Phase 4:
+Los template arguments siguen la misma regla que el modo circuito, con una restriccion adicional del modo VM:
 
 - **Deben ser constantes en tiempo de compilacion** (igual que modo circuito).
-- **Deben ser literales enteros** en el callsite (limitacion de Phase 4).
+- **Deben ser literales enteros** en el callsite.
 
 ```ach
 // ✓ Literal entero
@@ -130,7 +130,7 @@ let proof = prove(commitment: Public) {
 }
 ```
 
-## Limitaciones de Phase 4
+## Limitaciones Actuales
 
 Cosas que funcionan hoy:
 
@@ -139,7 +139,7 @@ Cosas que funcionan hoy:
 - Imports tanto selectivos como con namespace.
 - Evaluacion completa del testigo circom via `evaluate_template_witness`.
 
-Cosas fuera del alcance de Phase 4 que vienen despues:
+Cosas que aun no estan soportadas:
 
 - **Constant folding para template arguments** — `let N = 8; Num2Bits(N)(x)` en modo VM.
 - **Signal inputs de array** — llamar un template que toma `signal input in[n]`.

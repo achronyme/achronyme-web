@@ -138,11 +138,11 @@ La deduplicacion usa source paths canonicos, asi que diferentes escrituras del m
 
 ## Configuracion del Proyecto
 
-La Phase 5 agregara una seccion `[circom]` a `achronyme.toml`:
+La seccion `[circom]` en `achronyme.toml` declara las rutas de busqueda de librerias por proyecto:
 
 ```toml
 [circom]
 libs = ["vendor/circomlib/circuits"]
 ```
 
-Una vez que aterrice, `ach run`, `ach circuit` y `ach circom` consumiran `[circom].libs` automaticamente, igualando la ergonomia de `[project].entry` y los otros defaults manejados por el manifest. Ve [Limitaciones y Roadmap](/docs/circom/limitations/) para el estado actual.
+`ach run`, `ach circuit` y `ach circom` consumen `[circom].libs` automaticamente, igualando la ergonomia de `[project].entry` y los otros defaults manejados por el manifest. Las banderas CLI `-l/--lib` se suman a esa lista en lugar de reemplazarla. Ve [Limitaciones y Roadmap](/docs/circom/limitations/) para trabajo de seguimiento en esta area.

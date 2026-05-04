@@ -52,10 +52,10 @@ At runtime, the VM reads the handle, marshals the signal registers into field el
 
 ## Template Argument Rules
 
-Template arguments follow the same rule as circuit mode, with one additional Phase 4 restriction:
+Template arguments follow the same rule as circuit mode, with one additional VM-mode restriction:
 
 - **Must be compile-time constants** (same as circuit mode).
-- **Must be integer literals** at the call site (Phase 4 limitation).
+- **Must be integer literals** at the call site.
 
 ```ach
 // ✓ Integer literal
@@ -130,7 +130,7 @@ let proof = prove(commitment: Public) {
 }
 ```
 
-## Phase 4 Limitations
+## Current Limitations
 
 Things that work today:
 
@@ -139,7 +139,7 @@ Things that work today:
 - Both selective and namespaced imports.
 - Full circom witness evaluation via `evaluate_template_witness`.
 
-Things that are scoped out of Phase 4 and coming later:
+Things that are not yet supported:
 
 - **Constant folding for template arguments** — `let N = 8; Num2Bits(N)(x)` in VM mode.
 - **Array signal inputs** — calling a template that takes `signal input in[n]`.

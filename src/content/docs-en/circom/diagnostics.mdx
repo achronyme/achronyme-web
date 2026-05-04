@@ -101,7 +101,7 @@ Dispatch errors fire when an `.ach` file calls a Circom template through an impo
 | `signal input count mismatch` | `T(args)(in1, in2, in3)` where `T` declares a different number of inputs. |
 | `template argument must be a compile-time constant` | Passing a non-constant expression as a template parameter. |
 | `array signal input unsupported in VM mode` | Calling a template with `signal input in[n]` from VM mode. |
-| `template argument must be an integer literal` | Phase 4 restriction on VM-mode calls. |
+| `template argument must be an integer literal` | VM-mode call constraint (see [VM Mode Limitations](/docs/circom/limitations/#vm-mode-limitations)). |
 
 Each kind carries a source span at the callsite and, for template/namespace lookups, a did-you-mean suggestion when a similar name exists.
 
