@@ -5,6 +5,8 @@ description: "The headline release: Achronyme compiles .circom files end-to-end 
 
 Achronyme **0.1.0-beta.20** ships the Circom frontend: `.circom` files flow through the same pipeline as native `.ach` circuits, with compile-time soundness checks the reference circom compiler does not perform. This page is the two-minute version — the full changelog entry lives in the [Changelog](/docs/releases/changelog/).
 
+Alongside the Circom frontend, beta.20 reorganizes the codebase into 19 workspace crates and introduces **Lysis**, a third execution VM that lifts circom function bodies as VM traces. That's what unblocks heavy circuits like SHA-256(64) end-to-end.
+
 ## TL;DR
 
 - **`ach circom file.circom --prove`** compiles and proves a circom circuit end-to-end.
@@ -12,6 +14,8 @@ Achronyme **0.1.0-beta.20** ships the Circom frontend: `.circom` files flow thro
 - **E100 + W101 catch under-constrained signals** at compile time — the #1 source of ZK bugs, which the circom compiler does not detect.
 - **Three ways to reach Circom code**: full absorption (`import circuit`), selective templates (`import { T } from`), or namespaced library (`import ... as P`). See [Circom Interop Overview](/docs/circom/overview/).
 - **`[circom]` section** in `achronyme.toml` centralizes library search paths — no more `-l` on every invocation. See [Project Configuration](/docs/cli/project-config/#circom--circom-library-search-paths).
+- **Three-VM architecture** — Akron (bytecode), Artik (witness-only), Lysis (lifted circom bodies + uniform loops). See [Lysis VM](/docs/architecture/lysis-vm/) and [Pipeline](/docs/architecture/pipeline/).
+- **SHA-256(64) end-to-end** — full digest is bit-exact vs `sha2::Sha256::digest`; post-O1 R1CS lands within 4% of circom's reference O2 output.
 
 ## Why it matters
 
@@ -52,12 +56,15 @@ End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `Is
 
 ## What changed under the hood
 
-- New 11th workspace crate: `circom/` — hand-written Pratt parser, constraint analyzer, lowering pipeline (21 modules), witness evaluator, Groth16 E2E.
-- New diagnostics codes: **E100-E102** (constraint soundness), **W101-W103** (warning on unverified signals), **E200-E211** (lowering), **E300-E306** (parser).
-- New opcodes / infrastructure: `CallCircomTemplate` (VM-mode calls), `TAG_CIRCOM_HANDLE`, `CircomWitnessHandler` trait, `CircomLibraryHandle` trait, `CircomCallable` dispatch.
-- Compile-time arithmetic migrated from `i64` to **BigVal** (256-bit two's complement), so templates that compute `1 << 128` (like `CompConstant`) work correctly.
-- Dynamic loop bounds (`for i in 0..n+1`), component arrays (`component muls[n]`), 2-D array variables (`var M[t][t]`), function-keyword compile-time evaluator.
-- R1CS optimizer v2: frequency heuristic, tautological linear removal, zero-product handling, plus **DEDUCE** Gaussian elimination with field-folding constant propagation.
+- **Workspace decomposition: 19 crates.** `circom/` is one of them — hand-written Pratt parser, constraint analyzer, lowering pipeline, witness evaluator, Groth16 E2E. The wider split renames `vm` → `akron`, `witness` → `artik`, `compiler` → `akronc`, and decomposes the IR + constraint compiler into `ir-core` / `ir-forge` / `zkc`. See [Crate Map](/docs/architecture/crate-map/).
+- **Lysis (third VM).** 36 opcodes, single-static-store spill heap, mid-iter splits when a single iteration body exceeds the rolled-frame budget. Walker `do_split` quadratic fix takes SHA-256(64) instantiate from 7.85 s to 1.87 s. Output R1CS byte-identical pre/post.
+- **R1CS optimizer iterative pass.** Sparse DEDUCE + cluster-Gauss + in-place primitives; 26.5 % faster on the benchmark, with constraint counts matching or beating circom's O2 baseline.
+- **New diagnostics codes:** **E100-E102** (constraint soundness), **W101-W103** (warning on unverified signals), **E200-E211** (lowering), **E300-E306** (parser, including the stack-depth guard surfaced by the libFuzzer soak).
+- **New opcodes / infrastructure:** `CallCircomTemplate` (VM-mode calls), `TAG_CIRCOM_HANDLE`, `CircomWitnessHandler` trait, `CircomLibraryHandle` trait, `CircomCallable` dispatch.
+- **Compile-time arithmetic** migrated from `i64` to **BigVal** (256-bit two's complement), so templates that compute `1 << 128` (like `CompConstant`) work correctly.
+- **Dynamic loop bounds** (`for i in 0..n+1`), component arrays (`component muls[n]`), 2-D array variables (`var M[t][t]`), function-keyword compile-time evaluator.
+- **Bit-width inference** plumbed through `Capture(nBits)` — SHA-256 word-op narrowing is exact (10,473 / 10,473), no over-decomposition.
+- **Adversarial soundness suite** — every constraint reduction is paired with a forgery test that confirms soundness survives the optimization.
 
 ## Upgrading from beta.19
 
