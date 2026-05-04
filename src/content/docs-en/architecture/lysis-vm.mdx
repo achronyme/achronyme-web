@@ -1,22 +1,16 @@
 ---
-title: "Lysis VM (in-progress)"
-description: "Third VM: structural template instantiation with hash-consing. Status: Phase 3.B shipped."
+title: "Lysis VM"
+description: "Third VM: structural template instantiation with hash-consing and frame-spill heap."
 ---
 
 import AchDiagram from '../../../components/docs/AchDiagram.astro';
 import { lysisArchitectureSvgEn } from '../../../lib/diagrams/lysis-architecture';
 
-## Status
-
-Lysis is **in-progress**. Phases 0–2 + 3.A + 3.B + 3.C.6 P1 + P1.5 are shipped (as of 2026-04-24). Phase 3.C (oracle gate, 7 fixtures × 3 fields, 38 circom E2E via Lysis path, SHA-256(64) HARD GATE) is the next deliverable.
-
-This page is **subject to change** — opcode numbers and sink semantics may evolve before Phase 3.C closes. Treat it as the current state of the implementation, not a stable contract.
-
 ## Why Lysis exists
 
 Akron and Artik both **execute once per proof**. Lysis is different: it separates **compile/instantiate** from **runtime emission**. The walker emits a Lysis program that, when run, produces SSA IR — and the executor's interning sink collapses structurally identical sub-trees during emission.
 
-Concretely: the legacy `ir::prove_ir::instantiate` (~3,025 LOC) eagerly expands templates and unrolls loops. Lysis defers that expansion to runtime and dedupes redundant sub-graphs via hash-consing — a 58.3× constraint reduction was measured on the SHA-256(64) skeleton in Phase 2.
+Concretely: the legacy eager template expander unrolled every loop and inlined every sub-template up front. Lysis defers that expansion to runtime and dedupes redundant sub-graphs via hash-consing. The same SHA-256(64) skeleton that previously ran out of memory now compiles end-to-end in ~50 ms after the lift, with a constraint count within a few percent of circom O2.
 
 ## Where Lysis sits
 
@@ -26,39 +20,49 @@ The walker is the **IR-side lifter**: it consumes `ExtendedInstruction<F>` (from
 
 ## Lift pipeline (ir-forge::lysis_lift)
 
-File: `crates/ir-forge/src/lysis_lift/mod.rs`. Five phases:
+File: `crates/ir-forge/src/lysis_lift/mod.rs`. Five stages:
 
-| Phase | Module | Deliverable |
+| Stage | Module | Deliverable |
 |-------|--------|-------------|
 | Symbolic walk | `symbolic.rs` | `SymbolicTree` with placeholder slots for loop-var derivatives |
-| Structural diff | `diff.rs` | `Diff` with AST-path slot identity (3.B.4) |
+| Structural diff | `diff.rs` | `Diff` with AST-path slot identity |
 | Binding-Time Analysis | `bta.rs` | 3-point classification (Constant / Invariant / DataDependent) |
 | Template extraction | `extract.rs` | Lambda lifting + frame size, capture layout |
 | Walker (driver) | `walker.rs` | Orchestrates the full lift pass |
 
-All five implement RFC §6 (Lysis Phase 3.B) with **deferred evaluation** — templates remain symbolic until proof-time.
+All five implement deferred evaluation — templates remain symbolic until proof-time.
 
 ## Bytecode header
 
 ```text
 0..4    magic "AALSS"  (0xAA 0x4C 0x53 0x53)
-4..5    version (u8)
-5..6    field_family (u8)        — BnLike256 | Goldilocks64
-6..…    const_pool (FieldConst entries + bytecode blobs for Artik calls)
+4..5    version (u8)              — current: 2 (v1 streams decode with heap_size_hint = 0)
+5..6    field_family (u8)         — BnLike256 | Goldilocks64
+6..14   const_pool_len (u32 LE) + body_len (u32 LE)
+14..16  reserved
+16..18  heap_size_hint (u16 LE)   — spill heap size in entries (v2 only)
+18..…   const_pool (FieldConst entries + bytecode blobs for Artik calls)
 …..     body (instruction stream)
 ```
 
-Sections beyond the body are TBD — Phase 3 may add a template-table section.
+The decoder dispatches on `version` and reads the v1-shaped header (16 bytes) when it sees a v1 stream, defaulting `heap_size_hint` to 0.
 
 ## Register / frame model
 
 - Registers: 256 per frame, stored as `Vec<Option<FieldElement<F>>>` (undefined until written).
 - Frame stack: `Vec<Frame>` with `pc`, `body_start_idx`, `body_end_idx`, `template_id`, `loop_stack: Vec<LoopState>`.
 - Loop state: each `LoopUnroll` pushes a `LoopState` tracking iteration bounds; the dispatcher's `advance_loops()` step increments and detects completion.
+- Default call depth: 8192 (raised from the original 64 to accommodate deep template trees like SHA-256 message schedules).
 
-## Opcode table (29 opcodes)
+## Spill heap
 
-Subject to change. File: `crates/lysis/src/bytecode/opcode.rs`.
+The frame heap is a flat `Vec<FieldElement<F>>` allocated per program execution, sized by `heap_size_hint`. It holds values that outlive the frame that wrote them — captured loop-invariant values, materialised arrays from rolled loops, witness-call buffers — that don't fit into the 256-register window of the active frame.
+
+Each heap slot is governed by a **single-static-store invariant**: a slot is written exactly once per execution. The validator rejects programs that emit two `StoreHeap` to the same slot, and the executor traps on a `LoadHeap` from an unwritten slot. This makes the heap behave like SSA registers extended into a wider address space, with the same dataflow guarantees the rest of the VM relies on.
+
+## Opcode table (36 opcodes)
+
+File: `crates/lysis/src/bytecode/opcode.rs`.
 
 | Code | Mnemonic | Operands | Semantics |
 |------|----------|----------|-----------|
@@ -73,8 +77,8 @@ Subject to change. File: `crates/lysis/src/bytecode/opcode.rs`.
 | 0x13 | `Halt` | — | end execution |
 | 0x14 | `Trap` | code | abort |
 | 0x20 | `LoopUnroll` | iter_var, start, end, body_len | inline body N times |
-| 0x21 | `LoopRolled` | iter_var, start, end, template_id | call template repeatedly (Phase 4+) |
-| 0x22 | `LoopRange` | iter_var, R(end), template_id | dynamic loop (Phase 4+) |
+| 0x21 | `LoopRolled` | iter_var, start, end, template_id | call template repeatedly |
+| 0x22 | `LoopRange` | iter_var, R(end), template_id | dynamic-bound loop |
 | 0x30 | `DefineTemplate` | template_id, frame_size, n_params, body_offset, body_len | register template metadata |
 | 0x31 | `InstantiateTemplate` | template_id, capture_regs, output_regs | push frame + call |
 | 0x32 | `TemplateOutput` | output_idx, src | publish output value |
@@ -91,8 +95,13 @@ Subject to change. File: `crates/lysis/src/bytecode/opcode.rs`.
 | 0x4A | `EmitPoseidonHash` | dst, in_regs | emit `PoseidonHash` |
 | 0x4B | `EmitIsEq` | dst, lhs, rhs | emit `IsEq` |
 | 0x4C | `EmitIsLt` | dst, lhs, rhs | emit `IsLt` |
-| 0x4D | `EmitIntDiv` | dst, lhs, rhs, max_bits | emit `IntDiv` (Phase P1.5) |
-| 0x4E | `EmitIntMod` | dst, lhs, rhs, max_bits | emit `IntMod` (Phase P1.5) |
+| 0x4D | `EmitIntDiv` | dst, lhs, rhs, max_bits | emit `IntDiv` |
+| 0x4E | `EmitIntMod` | dst, lhs, rhs, max_bits | emit `IntMod` |
+| 0x4F | `EmitDiv` | dst, lhs, rhs | emit field-`Div` |
+| 0x50 | `StoreHeap` | slot, src | spill `R[src]` into heap slot (single-static-store) |
+| 0x51 | `LoadHeap` | dst, slot | read heap slot back into a register |
+| 0x52 | `EmitWitnessCallHeap` | bytecode_idx, in_descs, out_regs | `WitnessCall` whose inputs may live in heap slots |
+| 0x53 | `EmitAssertEqMsg` | lhs, rhs, msg_idx | `AssertEq` carrying a constant-pool message id |
 
 `Emit*` opcodes don't compute results — they push entries into the **sink**.
 
@@ -100,14 +109,12 @@ Subject to change. File: `crates/lysis/src/bytecode/opcode.rs`.
 
 The dispatcher writes IR-emitting opcodes into a `IrSink` trait object. Two implementations exist:
 
-- **`StubSink`** — no-op (Phase 1, used for skeleton tests)
-- **`InterningSink`** — hash-cons via `IndexMap<NodeKey, NodeId>`. Phase 2 default. Materialises a flat `Vec<Instruction<F>>` via `sink.materialize()`.
-
-Future: Phase 4 may add a `RecordingSink` for the oracle gate.
+- **`StubSink`** — no-op, used by skeleton tests that exercise control flow without materialising IR.
+- **`InterningSink`** — hash-cons via `IndexMap<NodeKey, NodeId>`. Default in production. Materialises a flat `Vec<Instruction<F>>` via `sink.materialize()`.
 
 ## Dispatcher loop
 
-File: `crates/lysis/src/execute/mod.rs:77-179`. Outer loop over frames + inner step:
+File: `crates/lysis/src/execute/mod.rs`. Outer loop over frames + inner step:
 
 ```rust
 loop {
@@ -126,7 +133,7 @@ loop {
 
 ## Memory model
 
-No GC. Frame registers live in the frame struct. The interner internally uses `IndexMap<NodeKey, NodeId>` borrowed mutably during execution.
+No GC. Frame registers live in the frame struct. The interner internally uses `IndexMap<NodeKey, NodeId>` borrowed mutably during execution. The spill heap is a single `Vec<FieldElement<F>>` owned by the executor for the duration of one program run, reset between executions.
 
 ## Lift output → walker
 
@@ -136,35 +143,20 @@ File: `crates/ir-forge/src/lysis_lift/walker.rs`. Driver that consumes `Vec<Exte
 |---------|---------------|
 | `Plain(ir::Instruction)` | emit corresponding `Emit*` opcode |
 | `LoopUnroll { iter_var, start, end, body }` | emit `LoopUnroll` opcode |
-| `TemplateCall {…}` | Phase 4+ — currently rejected |
-| `TemplateBody {…}` | Phase 4+ — currently rejected |
+| `TemplateCall {…}` | emit `InstantiateTemplate`; spill long-lived captures via `StoreHeap` |
+| `TemplateBody {…}` | bound to a `DefineTemplate` block; rolled-loop bodies live here |
 
-## Oracle (Phase 3.C scaffold)
+When a body is too wide to keep its values in the 256-register window — the SHA-256 round body is the canonical example — the walker drops to **per-iteration unroll** and routes loop-carried values through heap slots so each iteration starts with a fresh register file.
 
-File: `crates/zkc/src/lysis_oracle/`. Compares Lysis-emitted R1CS against circom-direct R1CS via:
+## E2E coverage
 
-1. `canonicalize_ssa` — topological renaming of SSA vars
-2. `semantic_equivalence` — multiset constraint comparison + witness solver
-
-Phase 3.C must pass: 7 fixtures × 3 fields = 21 oracle cells, all green.
-
-## SHA-256(64) HARD GATE
-
-The blocking benchmark is Decompose(254) in `Num2Bits_strict` for SHA bit-array slicing.
-
-- **Phase 2 (cleared 2026-04-20):** interner achieved 58.3× constraint reduction vs eager unroll.
-- **Phase 3 gate:** SHA-256(64) wallclock < 60s, constraint count within ±5% of circom O2.
-
-## Phase status snapshot
-
-| Phase | Date | Deliverable |
-|-------|------|-------------|
-| 0–2 | 2026-04-20 | Tri-color mark-sweep + hash-cons interner + BTA classifier (HARD GATE cleared) |
-| 3.A | 2026-04-20 | `ExtendedInstruction` schema + bridge (`ir-forge → lysis` dependency) |
-| 3.B | 2026-04-21 | Lysis-leaf primitives, IR-side lifter, `LoopUnroll` unblocked |
-| 3.C.6 P1 | 2026-04-23 | Walker scaffolding, 24/24 walker tests |
-| P1.5 | 2026-04-24 | Mechanical top-level template split, `IntDiv`/`IntMod` opcodes, lazy `one` |
-| 3.C (next) | TBD | Oracle gate (7 fixtures × 3 fields), 38 circom E2E, SHA-256(64) under gate |
+| Circuit | Pipeline | Result |
+|---------|----------|--------|
+| SHA-256(64) | walker (per-iter unroll, heap-routed) → optimize → R1CS | digest bit-exact vs `sha2::Sha256::digest`, ~30k constraints post-O1, within a few percent of circom O2 |
+| Poseidon(2) | structural lift → R1CS → Groth16 | verified on-chain |
+| EdDSAPoseidon | structural lift + heap captures | compile + R1CS clean |
+| MiMCSponge(2,220,1) | structural lift → R1CS | 1317 constraints post-O1 (3 fewer than circom O2) |
+| Adversarial constraint preservation | 8/8 benchmark + 3/3 cross-mode | byte-identical R1CS across the rolled and per-iter paths |
 
 ## Source files
 
@@ -174,8 +166,10 @@ The blocking benchmark is Decompose(254) in `Num2Bits_strict` for SHA bit-array 
 | Encoding | `crates/lysis/src/bytecode/encoding.rs` |
 | Validator | `crates/lysis/src/bytecode/validate.rs` |
 | Const pool | `crates/lysis/src/bytecode/const_pool.rs` |
+| Header (v1/v2) | `crates/lysis/src/header.rs` |
 | Dispatcher | `crates/lysis/src/execute/mod.rs` |
 | Frame | `crates/lysis/src/execute/frame.rs` |
+| Heap | `crates/lysis/src/execute/heap.rs` |
 | Interning sink | `crates/lysis/src/execute/interning_sink.rs` |
 | Interner | `crates/lysis/src/intern/interner.rs` |
 | Builder | `crates/lysis/src/builder.rs` |
@@ -184,6 +178,5 @@ The blocking benchmark is Decompose(254) in `Num2Bits_strict` for SHA bit-array 
 | Symbolic tree | `crates/ir-forge/src/lysis_lift/symbolic.rs` |
 | Structural diff | `crates/ir-forge/src/lysis_lift/diff.rs` |
 | Template extraction | `crates/ir-forge/src/lysis_lift/extract.rs` |
-| Oracle scaffold | `crates/zkc/src/lysis_oracle/` |
 
 See [ProveIR](/docs/architecture/prove-ir/) for the layer feeding Lysis. See [Akron VM](/docs/architecture/akron-vm/) and [Artik Witness VM](/docs/architecture/artik-vm/) for the other two VMs.
