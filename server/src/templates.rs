@@ -7,7 +7,7 @@
 use std::path::Path;
 
 /// Available templates (match `ach init --template` options).
-pub const TEMPLATES: &[&str] = &["circuit", "vm", "prove", "circom"];
+pub const TEMPLATES: &[&str] = &["circuit", "vm", "prove", "circom", "circomlib-demo"];
 
 /// Populate a workspace with a template project.
 /// Mirrors `ach init <name> --template <template>`.
@@ -24,8 +24,24 @@ pub fn populate_template(template: &str, workspace: &Path) -> Result<(), String>
     let src_dir = workspace.join("src");
     std::fs::create_dir_all(&src_dir).map_err(|e| format!("mkdir src: {e}"))?;
 
-    let toml_content = format!(
-        r#"[project]
+    // Templates that pull from circomlib opt in via `[circom] libs`.
+    // Other templates ship a minimal toml with no libs section.
+    let toml_content = match template {
+        "circomlib-demo" => format!(
+            r#"[project]
+name = "{name}"
+version = "0.1.0"
+entry = "src/main.ach"
+
+[build]
+backend = "r1cs"
+
+[circom]
+libs = ["@circomlib"]
+"#
+        ),
+        _ => format!(
+            r#"[project]
 name = "{name}"
 version = "0.1.0"
 entry = "src/main.ach"
@@ -33,7 +49,8 @@ entry = "src/main.ach"
 [build]
 backend = "r1cs"
 "#
-    );
+        ),
+    };
     std::fs::write(workspace.join("achronyme.toml"), toml_content)
         .map_err(|e| format!("write achronyme.toml: {e}"))?;
 
@@ -59,6 +76,7 @@ print("Proof verified!")
 "#
         ),
         "circom" => CIRCOM_TUTORIAL_MAIN.to_string(),
+        "circomlib-demo" => CIRCOMLIB_DEMO_MAIN.to_string(),
         // "circuit" or default
         _ => format!(
             r#"// {name} — ZK Circuit
@@ -86,6 +104,10 @@ print("Verified: " + verify_proof(proof).to_string())
     if template == "circom" {
         std::fs::write(src_dir.join("square.circom"), CIRCOM_TUTORIAL_SQUARE)
             .map_err(|e| format!("write src/square.circom: {e}"))?;
+    }
+    if template == "circomlib-demo" {
+        std::fs::write(src_dir.join("hash.circom"), CIRCOMLIB_DEMO_HASH)
+            .map_err(|e| format!("write src/hash.circom: {e}"))?;
     }
 
     Ok(())
@@ -146,6 +168,63 @@ template Square() {
 }
 "#;
 
+/// Demo entry point exercising real circomlib via the `@circomlib`
+/// server mount. Proves knowledge of a Poseidon preimage — the
+/// canonical "hello world" of practical ZK circuits.
+const CIRCOMLIB_DEMO_MAIN: &str = r#"// Achronyme + circomlib — Poseidon Preimage Proof
+//
+// Demonstrates a real ZK use case: prove that you know a secret
+// `x` such that `Poseidon(x) == h`, without revealing `x`.
+//
+// `src/hash.circom` wraps circomlib's Poseidon template — the
+// `include "poseidon.circom"` inside it resolves through
+// `[circom] libs = ["@circomlib"]` in achronyme.toml, which the
+// server backs with the vendored circomlib bundle.
+//
+// Press Run (▶) to execute. The prove block emits a Groth16 proof;
+// switch to the Proof tab to see the artifact.
+
+import { PoseidonHash } from "./hash.circom"
+
+// ── Step 1: pick a secret and compute its public Poseidon hash.
+let secret = 0p42
+let public_hash = PoseidonHash()(secret)
+
+print("Secret (hidden): " + secret.to_string())
+print("Public Poseidon hash: " + public_hash.to_string())
+
+// ── Step 2: prove we know a preimage of public_hash. The verifier
+// only sees public_hash and the proof — `secret` never leaves.
+prove preimage(public_hash: Public) {
+    let computed = PoseidonHash()(secret)
+    assert_eq(computed, public_hash, "preimage mismatch")
+}
+
+print("Witness verified — Groth16 proof is in the Proof tab.")
+"#;
+
+/// Workspace-local wrapper around circomlib's Poseidon. Keeps the
+/// public API to a single scalar in / single scalar out so .ach can
+/// invoke it as `PoseidonHash()(x)` without juggling array signals.
+const CIRCOMLIB_DEMO_HASH: &str = r#"pragma circom 2.0.0;
+
+// Resolves through `[circom] libs = ["@circomlib"]` to the vendored
+// circomlib's poseidon.circom on the server's read-only mount.
+include "poseidon.circom";
+
+// Fixed-arity wrapper: one input signal, one output signal.
+// Matches Poseidon(1) — same as `let h = poseidon(x)` in the .ach
+// scripting layer, but driven by circomlib's vetted constraints.
+template PoseidonHash() {
+    signal input in;
+    signal output out;
+
+    component p = Poseidon(1);
+    p.inputs[0] <== in;
+    out <== p.out;
+}
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -192,7 +271,36 @@ mod tests {
                 !ws.join("src/square.circom").exists(),
                 "template `{tpl}` must not emit a circom companion"
             );
+            assert!(
+                !ws.join("src/hash.circom").exists(),
+                "template `{tpl}` must not emit a circomlib-demo companion"
+            );
             let _ = std::fs::remove_dir_all(&ws);
         }
+    }
+
+    #[test]
+    fn circomlib_demo_template_opts_into_at_circomlib() {
+        let ws = mktemp();
+        populate_template("circomlib-demo", &ws).unwrap();
+
+        let toml = std::fs::read_to_string(ws.join("achronyme.toml")).unwrap();
+        assert!(
+            toml.contains(r#"libs = ["@circomlib"]"#),
+            "circomlib-demo must declare the @circomlib mount"
+        );
+
+        let main = std::fs::read_to_string(ws.join("src/main.ach")).unwrap();
+        assert!(main.contains(r#"import { PoseidonHash } from "./hash.circom""#));
+        assert!(main.contains("prove preimage(public_hash: Public)"));
+
+        let hash = std::fs::read_to_string(ws.join("src/hash.circom")).unwrap();
+        assert!(hash.contains(r#"include "poseidon.circom";"#));
+        assert!(hash.contains("template PoseidonHash()"));
+
+        // Companion files for OTHER templates must not leak into this one.
+        assert!(!ws.join("src/square.circom").exists());
+
+        let _ = std::fs::remove_dir_all(&ws);
     }
 }
