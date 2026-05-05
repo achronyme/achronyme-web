@@ -281,3 +281,147 @@ libs = ["/etc"]
         "expected error to mention path validation: {msg}"
     );
 }
+
+#[tokio::test]
+async fn prove_circom_workspace_emits_groth16() {
+    // Same Num2Bits(8) workspace, but exercises /api/prove instead of
+    // /api/circuit. Confirms the endpoint reads the entry from the
+    // session, runs the circom front-end with the resolved libs,
+    // computes witness hints, and returns a serialized Groth16 proof.
+    let app = make_app();
+    let session = setup_circom_workspace(&app).await;
+
+    let payload = json!({
+        "inputs": { "in": "13" },
+        "backend": "r1cs"
+    });
+    let request = req()
+        .method(Method::POST)
+        .uri("/api/prove")
+        .header("content-type", "application/json")
+        .header("x-ach-session", &session)
+        .body(Body::from(payload.to_string()))
+        .expect("valid request");
+    let resp = app.clone().oneshot(request).await.expect("oneshot");
+    assert_eq!(
+        resp.status(),
+        StatusCode::OK,
+        "prove failed with status {}",
+        resp.status()
+    );
+
+    let body = read_json(resp).await;
+    assert_eq!(body["success"], true, "prove reported failure: {}", body);
+    let constraints = body["constraints"].as_u64().expect("constraints field");
+    assert!(constraints > 0, "expected non-zero R1CS constraints");
+    assert!(
+        body["proof"].is_string(),
+        "expected proof JSON string in response"
+    );
+    assert!(
+        body["public_inputs"].is_string(),
+        "expected public_inputs JSON in response"
+    );
+    assert!(
+        body["vkey"].is_string(),
+        "expected verification-key JSON in response"
+    );
+}
+
+#[tokio::test]
+async fn prove_circom_returns_diagnostics_on_invalid_template() {
+    // Compile failure → response carries success=false + structured
+    // diagnostics array, mirroring /api/circuit.
+    let app = make_app();
+    let session = create_session(&app).await;
+
+    write_file(&app, &session, "achronyme.toml", ACHRONYME_TOML).await;
+    write_file(&app, &session, "circomlib/circuits/bitify.circom", "").await;
+    write_file(&app, &session, "src/main.circom", MAIN_CIRCOM).await;
+
+    let payload = json!({
+        "inputs": { "in": "13" },
+        "backend": "r1cs"
+    });
+    let request = req()
+        .method(Method::POST)
+        .uri("/api/prove")
+        .header("content-type", "application/json")
+        .header("x-ach-session", &session)
+        .body(Body::from(payload.to_string()))
+        .expect("valid request");
+    let resp = app.clone().oneshot(request).await.expect("oneshot");
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body = read_json(resp).await;
+    assert_eq!(body["success"], false, "expected prove failure");
+    let diags = body["diagnostics"]
+        .as_array()
+        .expect("diagnostics array in response");
+    assert!(
+        !diags.is_empty(),
+        "expected at least one diagnostic for missing template"
+    );
+}
+
+#[tokio::test]
+async fn inspect_circom_workspace_returns_graph() {
+    // /api/inspect over the circom workspace should produce an
+    // inspector graph JSON shaped the same way the .ach path produces.
+    // The graph carries `nodes`, `edges`, and the source/prove-IR text
+    // — assert the top-level structure rather than the full contents,
+    // which depend on the optimizer's instruction layout.
+    let app = make_app();
+    let session = setup_circom_workspace(&app).await;
+
+    let payload = json!({
+        "inputs": { "in": "13" }
+    });
+    let request = req()
+        .method(Method::POST)
+        .uri("/api/inspect")
+        .header("content-type", "application/json")
+        .header("x-ach-session", &session)
+        .body(Body::from(payload.to_string()))
+        .expect("valid request");
+    let resp = app.clone().oneshot(request).await.expect("oneshot");
+    assert_eq!(
+        resp.status(),
+        StatusCode::OK,
+        "inspect failed with status {}",
+        resp.status()
+    );
+
+    let body = read_json(resp).await;
+    assert!(
+        body["nodes"].is_array(),
+        "inspect graph missing nodes array: {}",
+        body
+    );
+    assert!(
+        body["edges"].is_array(),
+        "inspect graph missing edges array"
+    );
+}
+
+#[tokio::test]
+async fn inspect_circom_works_without_inputs() {
+    // Constraint-only inspection — no witness values, no failed
+    // assertions, but the constraint counts and the graph topology
+    // should still come back populated.
+    let app = make_app();
+    let session = setup_circom_workspace(&app).await;
+
+    let request = req()
+        .method(Method::POST)
+        .uri("/api/inspect")
+        .header("content-type", "application/json")
+        .header("x-ach-session", &session)
+        .body(Body::from("{}"))
+        .expect("valid request");
+    let resp = app.clone().oneshot(request).await.expect("oneshot");
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body = read_json(resp).await;
+    assert!(body["nodes"].is_array(), "expected nodes array");
+}

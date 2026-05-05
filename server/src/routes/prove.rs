@@ -1,6 +1,13 @@
 //! POST /api/prove — Generate a ZK proof from a circuit.
+//!
+//! Three modes, mirroring `/api/circuit`:
+//! - Single-source `.ach` (back-compat): request body carries `source`.
+//! - Workspace `.ach`: `X-Ach-Session` header, `[project] entry = "...ach"`.
+//! - Workspace `.circom`: `X-Ach-Session` header, `[project] entry = "...circom"`,
+//!   `[circom] libs = [...]` resolves to circomlib include paths.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use axum::Json;
 use serde::{Deserialize, Serialize};
@@ -17,7 +24,8 @@ const PROVE_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Deserialize)]
 pub struct ProveRequest {
-    source: String,
+    #[serde(default)]
+    source: Option<String>,
     inputs: HashMap<String, String>,
     #[serde(default = "default_backend")]
     backend: String,
@@ -36,10 +44,16 @@ pub struct ProveResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
     constraints: usize,
+    /// Structured diagnostics returned when the circom front-end rejects
+    /// the source. Mirrors `/api/circuit` so the playground client can
+    /// render per-line squigglies instead of a `\n`-joined blob.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    diagnostics: Option<Vec<crate::pipeline::DiagnosticInfo>>,
 }
 
 pub async fn handler(
-    axum::extract::State(_store): axum::extract::State<crate::session::SessionStore>,
+    axum::extract::State(store): axum::extract::State<crate::session::SessionStore>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<ProveRequest>,
 ) -> Result<Json<ProveResponse>, ApiError> {
     if req.inputs.is_empty() {
@@ -48,9 +62,61 @@ pub async fn handler(
         ));
     }
 
-    let source = req.source;
     let raw_inputs = req.inputs;
     let backend = req.backend;
+
+    if let Some(session_val) = headers.get("X-Ach-Session") {
+        let id: uuid::Uuid = session_val
+            .to_str()
+            .map_err(|_| ApiError::BadRequest("invalid session header".into()))?
+            .parse()
+            .map_err(|_| ApiError::BadRequest("invalid session id".into()))?;
+
+        let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
+        let config =
+            crate::workspace::load_workspace_config(&workspace).map_err(ApiError::BadRequest)?;
+
+        let is_circom = config
+            .entry
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.eq_ignore_ascii_case("circom"))
+            .unwrap_or(false);
+
+        if is_circom {
+            let entry = config.entry.clone();
+            let libs = config.circom_libs.clone();
+            let result = sandboxed(
+                move || prove_circuit_circom(&entry, &libs, &raw_inputs, &backend),
+                PROVE_TIMEOUT_SECS,
+            )
+            .await?;
+            return match result {
+                Ok(resp) => Ok(Json(resp)),
+                Err(msg) => Err(ApiError::CompileError(msg)),
+            };
+        }
+
+        let source = std::fs::read_to_string(&config.entry).map_err(|e| {
+            ApiError::BadRequest(format!("cannot read entry {}: {e}", config.entry.display()))
+        })?;
+        let result = sandboxed(
+            move || prove_circuit(&source, &raw_inputs, &backend),
+            PROVE_TIMEOUT_SECS,
+        )
+        .await?;
+        return match result {
+            Ok(resp) => Ok(Json(resp)),
+            Err(msg) => Err(ApiError::CompileError(msg)),
+        };
+    }
+
+    let source = req
+        .source
+        .ok_or_else(|| ApiError::BadRequest("source is required".into()))?;
+    if source.is_empty() {
+        return Err(ApiError::BadRequest("source is empty".into()));
+    }
 
     let result = sandboxed(
         move || prove_circuit(&source, &raw_inputs, &backend),
@@ -100,6 +166,56 @@ fn prove_circuit(
     }
 }
 
+fn prove_circuit_circom(
+    entry: &std::path::Path,
+    libs: &[PathBuf],
+    raw_inputs: &HashMap<String, String>,
+    backend: &str,
+) -> Result<ProveResponse, String> {
+    let mut inputs = HashMap::new();
+    for (name, val_str) in raw_inputs {
+        let fe = parse_field_value(name, val_str)?;
+        inputs.insert(name.clone(), fe);
+    }
+
+    let compiled = match crate::circom_pipeline::compile_circom(entry, libs) {
+        Ok(compiled) => compiled,
+        Err(diags) => {
+            // Mirror `/api/circuit`: surface every diagnostic with its
+            // own line + severity so the playground can render
+            // individual squigglies. Returning Ok(success=false) keeps
+            // the diagnostics list serialised; the unified ApiError
+            // path collapses to a single string.
+            return Ok(ProveResponse {
+                success: false,
+                proof: None,
+                public_inputs: None,
+                vkey: None,
+                error: Some("circom compilation failed".into()),
+                constraints: 0,
+                diagnostics: Some(crate::circom_pipeline::diagnostics_to_pipeline_format(
+                    &diags,
+                )),
+            });
+        }
+    };
+
+    let mut program = crate::circom_pipeline::instantiate_circom(&compiled)?;
+    ir::passes::optimize(&mut program);
+
+    let merged_inputs = crate::circom_pipeline::merge_circom_witness(&compiled, &inputs)?;
+
+    let cache_dir = std::env::temp_dir().join("ach-server-cache");
+
+    match backend {
+        "r1cs" => prove_r1cs(&program, &merged_inputs, &cache_dir),
+        "plonkish" => prove_plonkish(&program, &merged_inputs, &cache_dir),
+        _ => Err(format!(
+            "unknown backend: {backend} (expected 'r1cs' or 'plonkish')"
+        )),
+    }
+}
+
 fn prove_r1cs(
     program: &ir::IrProgram,
     inputs: &HashMap<String, FieldElement>,
@@ -134,6 +250,7 @@ fn prove_r1cs(
             vkey: Some(vkey_json),
             error: None,
             constraints: n_constraints,
+            diagnostics: None,
         }),
         ProveResult::VerifiedOnly => Ok(ProveResponse {
             success: true,
@@ -142,6 +259,7 @@ fn prove_r1cs(
             vkey: None,
             error: None,
             constraints: n_constraints,
+            diagnostics: None,
         }),
     }
 }
@@ -181,6 +299,7 @@ fn prove_plonkish(
             vkey: Some(vkey_json),
             error: None,
             constraints: n_rows,
+            diagnostics: None,
         }),
         ProveResult::VerifiedOnly => Ok(ProveResponse {
             success: true,
@@ -189,6 +308,7 @@ fn prove_plonkish(
             vkey: None,
             error: None,
             constraints: n_rows,
+            diagnostics: None,
         }),
     }
 }
