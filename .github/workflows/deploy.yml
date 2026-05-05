@@ -38,6 +38,13 @@ jobs:
           git fetch --tags origin main
           git checkout "${GITHUB_SHA}"
 
+          # Pull in (or update) vendored submodules — currently
+          # vendor/circomlib, served read-only via @circomlib in
+          # achronyme.toml. A missing submodule wouldn't break the
+          # build but would break every workspace that imports
+          # circomlib at runtime, so fail fast here instead.
+          git submodule update --init --recursive
+
           source ~/.cargo/env
           cd server
           # --locked rejects Cargo.lock drift between the committed state
