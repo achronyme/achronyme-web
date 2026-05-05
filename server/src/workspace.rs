@@ -99,8 +99,8 @@ pub struct WorkspaceConfig {
 pub fn load_workspace_config(workspace: &Path) -> Result<WorkspaceConfig, String> {
     let toml_path = workspace.join("achronyme.toml");
     let config: AchronymeToml = if toml_path.exists() {
-        let toml_str =
-            std::fs::read_to_string(&toml_path).map_err(|e| format!("cannot read achronyme.toml: {e}"))?;
+        let toml_str = std::fs::read_to_string(&toml_path)
+            .map_err(|e| format!("cannot read achronyme.toml: {e}"))?;
         toml::from_str(&toml_str).map_err(|e| format!("invalid achronyme.toml: {e}"))?
     } else {
         AchronymeToml::default()
@@ -137,9 +137,7 @@ pub fn load_workspace_config(workspace: &Path) -> Result<WorkspaceConfig, String
             .canonicalize()
             .map_err(|e| format!("[project] entry '{entry_rel}': {e}"))?;
         if !canonical_entry.starts_with(&canonical_ws) {
-            return Err(format!(
-                "[project] entry '{entry_rel}' escapes workspace"
-            ));
+            return Err(format!("[project] entry '{entry_rel}' escapes workspace"));
         }
     }
 

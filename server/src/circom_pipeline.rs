@@ -38,10 +38,8 @@ pub fn compile_circom(
     // `circom::compile_file` follow a path outside the workspace.
     // Cheap (one syscall per lib) and tightens the boundary to the
     // moment of use.
-    let canonical_libs: Result<Vec<PathBuf>, _> = library_dirs
-        .iter()
-        .map(|p| p.canonicalize())
-        .collect();
+    let canonical_libs: Result<Vec<PathBuf>, _> =
+        library_dirs.iter().map(|p| p.canonicalize()).collect();
     let canonical_libs = canonical_libs.map_err(|e| {
         vec![diagnostics::Diagnostic::error(
             format!("circom library path no longer resolvable: {e}"),

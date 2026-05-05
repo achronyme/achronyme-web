@@ -13,7 +13,7 @@ use uuid::Uuid;
 const MAX_SESSIONS: usize = 200;
 const SESSION_TTL: Duration = Duration::from_secs(2 * 60 * 60); // 2 hours
 const REAPER_INTERVAL: Duration = Duration::from_secs(60);
-const MAX_FILES_PER_SESSION: usize = 50;
+const MAX_FILES_PER_SESSION: usize = 100;
 const MAX_FILE_SIZE: usize = 128 * 1024; // 128KB — fits sha256compression.circom (~35KB) with headroom
 const MAX_WORKSPACE_SIZE: usize = 1024 * 1024; // 1MB — fits a circomlib subset plus user files
 

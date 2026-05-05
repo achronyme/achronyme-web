@@ -62,6 +62,11 @@ pub struct CircuitResponse {
     solidity: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<String>,
+    /// Multiple structured diagnostics when the circom front-end rejects
+    /// the source. Keeps per-line spans so the client can render
+    /// individual squigglies instead of a `\n`-joined blob.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    diagnostics: Option<Vec<crate::pipeline::DiagnosticInfo>>,
 }
 
 pub async fn handler(
@@ -98,7 +103,12 @@ pub async fn handler(
             let result = sandboxed(
                 move || {
                     compile_circuit_circom(
-                        &entry, &libs, &raw_inputs, &backend, do_prove, do_solidity,
+                        &entry,
+                        &libs,
+                        &raw_inputs,
+                        &backend,
+                        do_prove,
+                        do_solidity,
                     )
                 },
                 CIRCUIT_TIMEOUT_SECS,
@@ -129,6 +139,9 @@ pub async fn handler(
     let source = req
         .source
         .ok_or_else(|| ApiError::BadRequest("source is required".into()))?;
+    if source.is_empty() {
+        return Err(ApiError::BadRequest("source is empty".into()));
+    }
     let result = sandboxed(
         move || compile_circuit_ach(&source, &raw_inputs, &backend, do_prove, do_solidity),
         CIRCUIT_TIMEOUT_SECS,
@@ -194,12 +207,32 @@ fn compile_circuit_circom(
         inputs.insert(name.clone(), fe);
     }
 
-    let compiled = crate::circom_pipeline::compile_circom(entry, libs).map_err(|diags| {
-        // Render every diagnostic so the user sees all errors at once,
-        // not just the first one.
-        let lines: Vec<String> = diags.iter().map(|d| d.message.clone()).collect();
-        lines.join("\n")
-    })?;
+    let compiled = match crate::circom_pipeline::compile_circom(entry, libs) {
+        Ok(compiled) => compiled,
+        Err(diags) => {
+            // Surface every diagnostic with its own line + severity so
+            // the playground can render them individually. The handler
+            // returns `Ok(success=false)` rather than `Err` so the
+            // diagnostics list survives serialization (the unified
+            // ApiError path collapses to a single string).
+            return Ok(CircuitResponse {
+                success: false,
+                constraints: 0,
+                public_inputs: 0,
+                private_inputs: 0,
+                backend: backend.to_string(),
+                r1cs: None,
+                proof: None,
+                public_json: None,
+                vkey: None,
+                solidity: None,
+                error: Some("circom compilation failed".into()),
+                diagnostics: Some(crate::circom_pipeline::diagnostics_to_pipeline_format(
+                    &diags,
+                )),
+            });
+        }
+    };
 
     let n_public = compiled.prove_ir.public_inputs.len();
     let n_witness = compiled.prove_ir.witness_inputs.len();
@@ -335,6 +368,7 @@ fn compile_r1cs(
         vkey: vkey_json,
         solidity: solidity_src,
         error: None,
+        diagnostics: None,
     })
 }
 
@@ -400,6 +434,7 @@ fn compile_plonkish(
         vkey: vkey_json,
         solidity: None,
         error: None,
+        diagnostics: None,
     })
 }
 

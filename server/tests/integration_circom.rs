@@ -146,11 +146,7 @@ async fn compile_circom_workspace_succeeds() {
     );
 
     let body = read_json(resp).await;
-    assert_eq!(
-        body["success"], true,
-        "compile reported failure: {}",
-        body
-    );
+    assert_eq!(body["success"], true, "compile reported failure: {}", body);
 }
 
 #[tokio::test]

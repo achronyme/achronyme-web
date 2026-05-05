@@ -68,10 +68,7 @@ pub async fn handler(
             Ok(Json(result))
         } else {
             let source = std::fs::read_to_string(&config.entry).map_err(|e| {
-                ApiError::BadRequest(format!(
-                    "cannot read entry {}: {e}",
-                    config.entry.display()
-                ))
+                ApiError::BadRequest(format!("cannot read entry {}: {e}", config.entry.display()))
             })?;
             let result = sandboxed(
                 move || pipeline::check_source(&source),
@@ -110,9 +107,7 @@ fn compile_circom_workspace(entry: &std::path::Path, libs: &[PathBuf]) -> Compil
     match crate::circom_pipeline::compile_circom(entry, libs) {
         Ok(compiled) => CompileResponse {
             success: true,
-            diagnostics: crate::circom_pipeline::diagnostics_to_pipeline_format(
-                &compiled.warnings,
-            ),
+            diagnostics: crate::circom_pipeline::diagnostics_to_pipeline_format(&compiled.warnings),
         },
         Err(diags) => CompileResponse {
             success: false,
