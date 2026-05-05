@@ -7,7 +7,14 @@
 use std::path::Path;
 
 /// Available templates (match `ach init --template` options).
-pub const TEMPLATES: &[&str] = &["circuit", "vm", "prove", "circom", "circomlib-demo"];
+pub const TEMPLATES: &[&str] = &[
+    "circuit",
+    "vm",
+    "prove",
+    "circom",
+    "circomlib-demo",
+    "circomlib-mimc",
+];
 
 /// Populate a workspace with a template project.
 /// Mirrors `ach init <name> --template <template>`.
@@ -27,7 +34,7 @@ pub fn populate_template(template: &str, workspace: &Path) -> Result<(), String>
     // Templates that pull from circomlib opt in via `[circom] libs`.
     // Other templates ship a minimal toml with no libs section.
     let toml_content = match template {
-        "circomlib-demo" => format!(
+        "circomlib-demo" | "circomlib-mimc" => format!(
             r#"[project]
 name = "{name}"
 version = "0.1.0"
@@ -77,6 +84,7 @@ print("Proof verified!")
         ),
         "circom" => CIRCOM_TUTORIAL_MAIN.to_string(),
         "circomlib-demo" => CIRCOMLIB_DEMO_MAIN.to_string(),
+        "circomlib-mimc" => CIRCOMLIB_MIMC_MAIN.to_string(),
         // "circuit" or default
         _ => format!(
             r#"// {name} — ZK Circuit
@@ -107,6 +115,10 @@ print("Verified: " + verify_proof(proof).to_string())
     }
     if template == "circomlib-demo" {
         std::fs::write(src_dir.join("hash.circom"), CIRCOMLIB_DEMO_HASH)
+            .map_err(|e| format!("write src/hash.circom: {e}"))?;
+    }
+    if template == "circomlib-mimc" {
+        std::fs::write(src_dir.join("hash.circom"), CIRCOMLIB_MIMC_HASH)
             .map_err(|e| format!("write src/hash.circom: {e}"))?;
     }
 
@@ -225,6 +237,83 @@ template PoseidonHash() {
 }
 "#;
 
+/// Demo entry point for the mid-weight circomlib primitive: MiMCSponge.
+/// Proves knowledge of two field elements `(a, b)` whose hash is a
+/// public commitment. Uses circomlib's `MiMCSponge(2, 220, 1)` (~3,087
+/// R1CS constraints, the same shape Tornado Cash uses for its Merkle
+/// commitments) so the user can feel the size jump from Poseidon
+/// (~240) without hitting the heavier-still SHA-256 ceiling.
+const CIRCOMLIB_MIMC_MAIN: &str = r#"// Achronyme + circomlib — MiMC Sponge Preimage Proof
+//
+// Heavier counterpart to the Poseidon demo. Proves knowledge of two
+// secret field elements `(a, b)` whose `MiMCSponge(a, b)` matches a
+// public hash commitment, without revealing either input. MiMC is
+// the hash function Tornado Cash uses to commit to its Merkle
+// leaves — this demo follows the same shape.
+//
+// `src/hash.circom` wraps circomlib's `MiMCSponge(nInputs, nRounds,
+// nOutputs)` template (220-round Feistel construction). The include
+// resolves through `[circom] libs = ["@circomlib"]` in
+// achronyme.toml — the server backs it with the vendored circomlib
+// bundle.
+//
+// Heads-up: MiMCSponge(2, 220, 1) lands ~3,087 R1CS constraints —
+// roughly 12× heavier than the Poseidon demo. Watch the timing
+// line under the output once the Run finishes.
+//
+// Press Run (▶). The prove block emits a Groth16 proof — switch to
+// the Proof tab to see the artifact.
+
+import { MiMCPair } from "./hash.circom"
+
+// ── Step 1: pick two secrets and compute their public MiMC hash.
+let secret_a = 0p123456789
+let secret_b = 0p987654321
+let public_hash = MiMCPair()(secret_a, secret_b)
+
+print("Secret a (hidden): " + secret_a.to_string())
+print("Secret b (hidden): " + secret_b.to_string())
+print("Public MiMC(a, b): " + public_hash.to_string())
+
+// ── Step 2: prove we know a preimage pair `(a, b)` for public_hash.
+// The verifier only learns the hash; secret_a and secret_b never leave.
+prove preimage(public_hash: Public) {
+    let computed = MiMCPair()(secret_a, secret_b)
+    assert_eq(computed, public_hash, "preimage mismatch")
+}
+
+print("Witness verified — Groth16 proof is in the Proof tab.")
+"#;
+
+/// Workspace-local wrapper around circomlib's `MiMCSponge`. Mirrors
+/// the shape of `PoseidonHash` in the lighter demo: a fixed-arity
+/// two-in / one-out facade so `.ach` invokes it as
+/// `MiMCPair()(a, b)` without juggling array signals or sponge
+/// configuration.
+const CIRCOMLIB_MIMC_HASH: &str = r#"pragma circom 2.0.0;
+
+// Resolves through `[circom] libs = ["@circomlib"]` to the vendored
+// circomlib's mimcsponge.circom on the server's read-only mount.
+include "mimcsponge.circom";
+
+// Fixed-arity wrapper: two field inputs, one field output. The key
+// `k` is pinned to 0 (the standard Tornado-Cash configuration —
+// MiMC's keyed input is a hash-function modifier, not a secret in
+// this construction). 220 Feistel rounds match the audited
+// circomlib parameter set.
+template MiMCPair() {
+    signal input a;
+    signal input b;
+    signal output out;
+
+    component sponge = MiMCSponge(2, 220, 1);
+    sponge.ins[0] <== a;
+    sponge.ins[1] <== b;
+    sponge.k <== 0;
+    out <== sponge.outs[0];
+}
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,6 +366,32 @@ mod tests {
             );
             let _ = std::fs::remove_dir_all(&ws);
         }
+    }
+
+    #[test]
+    fn circomlib_mimc_template_opts_into_at_circomlib() {
+        let ws = mktemp();
+        populate_template("circomlib-mimc", &ws).unwrap();
+
+        let toml = std::fs::read_to_string(ws.join("achronyme.toml")).unwrap();
+        assert!(
+            toml.contains(r#"libs = ["@circomlib"]"#),
+            "circomlib-mimc must declare the @circomlib mount"
+        );
+
+        let main = std::fs::read_to_string(ws.join("src/main.ach")).unwrap();
+        assert!(main.contains(r#"import { MiMCPair } from "./hash.circom""#));
+        assert!(main.contains("prove preimage(public_hash: Public)"));
+
+        let hash = std::fs::read_to_string(ws.join("src/hash.circom")).unwrap();
+        assert!(hash.contains(r#"include "mimcsponge.circom";"#));
+        assert!(hash.contains("template MiMCPair()"));
+        assert!(hash.contains("MiMCSponge(2, 220, 1)"));
+
+        // Companion files for OTHER templates must not leak into this one.
+        assert!(!ws.join("src/square.circom").exists());
+
+        let _ = std::fs::remove_dir_all(&ws);
     }
 
     #[test]
