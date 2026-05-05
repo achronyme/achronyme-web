@@ -50,6 +50,39 @@ jobs:
           # --locked rejects Cargo.lock drift between the committed state
           # and whatever the build host happens to have cached.
           cargo build --release --locked
+
+          # Sync the systemd unit if the canonical source in the repo
+          # has drifted from what's installed. Background: this
+          # workflow used to only restart the service, so changes to
+          # deploy/systemd/ach-server.service required a manual
+          # `sudo cp + daemon-reload` on vps1, easy to forget. The
+          # block below makes the repo authoritative; on commits that
+          # don't touch the unit, `cmp` is a no-op and no sudo fires.
+          #
+          # Operator setup (one-time, on vps1): add to
+          # /etc/sudoers.d/github-runner, otherwise the first drift
+          # deploy fails with "a password is required":
+          #
+          #   github-runner ALL=(ALL) NOPASSWD: /usr/bin/install -m 0644 -o root -g root /opt/achronyme-web/deploy/systemd/ach-server.service /etc/systemd/system/ach-server.service
+          #   github-runner ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
+          #
+          # `systemd-analyze verify` gates the install — a malformed
+          # unit aborts the deploy before /etc gets touched, and the
+          # health probe below catches any runtime regression. Git
+          # history is the rollback path; intentionally no .bak file.
+          CANONICAL=/opt/achronyme-web/deploy/systemd/ach-server.service
+          INSTALLED=/etc/systemd/system/ach-server.service
+          if ! cmp -s "$CANONICAL" "$INSTALLED"; then
+            echo "::notice::ach-server.service drifted; syncing canonical → /etc"
+            if ! systemd-analyze verify --man=no "$CANONICAL"; then
+              echo "::error::canonical unit fails systemd-analyze verify; aborting"
+              exit 1
+            fi
+            sudo /usr/bin/install -m 0644 -o root -g root "$CANONICAL" "$INSTALLED"
+            sudo /usr/bin/systemctl daemon-reload
+            echo "ach-server unit synced"
+          fi
+
           sudo systemctl restart ach-server
 
           # Health gate: if the new binary refuses to serve /health within
