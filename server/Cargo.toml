@@ -19,6 +19,7 @@ ir = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf6
 ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 circom = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 constraints = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 

@@ -20,6 +20,7 @@ use tower_governor::GovernorLayer;
 use tower_http::cors::CorsLayer;
 use tower_http::timeout::TimeoutLayer;
 
+pub mod circom_pipeline;
 pub mod error;
 pub mod pipeline;
 pub mod prove_handler;

@@ -1,6 +1,13 @@
 //! POST /api/circuit — Compile a standalone circuit, generate R1CS/WTNS/proof artifacts.
+//!
+//! Three modes:
+//! - Single-source `.ach` (back-compat): request body carries `source`.
+//! - Workspace `.ach`: `X-Ach-Session` header, `[project] entry = "...ach"`.
+//! - Workspace `.circom`: `X-Ach-Session` header, `[project] entry = "...circom"`,
+//!   `[circom] libs = [...]` resolves to circomlib include paths.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use axum::Json;
 use base64::Engine;
@@ -20,7 +27,8 @@ const CIRCUIT_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Deserialize)]
 pub struct CircuitRequest {
-    source: String,
+    #[serde(default)]
+    source: Option<String>,
     #[serde(default)]
     inputs: HashMap<String, String>,
     #[serde(default = "default_backend")]
@@ -57,17 +65,72 @@ pub struct CircuitResponse {
 }
 
 pub async fn handler(
-    axum::extract::State(_store): axum::extract::State<crate::session::SessionStore>,
+    axum::extract::State(store): axum::extract::State<crate::session::SessionStore>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<CircuitRequest>,
 ) -> Result<Json<CircuitResponse>, ApiError> {
-    let source = req.source;
     let raw_inputs = req.inputs;
     let backend = req.backend;
     let do_prove = req.prove;
     let do_solidity = req.solidity;
 
+    if let Some(session_val) = headers.get("X-Ach-Session") {
+        let id: uuid::Uuid = session_val
+            .to_str()
+            .map_err(|_| ApiError::BadRequest("invalid session header".into()))?
+            .parse()
+            .map_err(|_| ApiError::BadRequest("invalid session id".into()))?;
+
+        let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
+        let config =
+            crate::workspace::load_workspace_config(&workspace).map_err(ApiError::BadRequest)?;
+
+        let is_circom = config
+            .entry
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.eq_ignore_ascii_case("circom"))
+            .unwrap_or(false);
+
+        if is_circom {
+            let entry = config.entry.clone();
+            let libs = config.circom_libs.clone();
+            let result = sandboxed(
+                move || {
+                    compile_circuit_circom(
+                        &entry, &libs, &raw_inputs, &backend, do_prove, do_solidity,
+                    )
+                },
+                CIRCUIT_TIMEOUT_SECS,
+            )
+            .await?;
+            return match result {
+                Ok(resp) => Ok(Json(resp)),
+                Err(msg) => Err(ApiError::CompileError(msg)),
+            };
+        }
+
+        // .ach workspace mode
+        let source = std::fs::read_to_string(&config.entry).map_err(|e| {
+            ApiError::BadRequest(format!("cannot read entry {}: {e}", config.entry.display()))
+        })?;
+        let result = sandboxed(
+            move || compile_circuit_ach(&source, &raw_inputs, &backend, do_prove, do_solidity),
+            CIRCUIT_TIMEOUT_SECS,
+        )
+        .await?;
+        return match result {
+            Ok(resp) => Ok(Json(resp)),
+            Err(msg) => Err(ApiError::CompileError(msg)),
+        };
+    }
+
+    // Single-source mode: .ach only.
+    let source = req
+        .source
+        .ok_or_else(|| ApiError::BadRequest("source is required".into()))?;
     let result = sandboxed(
-        move || compile_circuit(&source, &raw_inputs, &backend, do_prove, do_solidity),
+        move || compile_circuit_ach(&source, &raw_inputs, &backend, do_prove, do_solidity),
         CIRCUIT_TIMEOUT_SECS,
     )
     .await?;
@@ -78,7 +141,7 @@ pub async fn handler(
     }
 }
 
-fn compile_circuit(
+fn compile_circuit_ach(
     source: &str,
     raw_inputs: &HashMap<String, String>,
     backend: &str,
@@ -87,7 +150,6 @@ fn compile_circuit(
 ) -> Result<CircuitResponse, String> {
     let source_path = std::path::Path::new("playground.ach");
 
-    // Parse inputs
     let mut inputs = HashMap::new();
     for (name, val_str) in raw_inputs {
         let fe = parse_field_value(name, val_str)?;
@@ -95,7 +157,6 @@ fn compile_circuit(
     }
     let has_inputs = !inputs.is_empty();
 
-    // Compile circuit to ProveIR and instantiate
     let prove_ir = ProveIrCompiler::<memory::Bn254Fr>::compile_circuit(source, Some(source_path))
         .map_err(|e| format!("{e}"))?;
 
@@ -108,26 +169,89 @@ fn compile_circuit(
 
     ir::passes::optimize(&mut program);
 
+    run_backend(
+        &program,
+        if has_inputs { Some(&inputs) } else { None },
+        n_public,
+        n_witness,
+        backend,
+        do_prove,
+        do_solidity,
+    )
+}
+
+fn compile_circuit_circom(
+    entry: &std::path::Path,
+    libs: &[PathBuf],
+    raw_inputs: &HashMap<String, String>,
+    backend: &str,
+    do_prove: bool,
+    do_solidity: bool,
+) -> Result<CircuitResponse, String> {
+    let mut inputs = HashMap::new();
+    for (name, val_str) in raw_inputs {
+        let fe = parse_field_value(name, val_str)?;
+        inputs.insert(name.clone(), fe);
+    }
+
+    let compiled = crate::circom_pipeline::compile_circom(entry, libs).map_err(|diags| {
+        // Render every diagnostic so the user sees all errors at once,
+        // not just the first one.
+        let lines: Vec<String> = diags.iter().map(|d| d.message.clone()).collect();
+        lines.join("\n")
+    })?;
+
+    let n_public = compiled.prove_ir.public_inputs.len();
+    let n_witness = compiled.prove_ir.witness_inputs.len();
+
+    let mut program = crate::circom_pipeline::instantiate_circom(&compiled)?;
+    ir::passes::optimize(&mut program);
+
+    // Witness hints: only computed when the user supplied inputs (i.e.
+    // they want a witness/proof, not just constraints). The hint
+    // computation off-circuit-evaluates `<--` expressions, which can be
+    // expensive on heavy templates.
+    let merged_inputs;
+    let inputs_ref = if !inputs.is_empty() {
+        merged_inputs = crate::circom_pipeline::merge_circom_witness(&compiled, &inputs)?;
+        Some(&merged_inputs)
+    } else {
+        None
+    };
+
+    run_backend(
+        &program,
+        inputs_ref,
+        n_public,
+        n_witness,
+        backend,
+        do_prove,
+        do_solidity,
+    )
+}
+
+fn run_backend(
+    program: &ir::IrProgram,
+    inputs: Option<&HashMap<String, FieldElement>>,
+    n_public: usize,
+    n_witness: usize,
+    backend: &str,
+    do_prove: bool,
+    do_solidity: bool,
+) -> Result<CircuitResponse, String> {
     let cache_dir = std::env::temp_dir().join("ach-server-cache");
 
     match backend {
         "r1cs" => compile_r1cs(
-            &program,
-            if has_inputs { Some(&inputs) } else { None },
+            program,
+            inputs,
             n_public,
             n_witness,
             do_prove,
             do_solidity,
             &cache_dir,
         ),
-        "plonkish" => compile_plonkish(
-            &program,
-            if has_inputs { Some(&inputs) } else { None },
-            n_public,
-            n_witness,
-            do_prove,
-            &cache_dir,
-        ),
+        "plonkish" => compile_plonkish(program, inputs, n_public, n_witness, do_prove, &cache_dir),
         _ => Err(format!(
             "unknown backend: {backend} (expected 'r1cs' or 'plonkish')"
         )),

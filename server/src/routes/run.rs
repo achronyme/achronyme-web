@@ -51,6 +51,25 @@ pub async fn handler(
 
         let workspace = store.get_workspace(id).map_err(ApiError::BadRequest)?;
 
+        // .circom workspaces have no `run` semantic — they describe
+        // constraint systems, not bytecode programs. Reject early with a
+        // clear error rather than letting the .ach parser stumble over
+        // circom syntax.
+        if let Ok(config) = crate::workspace::load_workspace_config(&workspace) {
+            let is_circom = config
+                .entry
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|s| s.eq_ignore_ascii_case("circom"))
+                .unwrap_or(false);
+            if is_circom {
+                return Err(ApiError::BadRequest(
+                    "run is not supported for .circom workspaces; use /api/circuit or /api/prove"
+                        .into(),
+                ));
+            }
+        }
+
         let result = sandboxed(
             move || crate::workspace::run_workspace(&workspace, INSTRUCTION_BUDGET, MAX_HEAP_BYTES),
             RUN_TIMEOUT_SECS,
