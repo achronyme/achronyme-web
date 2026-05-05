@@ -6,12 +6,12 @@ use axum::Json;
 use base64::Engine;
 use serde::{Deserialize, Serialize};
 
-use compiler::r1cs_backend::R1CSCompiler;
+use akron::ProveResult;
 use constraints::write_r1cs;
-use ir::prove_ir::ProveIrCompiler;
+use ir_forge::ProveIrCompiler;
 use memory::field::PrimeId;
 use memory::FieldElement;
-use vm::ProveResult;
+use zkc::r1cs_backend::R1CSCompiler;
 
 use crate::error::ApiError;
 use crate::sandbox::sandboxed;
@@ -103,7 +103,7 @@ fn compile_circuit(
     let n_witness = prove_ir.witness_inputs.len();
 
     let mut program = prove_ir
-        .instantiate(&HashMap::new())
+        .instantiate_lysis(&HashMap::new())
         .map_err(|e| format!("{e}"))?;
 
     ir::passes::optimize(&mut program);
@@ -222,7 +222,7 @@ fn compile_plonkish(
     do_prove: bool,
     cache_dir: &std::path::Path,
 ) -> Result<CircuitResponse, String> {
-    let mut compiler = compiler::plonkish_backend::PlonkishCompiler::new();
+    let mut compiler = zkc::plonkish_backend::PlonkishCompiler::new();
     let proven = ir::passes::bool_prop::compute_proven_boolean(program);
     compiler.set_proven_boolean(proven);
 

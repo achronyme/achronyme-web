@@ -8,13 +8,19 @@ license = "Apache-2.0"
 # Achronyme crates (from main repo).
 # Pin to an explicit rev so `cargo build --locked` is reproducible even
 # if upstream `main` advances between a push and this deploy.
-compiler = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
-vm = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
-memory = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
-ir = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
-constraints = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
-achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
-achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+# Bumped from a05f4db6 (beta.19) to c9f02ccf (beta.20) for circom support.
+# Crate renames in beta.20: compiler → akronc (bytecode) + zkc (R1CS/Plonkish
+# backends); vm → akron; new ir_forge sibling holds ProveIrCompiler/ProveIR.
+akronc = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+akron = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+zkc = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+memory = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+ir = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+circom = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+constraints = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
+achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 
 # Web framework
 axum = "0.8"
@@ -27,7 +33,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Proving backends (shared crate)
-proving = { git = "https://github.com/achronyme/achronyme", rev = "a05f4db6" }
+proving = { git = "https://github.com/achronyme/achronyme", rev = "c9f02ccf42fec6daf61c6f80d18110cc365f9a39" }
 
 # Session management
 dashmap = "6"

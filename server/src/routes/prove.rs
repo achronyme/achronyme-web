@@ -5,10 +5,10 @@ use std::collections::HashMap;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use compiler::r1cs_backend::R1CSCompiler;
-use ir::prove_ir::ProveIrCompiler;
+use akron::ProveResult;
+use ir_forge::ProveIrCompiler;
 use memory::FieldElement;
-use vm::ProveResult;
+use zkc::r1cs_backend::R1CSCompiler;
 
 use crate::error::ApiError;
 use crate::sandbox::sandboxed;
@@ -83,7 +83,7 @@ fn prove_circuit(
         .map_err(|e| format!("{e}"))?;
 
     let mut program = prove_ir
-        .instantiate(&HashMap::new())
+        .instantiate_lysis(&HashMap::new())
         .map_err(|e| format!("{e}"))?;
 
     ir::passes::optimize(&mut program);
@@ -151,7 +151,7 @@ fn prove_plonkish(
     inputs: &HashMap<String, FieldElement>,
     cache_dir: &std::path::Path,
 ) -> Result<ProveResponse, String> {
-    let mut compiler = compiler::plonkish_backend::PlonkishCompiler::new();
+    let mut compiler = zkc::plonkish_backend::PlonkishCompiler::new();
     let proven = ir::passes::bool_prop::compute_proven_boolean(program);
     compiler.set_proven_boolean(proven);
 

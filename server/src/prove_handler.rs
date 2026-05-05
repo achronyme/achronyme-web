@@ -6,10 +6,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use compiler::plonkish_backend::PlonkishCompiler;
-use compiler::r1cs_backend::R1CSCompiler;
+use akron::{ProveError, ProveHandler, ProveResult, VerifyHandler};
 use memory::FieldElement;
-use vm::{ProveError, ProveHandler, ProveResult, VerifyHandler};
+use zkc::plonkish_backend::PlonkishCompiler;
+use zkc::r1cs_backend::R1CSCompiler;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProveBackend {
@@ -60,12 +60,12 @@ impl ProveHandler for ServerProveHandler {
         scope_values: &HashMap<String, FieldElement>,
     ) -> Result<ProveResult, ProveError> {
         // 1. Deserialize ProveIR
-        let (prove_ir, _prime_id) = ir::prove_ir::ProveIR::from_bytes(prove_ir_bytes)
+        let (prove_ir, _prime_id) = ir_forge::ProveIR::from_bytes(prove_ir_bytes)
             .map_err(|e| ProveError::IrLowering(format!("ProveIR deserialization: {e}")))?;
 
         // 2. Instantiate with scope values
         let mut program = prove_ir
-            .instantiate(scope_values)
+            .instantiate_lysis(scope_values)
             .map_err(|e| ProveError::IrLowering(format!("{e}")))?;
 
         // 3. Optimize
@@ -79,7 +79,7 @@ impl ProveHandler for ServerProveHandler {
             .chain(prove_ir.witness_inputs.iter())
         {
             match &input.array_size {
-                Some(ir::prove_ir::ArraySize::Literal(n)) => {
+                Some(ir_forge::ArraySize::Literal(n)) => {
                     for i in 0..*n {
                         let elem_name = format!("{}_{i}", input.name);
                         let fe = scope_values.get(&elem_name).ok_or_else(|| {
@@ -99,7 +99,7 @@ impl ProveHandler for ServerProveHandler {
                     })?;
                     inputs.insert(input.name.clone(), *fe);
                 }
-                Some(ir::prove_ir::ArraySize::Capture(_)) => {}
+                Some(ir_forge::ArraySize::Capture(_)) => {}
             }
         }
         for cap in &prove_ir.captures {

@@ -5,10 +5,10 @@ use std::collections::HashMap;
 use axum::Json;
 use serde::Deserialize;
 
-use compiler::r1cs_backend::R1CSCompiler;
-use ir::prove_ir::ProveIrCompiler;
-use ir::types::SsaVar;
+use ir::SsaVar;
+use ir_forge::ProveIrCompiler;
 use memory::FieldElement;
+use zkc::r1cs_backend::R1CSCompiler;
 
 use crate::error::ApiError;
 use crate::sandbox::sandboxed;
@@ -67,7 +67,7 @@ fn inspect_circuit(
 
     // Instantiate
     let mut program = prove_ir
-        .instantiate(&HashMap::new())
+        .instantiate_lysis(&HashMap::new())
         .map_err(|e| format!("{e}"))?;
 
     // Optimize

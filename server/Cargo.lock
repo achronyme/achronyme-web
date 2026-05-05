@@ -4,8 +4,8 @@ version = 4
 
 [[package]]
 name = "ach-macros"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -18,13 +18,16 @@ version = "0.1.0"
 dependencies = [
  "achronyme-parser",
  "achronyme-std",
+ "akron",
+ "akronc",
  "axum",
  "base64",
- "compiler",
+ "circom",
  "constraints",
  "dashmap",
  "http-body-util",
  "ir",
+ "ir-forge",
  "memory",
  "proving",
  "serde",
@@ -37,25 +40,25 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.23",
  "uuid",
- "vm",
+ "zkc",
 ]
 
 [[package]]
 name = "achronyme-parser"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
  "diagnostics",
 ]
 
 [[package]]
 name = "achronyme-std"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
  "ach-macros",
+ "akron",
  "memory",
- "vm",
 ]
 
 [[package]]
@@ -77,6 +80,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddd31a130427c27518df266943a5308ed92d4b226cc639f5a8f1002816174301"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "akron"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "ach-macros",
+ "byteorder",
+ "constraints",
+ "memory",
+ "resolve",
+]
+
+[[package]]
+name = "akronc"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "achronyme-parser",
+ "akron",
+ "artik",
+ "circom",
+ "constraints",
+ "ir",
+ "ir-forge",
+ "memory",
+ "resolve",
 ]
 
 [[package]]
@@ -319,6 +350,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
+name = "artik"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "memory",
+]
+
+[[package]]
 name = "async-trait"
 version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -497,26 +536,16 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "circom"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
+ "artik",
  "diagnostics",
  "ir",
+ "ir-forge",
  "memory",
-]
-
-[[package]]
-name = "compiler"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
-dependencies = [
- "achronyme-parser",
- "circom",
- "constraints",
- "ir",
- "memory",
- "resolve",
- "vm",
+ "num-bigint",
+ "num-traits",
 ]
 
 [[package]]
@@ -527,10 +556,12 @@ checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
 
 [[package]]
 name = "constraints"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
+ "ir-core",
  "memory",
+ "rustc-hash",
  "serde_json",
 ]
 
@@ -605,8 +636,8 @@ dependencies = [
 
 [[package]]
 name = "diagnostics"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 
 [[package]]
 name = "digest"
@@ -692,6 +723,12 @@ dependencies = [
  "rand_core 0.6.4",
  "subtle",
 ]
+
+[[package]]
+name = "fixedbitset"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99"
 
 [[package]]
 name = "fnv"
@@ -1076,16 +1113,51 @@ dependencies = [
 
 [[package]]
 name = "ir"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
  "achronyme-parser",
+ "artik",
  "bincode",
  "constraints",
  "diagnostics",
+ "ir-core",
+ "ir-forge",
+ "lysis",
+ "lysis-types",
  "memory",
  "resolve",
  "serde",
+ "smallvec",
+]
+
+[[package]]
+name = "ir-core"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "diagnostics",
+ "memory",
+ "serde",
+]
+
+[[package]]
+name = "ir-forge"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "achronyme-parser",
+ "bincode",
+ "diagnostics",
+ "fixedbitset",
+ "ir-core",
+ "lysis",
+ "lysis-types",
+ "memory",
+ "resolve",
+ "rustc-hash",
+ "serde",
+ "smallvec",
 ]
 
 [[package]]
@@ -1159,6 +1231,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
+name = "lysis"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "artik",
+ "indexmap",
+ "lysis-types",
+ "memory",
+ "rustc-hash",
+ "siphasher",
+ "smallvec",
+]
+
+[[package]]
+name = "lysis-types"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "memory",
+]
+
+[[package]]
 name = "matchers"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1181,8 +1275,8 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "memory"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
  "serde",
 ]
@@ -1389,9 +1483,11 @@ dependencies = [
 
 [[package]]
 name = "proving"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
+ "akron",
+ "akronc",
  "ark-bls12-381",
  "ark-bn254",
  "ark-ec",
@@ -1401,14 +1497,13 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
- "compiler",
  "constraints",
  "halo2_proofs",
  "memory",
  "rand 0.8.6",
  "serde_json",
  "sha2",
- "vm",
+ "zkc",
 ]
 
 [[package]]
@@ -1569,11 +1664,17 @@ checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
 
 [[package]]
 name = "resolve"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
 dependencies = [
  "achronyme-parser",
 ]
+
+[[package]]
+name = "rustc-hash"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94300abf3f1ae2e2b8ffb7b58043de3d399c73fa6f4b73826402a5c457614dbe"
 
 [[package]]
 name = "rustversion"
@@ -1715,6 +1816,12 @@ dependencies = [
  "errno",
  "libc",
 ]
+
+[[package]]
+name = "siphasher"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "slab"
@@ -2154,18 +2261,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "vm"
-version = "0.1.0-beta.19"
-source = "git+https://github.com/achronyme/achronyme?rev=a05f4db6#a05f4db69b6bf515de4c0f11a8006a7a9e128464"
-dependencies = [
- "ach-macros",
- "byteorder",
- "constraints",
- "memory",
- "resolve",
-]
-
-[[package]]
 name = "want"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2484,6 +2579,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "zkc"
+version = "0.1.0-beta.20"
+source = "git+https://github.com/achronyme/achronyme?rev=c9f02ccf42fec6daf61c6f80d18110cc365f9a39#c9f02ccf42fec6daf61c6f80d18110cc365f9a39"
+dependencies = [
+ "artik",
+ "constraints",
+ "ir",
+ "ir-core",
+ "ir-forge",
+ "memory",
 ]
 
 [[package]]

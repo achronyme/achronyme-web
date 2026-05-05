@@ -6,28 +6,28 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use compiler::Compiler;
+use akron::error::RuntimeError;
+use akron::native::NativeObj;
+use akron::{CallFrame, ValueOps, VM};
+use akronc::Compiler;
 use memory::{Closure, Function, Value};
-use vm::error::RuntimeError;
-use vm::native::NativeObj;
-use vm::{CallFrame, ValueOps, VM};
 
 use crate::prove_handler::ServerProveHandler;
 
 /// Wrapper to share `ServerProveHandler` via Rc (orphan rule workaround).
 struct SharedHandler(Rc<ServerProveHandler>);
 
-impl vm::ProveHandler for SharedHandler {
+impl akron::ProveHandler for SharedHandler {
     fn execute_prove_ir(
         &self,
         prove_ir_bytes: &[u8],
         scope_values: &std::collections::HashMap<String, memory::FieldElement>,
-    ) -> Result<vm::ProveResult, vm::ProveError> {
+    ) -> Result<akron::ProveResult, akron::ProveError> {
         self.0.execute_prove_ir(prove_ir_bytes, scope_values)
     }
 }
 
-impl vm::VerifyHandler for SharedHandler {
+impl akron::VerifyHandler for SharedHandler {
     fn verify_proof(&self, proof: &memory::ProofObject) -> Result<bool, String> {
         self.0.verify_proof(proof)
     }
