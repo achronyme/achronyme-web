@@ -993,7 +993,7 @@ import 'material-symbols/outlined.css';
     import { oneDark } from "@codemirror/theme-one-dark";
     import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
     import { highlightSelectionMatches } from "@codemirror/search";
-    import { achronymeLanguage } from "../lib/achronyme-lang.js";
+    import { languageForPath } from "../lib/achronyme-lang.js";
     import { initLspWasm, achLinter, achAutocompletion, achHover } from "../lib/achronyme-lsp.js";
     import { renderFileTree, startInlineCreate, startInlineCreateDir, setupRootDrop } from "../lib/playground-filetree.js";
     import { TabManager } from "../lib/playground-tabs.js";
@@ -1324,7 +1324,7 @@ import 'material-symbols/outlined.css';
         history(), bracketMatching(), closeBrackets(), indentOnInput(),
         highlightSelectionMatches(), oneDark, editorTheme,
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        achronymeLanguage,
+        languageForPath(path),
         achLinter(path), achAutocompletion(path), achHover(path),
         keymap.of([indentWithTab, ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
         runKeymap, cursorTrack, autoSave, focusTracker, EditorView.lineWrapping,
