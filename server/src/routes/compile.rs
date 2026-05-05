@@ -70,8 +70,18 @@ pub async fn handler(
             let source = std::fs::read_to_string(&config.entry).map_err(|e| {
                 ApiError::BadRequest(format!("cannot read entry {}: {e}", config.entry.display()))
             })?;
+            // Mirror `run_workspace`: hand the entry's directory and the
+            // resolved circom libs to the .ach checker so workspace
+            // imports + their nested .circom includes resolve the same
+            // way at /api/compile, /api/run, and /api/circuit.
+            let base_path = config
+                .entry
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| workspace.clone());
+            let libs = config.circom_libs;
             let result = sandboxed(
-                move || pipeline::check_source(&source),
+                move || pipeline::check_source_with_libs(&source, Some(base_path), &libs),
                 COMPILE_TIMEOUT_SECS,
             )
             .await?;

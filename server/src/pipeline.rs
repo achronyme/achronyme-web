@@ -97,21 +97,37 @@ pub fn run_source(source: &str, budget: u64, max_heap: usize) -> RunOutput {
         max_heap,
         None,
         crate::prove_handler::ProveBackend::R1cs,
+        Vec::new(),
     )
 }
 
-/// Compile and run with an optional base_path and prove backend.
+/// Compile and run with an optional base_path, prove backend, and
+/// resolved circom library directories.
+///
+/// `circom_lib_dirs` flows into `compiler.circom_lib_dirs`, which the
+/// circom front-end consults when resolving `include` statements
+/// inside imported `.circom` files. `.ach` `import { … } from "..."`
+/// itself only resolves through `base_path`; library lookup happens
+/// one level deeper, when the `.circom` file's includes are processed.
 pub fn run_source_with_base_path(
     source: &str,
     budget: u64,
     max_heap: usize,
     base_path: Option<std::path::PathBuf>,
     backend: crate::prove_handler::ProveBackend,
+    circom_lib_dirs: Vec<std::path::PathBuf>,
 ) -> RunOutput {
     OUTPUT.with(|buf| buf.borrow_mut().clear());
     OUTPUT_BYTES.with(|b| *b.borrow_mut() = 0);
 
-    match run_inner(source, budget, max_heap, base_path, backend) {
+    match run_inner(
+        source,
+        budget,
+        max_heap,
+        base_path,
+        backend,
+        circom_lib_dirs,
+    ) {
         Ok(proofs) => {
             let truncated = OUTPUT_BYTES.with(|b| *b.borrow() >= MAX_OUTPUT_BYTES);
             let mut output = OUTPUT.with(|buf| buf.borrow().join("\n"));
@@ -147,12 +163,14 @@ fn run_inner(
     max_heap: usize,
     base_path: Option<std::path::PathBuf>,
     backend: crate::prove_handler::ProveBackend,
+    circom_lib_dirs: Vec<std::path::PathBuf>,
 ) -> Result<Vec<crate::prove_handler::CapturedProof>, String> {
     // 1. Compile
     let mut compiler = Compiler::new();
     if let Some(bp) = base_path {
         compiler.base_path = Some(bp);
     }
+    compiler.circom_lib_dirs = circom_lib_dirs;
     let bytecode = compiler.compile(source).map_err(|e| format!("{e}"))?;
 
     // 2. Create VM
@@ -271,9 +289,21 @@ fn run_inner(
     Ok(proofs)
 }
 
-/// Check source code for errors without executing.
+/// Check source code for errors without executing. Single-source mode
+/// delegates here with no base_path and no library directories.
 pub fn check_source(source: &str) -> CompileOutput {
-    // Parse
+    check_source_with_libs(source, None, &[])
+}
+
+/// Workspace-aware variant of [`check_source`]. Threads `base_path` and
+/// `circom_lib_dirs` into the compiler so circom imports + their nested
+/// `include` statements resolve the same way they would at run time.
+/// Returns parse errors as zero-based-line `DiagnosticInfo` entries.
+pub fn check_source_with_libs(
+    source: &str,
+    base_path: Option<std::path::PathBuf>,
+    circom_lib_dirs: &[std::path::PathBuf],
+) -> CompileOutput {
     let (_, errors) = achronyme_parser::parse_program(source);
     if !errors.is_empty() {
         let diagnostics = errors
@@ -291,8 +321,11 @@ pub fn check_source(source: &str) -> CompileOutput {
         };
     }
 
-    // Compile (catches semantic errors)
     let mut compiler = Compiler::new();
+    if let Some(bp) = base_path {
+        compiler.base_path = Some(bp);
+    }
+    compiler.circom_lib_dirs = circom_lib_dirs.to_vec();
     match compiler.compile(source) {
         Ok(_) => CompileOutput {
             success: true,

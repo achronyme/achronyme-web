@@ -4,9 +4,43 @@
 //! so imports resolve against the workspace directory.
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use crate::pipeline::RunOutput;
 use crate::prove_handler::ProveBackend;
+
+/// Resolved path of the server-managed circomlib mount, or `None` if
+/// `ACH_CIRCOMLIB_PATH` is not configured. Canonicalized once on first
+/// access — subsequent reads are lock-free.
+static CIRCOMLIB_PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
+
+/// Read-only path the operator points at the vendored circomlib bundle.
+/// Returns `None` if unset or unreadable so request handlers can surface
+/// a clear error instead of a misleading "not found".
+fn circomlib_path() -> Option<&'static Path> {
+    CIRCOMLIB_PATH
+        .get_or_init(|| {
+            let raw = std::env::var("ACH_CIRCOMLIB_PATH").ok()?;
+            match Path::new(&raw).canonicalize() {
+                Ok(p) if p.is_dir() => Some(p),
+                Ok(p) => {
+                    tracing::error!(
+                        "ACH_CIRCOMLIB_PATH={} is not a directory; @circomlib will be rejected",
+                        p.display()
+                    );
+                    None
+                }
+                Err(e) => {
+                    tracing::error!(
+                        "ACH_CIRCOMLIB_PATH={raw} could not be canonicalized: {e}; \
+                         @circomlib will be rejected"
+                    );
+                    None
+                }
+            }
+        })
+        .as_deref()
+}
 
 /// Minimal achronyme.toml parsing — only what the server needs.
 #[derive(serde::Deserialize, Default)]
@@ -33,16 +67,33 @@ struct CircomSection {
 
 /// Validate and resolve `[circom] libs = [...]` entries against a workspace.
 ///
-/// Each entry must be a workspace-relative path that resolves (after
-/// canonicalization) underneath the workspace root. Absolute paths,
-/// `..` traversal, and symlinks pointing outside the workspace are
-/// rejected.
+/// Two entry shapes are accepted:
+///
+/// - **Workspace-relative paths** — must canonicalize underneath the
+///   workspace root. Absolute paths, `..` traversal, and symlinks
+///   pointing outside the workspace are rejected.
+/// - **Server-managed namespaces** — entries starting with `@` resolve
+///   to a read-only path the operator configured. The only namespace
+///   today is `@circomlib`, backed by `ACH_CIRCOMLIB_PATH`. Unknown
+///   `@`-prefixed names are rejected so a typo can't silently fall
+///   through to the relative-path branch.
 ///
 /// This is the **only** validation layer between the user-controlled
 /// `achronyme.toml` and the `circom` crate's include resolver — the
 /// crate itself does not re-check that paths stay sandboxed. Any
 /// vulnerability here reaches the host filesystem.
 pub fn resolve_circom_libs(workspace: &Path, raw: &[String]) -> Result<Vec<PathBuf>, String> {
+    resolve_circom_libs_inner(workspace, raw, circomlib_path())
+}
+
+/// Test seam — same logic as [`resolve_circom_libs`] but takes the
+/// `@circomlib` mount as an explicit parameter so unit tests can vary
+/// it without racing on the process-global `OnceLock`.
+fn resolve_circom_libs_inner(
+    workspace: &Path,
+    raw: &[String],
+    circomlib: Option<&Path>,
+) -> Result<Vec<PathBuf>, String> {
     let canonical_ws = workspace
         .canonicalize()
         .map_err(|e| format!("workspace error: {e}"))?;
@@ -52,6 +103,26 @@ pub fn resolve_circom_libs(workspace: &Path, raw: &[String]) -> Result<Vec<PathB
         if entry.is_empty() {
             return Err("[circom] libs entry is empty".into());
         }
+
+        // Server-managed namespaces. The `@` prefix is reserved so user
+        // workspace paths can't ever start with `@` and accidentally
+        // resolve to an operator-controlled mount.
+        if let Some(namespace) = entry.strip_prefix('@') {
+            match namespace {
+                "circomlib" => {
+                    let path = circomlib.ok_or(
+                        "@circomlib is not configured on this server \
+                         (set ACH_CIRCOMLIB_PATH)",
+                    )?;
+                    out.push(path.to_path_buf());
+                    continue;
+                }
+                other => {
+                    return Err(format!("unknown library namespace '@{other}'"));
+                }
+            }
+        }
+
         if entry.starts_with('/') || entry.starts_with('\\') {
             return Err(format!("[circom] libs entry '{entry}' must be relative"));
         }
@@ -158,68 +229,49 @@ pub fn load_workspace_config(workspace: &Path) -> Result<WorkspaceConfig, String
     })
 }
 
-/// Run a workspace project. Reads achronyme.toml for entry point and backend.
+/// Run a workspace project. Reads achronyme.toml for entry point,
+/// backend, and `[circom] libs` so the compiler's include resolver
+/// can reach circomlib (or any other library mount) the same way
+/// `ach run` does locally.
 pub fn run_workspace(workspace: &Path, budget: u64, max_heap: usize) -> RunOutput {
-    // 1. Read and parse achronyme.toml
-    let toml_path = workspace.join("achronyme.toml");
-    let config: AchronymeToml = if toml_path.exists() {
-        let toml_str = match std::fs::read_to_string(&toml_path) {
-            Ok(s) => s,
-            Err(e) => {
-                return RunOutput {
-                    success: false,
-                    output: String::new(),
-                    error: Some(format!("cannot read achronyme.toml: {e}")),
-                    proofs: vec![],
-                }
-            }
-        };
-        match toml::from_str(&toml_str) {
-            Ok(c) => c,
-            Err(e) => {
-                return RunOutput {
-                    success: false,
-                    output: String::new(),
-                    error: Some(format!("invalid achronyme.toml: {e}")),
-                    proofs: vec![],
-                }
-            }
-        }
-    } else {
-        AchronymeToml::default()
-    };
-
-    let entry = config
-        .project
-        .and_then(|p| p.entry)
-        .unwrap_or_else(|| "src/main.ach".to_string());
-
-    let backend = match config.build.and_then(|b| b.backend).as_deref() {
-        Some("plonkish") => ProveBackend::Plonkish,
-        _ => ProveBackend::R1cs,
-    };
-
-    // 2. Read entry file
-    let entry_path = workspace.join(&entry);
-    let source = match std::fs::read_to_string(&entry_path) {
-        Ok(s) => s,
+    let config = match load_workspace_config(workspace) {
+        Ok(c) => c,
         Err(e) => {
             return RunOutput {
                 success: false,
                 output: String::new(),
-                error: Some(format!("cannot read {entry}: {e}")),
+                error: Some(e),
                 proofs: vec![],
             }
         }
     };
 
-    // 3. Compile and run with base_path + backend
-    let base_path = entry_path
+    let source = match std::fs::read_to_string(&config.entry) {
+        Ok(s) => s,
+        Err(e) => {
+            return RunOutput {
+                success: false,
+                output: String::new(),
+                error: Some(format!("cannot read {}: {e}", config.entry.display())),
+                proofs: vec![],
+            }
+        }
+    };
+
+    let base_path = config
+        .entry
         .parent()
         .map(|p| p.to_path_buf())
         .unwrap_or_else(|| workspace.to_path_buf());
 
-    crate::pipeline::run_source_with_base_path(&source, budget, max_heap, Some(base_path), backend)
+    crate::pipeline::run_source_with_base_path(
+        &source,
+        budget,
+        max_heap,
+        Some(base_path),
+        config.backend,
+        config.circom_libs,
+    )
 }
 
 #[cfg(test)]
@@ -299,6 +351,55 @@ mod tests {
         let ws = mktemp_workspace();
         let resolved = resolve_circom_libs(&ws, &[]).expect("empty should pass");
         assert!(resolved.is_empty());
+        let _ = fs::remove_dir_all(&ws);
+    }
+
+    #[test]
+    fn resolve_libs_at_circomlib_uses_configured_mount() {
+        let ws = mktemp_workspace();
+        let mount = std::env::temp_dir().join(format!("ach-circomlib-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&mount).unwrap();
+        let canonical_mount = mount.canonicalize().unwrap();
+
+        let resolved =
+            resolve_circom_libs_inner(&ws, &["@circomlib".to_string()], Some(&canonical_mount))
+                .expect("should accept");
+        assert_eq!(resolved, vec![canonical_mount]);
+
+        let _ = fs::remove_dir_all(&ws);
+        let _ = fs::remove_dir_all(&mount);
+    }
+
+    #[test]
+    fn resolve_libs_at_circomlib_rejects_when_unset() {
+        let ws = mktemp_workspace();
+        let err = resolve_circom_libs_inner(&ws, &["@circomlib".to_string()], None).unwrap_err();
+        assert!(err.contains("not configured"), "got: {err}");
+        let _ = fs::remove_dir_all(&ws);
+    }
+
+    #[test]
+    fn resolve_libs_rejects_unknown_namespace() {
+        let ws = mktemp_workspace();
+        // Even with a configured mount, an unknown namespace must error.
+        let mount = std::env::temp_dir().join(format!("ach-circomlib-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&mount).unwrap();
+        let err =
+            resolve_circom_libs_inner(&ws, &["@noisette".to_string()], Some(&mount)).unwrap_err();
+        assert!(err.contains("unknown library namespace"), "got: {err}");
+        let _ = fs::remove_dir_all(&ws);
+        let _ = fs::remove_dir_all(&mount);
+    }
+
+    #[test]
+    fn resolve_libs_user_workspace_path_cannot_start_with_at() {
+        let ws = mktemp_workspace();
+        // A user creating a directory literally called "@circomlib" must
+        // not have it accidentally resolve to the server mount. The `@`
+        // prefix is reserved for namespaces, and unknown ones error.
+        fs::create_dir_all(ws.join("@circomlib")).unwrap();
+        let err = resolve_circom_libs_inner(&ws, &["@circomlib".to_string()], None).unwrap_err();
+        assert!(err.contains("not configured"), "got: {err}");
         let _ = fs::remove_dir_all(&ws);
     }
 
