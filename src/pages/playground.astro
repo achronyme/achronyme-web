@@ -1288,8 +1288,11 @@ import 'material-symbols/outlined.css';
       { key: "Ctrl-Shift-p", mac: "Cmd-Shift-p", run: () => { openCommandPalette(); return true; } },
     ]);
 
-    // ═══ EDITOR EXTENSIONS (per group) ═══
-    function editorExtensions(group) {
+    // ═══ EDITOR EXTENSIONS (per group / per file) ═══
+    // `path` selects the LSP dispatch (.circom vs .ach). Tab-switch
+    // replaces the entire EditorState, so the language is fixed at
+    // construction time — there is no facet to flip mid-edit.
+    function editorExtensions(group, path) {
       const autoSave = EditorView.updateListener.of((update) => {
         if (update.docChanged && session.isProjectMode()) {
           const idx = group.tabs.getActiveIndex();
@@ -1321,7 +1324,8 @@ import 'material-symbols/outlined.css';
         history(), bracketMatching(), closeBrackets(), indentOnInput(),
         highlightSelectionMatches(), oneDark, editorTheme,
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        achronymeLanguage, achLinter, achAutocompletion, achHover,
+        achronymeLanguage,
+        achLinter(path), achAutocompletion(path), achHover(path),
         keymap.of([indentWithTab, ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
         runKeymap, cursorTrack, autoSave, focusTracker, EditorView.lineWrapping,
       ];
@@ -1451,7 +1455,7 @@ import 'material-symbols/outlined.css';
         if (remaining) src.view.setState(remaining.editorState);
 
         // Add to new group
-        newGroup.tabs.openTab(path, content, editorExtensions(newGroup));
+        newGroup.tabs.openTab(path, content, editorExtensions(newGroup, path));
         if (modified) {
           const ni = newGroup.tabs.getActiveIndex();
           newGroup.tabs.setModified(ni, true);
@@ -1709,7 +1713,7 @@ import 'material-symbols/outlined.css';
       try {
         const content = await session.readFile(path);
         group.tabs.saveEditorState(group.view.state);
-        group.tabs.openTab(path, content, editorExtensions(group));
+        group.tabs.openTab(path, content, editorExtensions(group, path));
         group.view.setState(group.tabs.getActiveTab().editorState);
         renderGroupTabs(group);
         refreshFileTree();
@@ -2244,7 +2248,7 @@ import 'material-symbols/outlined.css';
       else src.view.setState(EditorState.create({ doc: "", extensions: editorExtensions(src) }));
 
       dst.tabs.saveEditorState(dst.view.state);
-      dst.tabs.openTab(path, content, editorExtensions(dst));
+      dst.tabs.openTab(path, content, editorExtensions(dst, path));
       if (modified) {
         const ni = dst.tabs.getActiveIndex();
         dst.tabs.setModified(ni, true);
@@ -2281,7 +2285,7 @@ import 'material-symbols/outlined.css';
         rebuildGroupsDOM();
       }
 
-      newGroup.tabs.openTab(path, content, editorExtensions(newGroup));
+      newGroup.tabs.openTab(path, content, editorExtensions(newGroup, path));
       if (modified) {
         const ni = newGroup.tabs.getActiveIndex();
         newGroup.tabs.setModified(ni, true);
