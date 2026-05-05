@@ -47,5 +47,40 @@ async fn main() {
     tracing::info!("CORS origin: {}", cfg.cors_origin);
 
     let listener = TcpListener::bind(addr).await.expect("failed to bind");
-    axum::serve(listener, app).await.expect("server error");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .expect("server error");
+
+    tracing::info!("ach-server shutdown complete");
+}
+
+/// Resolve when the process receives SIGTERM (systemd stop) or SIGINT
+/// (Ctrl-C). Axum stops accepting new connections and lets in-flight
+/// requests finish within `TimeoutStopSec`. Session workspaces under
+/// `/tmp/ach-sessions/<uuid>` persist across restart by design — the
+/// reaper task is a fire-and-forget tokio task that is dropped with
+/// the runtime, no explicit cleanup needed.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl-C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => tracing::info!("received SIGINT, shutting down"),
+        _ = terminate => tracing::info!("received SIGTERM, shutting down"),
+    }
 }

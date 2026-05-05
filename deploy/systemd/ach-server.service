@@ -1,0 +1,99 @@
+# ach-server systemd unit (canonical source).
+#
+# BEFORE INSTALLING: edit `User=` / `Group=` below to match the account
+# that owns /opt/achronyme-web on vps1. The default (`runner`) assumes
+# the GitHub self-hosted runner deploys directly; if a dedicated
+# service account exists, use that. The service fails to start on
+# first install if this is wrong.
+#
+# Provisioning (one-time, on vps1):
+#
+#   sudo install -m 0644 /opt/achronyme-web/deploy/systemd/ach-server.service \
+#         /etc/systemd/system/ach-server.service
+#   sudo install -m 0640 -o root -g root \
+#         /opt/achronyme-web/deploy/ach-server.env.example /etc/ach-server.env
+#   # edit /etc/ach-server.env: ACH_CORS_ORIGIN must match the public domain
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ach-server
+#
+# Update flow: the deploy.yml workflow only `cargo build --release &&
+# systemctl restart ach-server` — that does NOT replace this file.
+# After editing the unit, push the change, then on vps1:
+#
+#   sudo cp /opt/achronyme-web/deploy/systemd/ach-server.service \
+#           /etc/systemd/system/ach-server.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl restart ach-server
+
+[Unit]
+Description=Achronyme server (ach-server) — playground compilation API
+Documentation=https://achrony.me/docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# The bare-metal deploy runs as the GitHub self-hosted runner user, which
+# already owns /opt/achronyme-web. Override locally if a dedicated
+# `achsrv` account exists.
+User=runner
+Group=runner
+
+WorkingDirectory=/opt/achronyme-web/server
+ExecStart=/opt/achronyme-web/server/target/release/ach-server
+
+# Pulls ACH_PORT, ACH_BIND, ACH_CORS_ORIGIN, RUST_LOG. The leading `-`
+# makes the file optional so a fresh install with sensible defaults
+# starts up; missing CORS origin will fall back to localhost:4321,
+# which is harmless behind nginx but useless in production — set it.
+EnvironmentFile=-/etc/ach-server.env
+
+# Graceful shutdown: SIGTERM tells axum to stop accepting and drain
+# in-flight requests. The 35s tower TimeoutLayer caps any single
+# request, so a 45s stop budget covers the slowest legitimate finish
+# plus a safety margin.
+KillSignal=SIGTERM
+TimeoutStopSec=45s
+
+# Restart on crash but back off so we don't pin a CPU if the binary is
+# in a tight panic loop after a bad deploy.
+Restart=on-failure
+RestartSec=5s
+
+# ── Hardening ────────────────────────────────────────────────────────
+# Production sandbox. Adjust ReadWritePaths if /tmp/ach-sessions moves.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+
+# MemoryDenyWriteExecute=true is a known footgun for Rust crypto
+# binaries (ark-bn254 / halo2 use memory regions this rejects). Test
+# under realistic /api/prove load on vps1 before enabling — failure
+# mode is mid-request SIGSYS/abort, not a startup error, so
+# `systemctl status` would look healthy while proofs crash.
+# MemoryDenyWriteExecute=true
+
+# Session workspaces live under /tmp/ach-sessions/<uuid>. PrivateTmp
+# would namespace /tmp per service, which means the directory would be
+# wiped on every restart — fine functionally (sessions already
+# vanish) but inconvenient when triaging via `ls /tmp/ach-sessions`
+# from a shell. Leave /tmp shared and grant explicit RW.
+ReadWritePaths=/tmp
+
+# Resource ceilings. The application enforces its own per-request
+# heap limit (256 MB); this is the hard ceiling for the whole process,
+# generous enough to handle 4 concurrent Groth16 proofs.
+LimitNOFILE=65535
+MemoryMax=4G
+
+[Install]
+WantedBy=multi-user.target
