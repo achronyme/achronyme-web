@@ -62,7 +62,7 @@ export class RunResult {
 if (Symbol.dispose) RunResult.prototype[Symbol.dispose] = RunResult.prototype.free;
 
 /**
- * Check source code for diagnostics. Returns JSON array of LspDiagnostic[].
+ * Check `.ach` source code for diagnostics. Returns JSON array of LspDiagnostic[].
  * @param {string} source
  * @returns {string}
  */
@@ -82,7 +82,32 @@ export function check(source) {
 }
 
 /**
- * Get all completion items. Returns JSON array of CompletionItem[].
+ * Check `.circom` source code for diagnostics. Returns JSON array of LspDiagnostic[].
+ *
+ * Routes through the circom parser + constraint analyzer + (for self-contained
+ * sources) the lowering pipeline. Use this entry point — not [`check`] — for
+ * any URI ending in `.circom`. The two pipelines surface different code
+ * families (E100-E102 / W101-W103 / E200-E211 vs the `.ach` parser codes).
+ * @param {string} source
+ * @returns {string}
+ */
+export function check_circom(source) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.check_circom(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Get all `.ach` completion items. Returns JSON array of CompletionItem[].
  * This is static data (keywords + builtins + snippets), no source needed.
  * @returns {string}
  */
@@ -91,6 +116,27 @@ export function completions() {
     let deferred1_1;
     try {
         const ret = wasm.completions();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Get all `.circom` completion items. Returns JSON array of CompletionItem[].
+ *
+ * Disjoint from [`completions`] — circom keywords (`template`, `signal`,
+ * `pragma`, `include`) and the verified circomlib templates (Num2Bits,
+ * Poseidon, MiMCSponge, …) live in the circom-specific tables.
+ * @returns {string}
+ */
+export function completions_circom() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.completions_circom();
         deferred1_0 = ret[0];
         deferred1_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -142,7 +188,8 @@ export function goto_definition(source, line, col) {
 }
 
 /**
- * Get hover documentation for the word at (line, col). Returns markdown string or "".
+ * Get `.ach` hover documentation for the word at (line, col).
+ * Returns a markdown string or `""` when no entry matches.
  * @param {string} source
  * @param {number} line
  * @param {number} col
@@ -155,6 +202,33 @@ export function hover(source, line, col) {
         const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.hover(ptr0, len0, line, col);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Get `.circom` hover documentation for the word at (line, col).
+ * Returns a markdown string or `""` when no entry matches.
+ *
+ * `Poseidon`, `Pedersen`, `Sha256`, etc. resolve to circomlib component
+ * docs here; in the `.ach` table the same identifiers (when present)
+ * resolve to the achronyme builtin instead.
+ * @param {string} source
+ * @param {number} line
+ * @param {number} col
+ * @returns {string}
+ */
+export function hover_circom(source, line, col) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.hover_circom(ptr0, len0, line, col);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
