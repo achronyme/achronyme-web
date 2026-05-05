@@ -13,13 +13,13 @@ use uuid::Uuid;
 const MAX_SESSIONS: usize = 200;
 const SESSION_TTL: Duration = Duration::from_secs(2 * 60 * 60); // 2 hours
 const REAPER_INTERVAL: Duration = Duration::from_secs(60);
-const MAX_FILES_PER_SESSION: usize = 20;
-const MAX_FILE_SIZE: usize = 32 * 1024; // 32KB
-const MAX_WORKSPACE_SIZE: usize = 256 * 1024; // 256KB
+const MAX_FILES_PER_SESSION: usize = 50;
+const MAX_FILE_SIZE: usize = 128 * 1024; // 128KB — fits sha256compression.circom (~35KB) with headroom
+const MAX_WORKSPACE_SIZE: usize = 1024 * 1024; // 1MB — fits a circomlib subset plus user files
 
 /// Allowed file extensions.
 fn is_allowed_path(path: &str) -> bool {
-    path == "achronyme.toml" || path.ends_with(".ach")
+    path == "achronyme.toml" || path.ends_with(".ach") || path.ends_with(".circom")
 }
 
 /// Validate a user-supplied path is safe (for files).
@@ -34,7 +34,7 @@ pub fn validate_path(workspace: &Path, user_path: &str) -> Result<PathBuf, Strin
         return Err("path traversal not allowed".into());
     }
     if !is_allowed_path(user_path) {
-        return Err("only .ach files and achronyme.toml are allowed".into());
+        return Err("only .ach, .circom files and achronyme.toml are allowed".into());
     }
 
     let full = workspace.join(user_path);
