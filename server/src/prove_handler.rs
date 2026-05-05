@@ -37,9 +37,12 @@ pub struct ServerProveHandler {
 
 impl ServerProveHandler {
     pub fn new(backend: ProveBackend) -> Self {
-        let cache_dir = std::env::var("HOME")
-            .map(|h| PathBuf::from(h).join(".achronyme").join("cache"))
-            .unwrap_or_else(|_| std::env::temp_dir().join("achronyme-cache"));
+        // /tmp/ach-server-cache: shared with routes/prove.rs and
+        // routes/circuit.rs so warm Groth16 keys are reused across
+        // /api/run + /api/prove + /api/circuit. $HOME is unsuitable
+        // here — systemd's ProtectHome=true masks /home from the
+        // service, and the cache is ephemeral anyway.
+        let cache_dir = std::env::temp_dir().join("ach-server-cache");
         Self {
             cache_dir,
             backend,

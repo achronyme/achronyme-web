@@ -1,10 +1,10 @@
 # ach-server systemd unit (canonical source).
 #
-# BEFORE INSTALLING: edit `User=` / `Group=` below to match the account
-# that owns /opt/achronyme-web on vps1. The default (`runner`) assumes
-# the GitHub self-hosted runner deploys directly; if a dedicated
-# service account exists, use that. The service fails to start on
-# first install if this is wrong.
+# BEFORE INSTALLING: confirm `User=` / `Group=` below match the account
+# that owns /opt/achronyme-web on vps1. The default (`github-runner`)
+# is the self-hosted runner identity used in the deploy.yml workflow;
+# change only if a dedicated service account replaces the runner-as-
+# deployer pattern. Wrong identity = failed start on first install.
 #
 # Provisioning (one-time, on vps1):
 #
@@ -37,8 +37,8 @@ Type=simple
 # The bare-metal deploy runs as the GitHub self-hosted runner user, which
 # already owns /opt/achronyme-web. Override locally if a dedicated
 # `achsrv` account exists.
-User=runner
-Group=runner
+User=github-runner
+Group=github-runner
 
 WorkingDirectory=/opt/achronyme-web/server
 ExecStart=/opt/achronyme-web/server/target/release/ach-server
