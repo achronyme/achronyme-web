@@ -180,6 +180,20 @@ fn run_inner(
     vm.import_strings(compiler.interner.strings);
     vm.heap.import_bytes(compiler.bytes_interner.blobs);
 
+    // Move compile-time circom handles into the VM heap so
+    // `Value::circom_handle(idx)` constants resolve at runtime, then
+    // install the witness dispatcher backed by the same library
+    // registry the compiler used. Without these two steps any
+    // `CallCircomTemplate` opcode bails with "circom template handler
+    // not configured".
+    vm.heap
+        .import_circom_handles(std::mem::take(&mut compiler.circom_handle_interner.handles));
+    vm.circom_handler = Some(Box::new(
+        crate::circom_witness::DefaultCircomWitnessHandler::new(
+            compiler.circom_library_registry.take_libraries(),
+        ),
+    ));
+
     let field_map = vm
         .heap
         .import_fields(compiler.field_interner.fields)
