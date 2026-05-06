@@ -14,6 +14,7 @@ pub const TEMPLATES: &[&str] = &[
     "circom",
     "circomlib-demo",
     "circomlib-mimc",
+    "circomlib-sha256",
 ];
 
 /// Populate a workspace with a template project.
@@ -34,7 +35,7 @@ pub fn populate_template(template: &str, workspace: &Path) -> Result<(), String>
     // Templates that pull from circomlib opt in via `[circom] libs`.
     // Other templates ship a minimal toml with no libs section.
     let toml_content = match template {
-        "circomlib-demo" | "circomlib-mimc" => format!(
+        "circomlib-demo" | "circomlib-mimc" | "circomlib-sha256" => format!(
             r#"[project]
 name = "{name}"
 version = "0.1.0"
@@ -85,6 +86,7 @@ print("Proof verified!")
         "circom" => CIRCOM_TUTORIAL_MAIN.to_string(),
         "circomlib-demo" => CIRCOMLIB_DEMO_MAIN.to_string(),
         "circomlib-mimc" => CIRCOMLIB_MIMC_MAIN.to_string(),
+        "circomlib-sha256" => CIRCOMLIB_SHA256_MAIN.to_string(),
         // "circuit" or default
         _ => format!(
             r#"// {name} — ZK Circuit
@@ -119,6 +121,10 @@ print("Verified: " + verify_proof(proof).to_string())
     }
     if template == "circomlib-mimc" {
         std::fs::write(src_dir.join("hash.circom"), CIRCOMLIB_MIMC_HASH)
+            .map_err(|e| format!("write src/hash.circom: {e}"))?;
+    }
+    if template == "circomlib-sha256" {
+        std::fs::write(src_dir.join("hash.circom"), CIRCOMLIB_SHA256_HASH)
             .map_err(|e| format!("write src/hash.circom: {e}"))?;
     }
 
@@ -314,6 +320,86 @@ template MiMCPair() {
 }
 "#;
 
+/// Demo entry point for the SHA-256 primitive. Proves knowledge of a
+/// secret byte (0-255) whose first SHA-256 digest bit matches a public
+/// commitment. The wrapper inlines circomlib's `Sha256(8)` — small
+/// enough to compile + Groth16-prove inside the playground's run
+/// timeout, large enough to exercise the full SHA-256 round permutation.
+const CIRCOMLIB_SHA256_MAIN: &str = r#"// Achronyme + circomlib — SHA-256 Preimage Bit Proof
+//
+// Heaviest of the three circomlib demos. Proves knowledge of a
+// secret byte (0-255) whose `SHA-256(byte)[0]` matches a public
+// commitment, without revealing the byte. The same shape scales to
+// longer messages — this small variant fits inside the playground's
+// run budget.
+//
+// `src/hash.circom` wraps circomlib's `Sha256(nBits)` template
+// (full SHA-256 round permutation) behind a scalar-in / scalar-out
+// API. It bit-decomposes the byte with `Num2Bits(8)` internally so
+// `.ach` can invoke it as `Sha256ByteBit()(byte)` without juggling
+// the 8-element bit array. The include resolves through
+// `[circom] libs = ["@circomlib"]` in achronyme.toml — the server
+// backs it with the vendored circomlib bundle.
+//
+// Heads-up: SHA-256 is the heaviest hash in circomlib (~28k R1CS
+// constraints for one compression). Expect a few seconds of compile
+// + prove time when you press Run.
+//
+// Press Run (▶). The prove block emits a Groth16 proof — switch to
+// the Proof tab to see the artifact.
+
+import { Sha256ByteBit } from "./hash.circom"
+
+// ── Step 1: pick a secret byte and compute its public hash bit.
+let secret_byte = 0p150
+let public_bit = Sha256ByteBit()(secret_byte)
+
+print("Secret byte (hidden): " + secret_byte.to_string())
+print("Public SHA-256 bit 0: " + public_bit.to_string())
+
+// ── Step 2: prove we know a byte that hashes to `public_bit`.
+// The verifier learns only the bit and the proof — secret_byte stays secret.
+prove preimage_bit(public_bit: Public) {
+    let computed = Sha256ByteBit()(secret_byte)
+    assert_eq(computed, public_bit, "preimage mismatch")
+}
+
+print("Witness verified — Groth16 proof is in the Proof tab.")
+"#;
+
+/// Workspace-local wrapper around circomlib's `Sha256(nBits)`. Mirrors
+/// `PoseidonHash` and `MiMCPair`: scalar in / scalar out so `.ach`
+/// invokes it as `Sha256ByteBit()(byte)` without passing array
+/// literals. Bit-decomposition happens inside the wrapper via
+/// `Num2Bits(8)`, and the exposed scalar is the first digest bit —
+/// enough to anchor a preimage proof while keeping the API ergonomic.
+const CIRCOMLIB_SHA256_HASH: &str = r#"pragma circom 2.0.0;
+
+// Resolves through `[circom] libs = ["@circomlib"]` to the vendored
+// circomlib's sha256.circom and bitify.circom on the server's
+// read-only mount.
+include "sha256/sha256.circom";
+include "bitify.circom";
+
+// One byte (0-255) in, first digest bit out. Sha256(nBits) produces
+// a 256-bit output; we expose `out[0]` as a scalar so the .ach side
+// can compare it directly. The remaining 255 output bits are still
+// constrained — narrowing to one bit just simplifies the API.
+template Sha256ByteBit() {
+    signal input in;
+    signal output out;
+
+    component nb = Num2Bits(8);
+    nb.in <== in;
+
+    component s = Sha256(8);
+    for (var i = 0; i < 8; i++) {
+        s.in[i] <== nb.out[i];
+    }
+    out <== s.out[0];
+}
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -387,6 +473,34 @@ mod tests {
         assert!(hash.contains(r#"include "mimcsponge.circom";"#));
         assert!(hash.contains("template MiMCPair()"));
         assert!(hash.contains("MiMCSponge(2, 220, 1)"));
+
+        // Companion files for OTHER templates must not leak into this one.
+        assert!(!ws.join("src/square.circom").exists());
+
+        let _ = std::fs::remove_dir_all(&ws);
+    }
+
+    #[test]
+    fn circomlib_sha256_template_opts_into_at_circomlib() {
+        let ws = mktemp();
+        populate_template("circomlib-sha256", &ws).unwrap();
+
+        let toml = std::fs::read_to_string(ws.join("achronyme.toml")).unwrap();
+        assert!(
+            toml.contains(r#"libs = ["@circomlib"]"#),
+            "circomlib-sha256 must declare the @circomlib mount"
+        );
+
+        let main = std::fs::read_to_string(ws.join("src/main.ach")).unwrap();
+        assert!(main.contains(r#"import { Sha256ByteBit } from "./hash.circom""#));
+        assert!(main.contains("prove preimage_bit(public_bit: Public)"));
+
+        let hash = std::fs::read_to_string(ws.join("src/hash.circom")).unwrap();
+        assert!(hash.contains(r#"include "sha256/sha256.circom";"#));
+        assert!(hash.contains(r#"include "bitify.circom";"#));
+        assert!(hash.contains("template Sha256ByteBit()"));
+        assert!(hash.contains("Sha256(8)"));
+        assert!(hash.contains("Num2Bits(8)"));
 
         // Companion files for OTHER templates must not leak into this one.
         assert!(!ws.join("src/square.circom").exists());
