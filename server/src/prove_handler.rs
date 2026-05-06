@@ -112,6 +112,23 @@ impl ProveHandler for ServerProveHandler {
             inputs.insert(cap.name.clone(), *fe);
         }
 
+        // Imported circom templates emit `WitnessHint` nodes for `<--`
+        // expressions on internal signals (e.g. `Num2Bits` bit
+        // decompositions, `Sha256Compression` round outputs). The IR
+        // evaluator treats them as `Input { Witness }` wires, so their
+        // values must be computed off-circuit and supplied in the
+        // inputs map before R1CS / Plonkish compilation. The hint
+        // walker is the same one `cli/src/prove_handler.rs` and `ach
+        // circom` use; existing inputs always win over hint-computed
+        // ones.
+        let hint_env =
+            circom::witness::compute_witness_hints::<memory::Bn254Fr>(&prove_ir, &inputs).map_err(
+                |e| ProveError::IrLowering(format!("circom witness hint computation failed: {e}")),
+            )?;
+        for (name, fe) in hint_env {
+            inputs.entry(name).or_insert(fe);
+        }
+
         match self.backend {
             ProveBackend::R1cs => self.prove_r1cs(&program, &inputs),
             ProveBackend::Plonkish => self.prove_plonkish(&program, &inputs),
