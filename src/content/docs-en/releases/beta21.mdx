@@ -1,0 +1,45 @@
+---
+title: "beta.21 — SHA-256 in the playground"
+description: "A focused fix release: SHA-256 imported from circomlib now compiles end-to-end through .ach prove blocks, including the small-N variants the previous walker tripped on."
+---
+
+Achronyme **0.1.0-beta.21** is a focused fix release that closes the last blocker between the playground and circomlib's SHA-256. Every input shape — `Sha256(8)`, `Sha256(16)`, `Sha256(32)`, `Sha256(64)` — now compiles, runs, and proves through a `.ach prove` block.
+
+## TL;DR
+
+- **`Sha256(N)` from circomlib works inside `.ach prove`** for every `N` we ship in the playground. Previously, only `Sha256(64)` compiled; smaller `N` faulted Lysis with `walker: undefined SsaVar`.
+- **Library template instantiation now goes through the For-preserving lowering path.** Heavy circomlib templates dispatched from `.ach` no longer hit the 255-slot frame ceiling that beta.20 left exposed.
+- **WASM LSP gains circom-specific entry points** so the in-browser editor highlights `.circom` files with the same diagnostics the standalone LSP emits.
+
+No breaking changes, no migration steps. Bumping the workspace version is the entire upgrade.
+
+## What was broken
+
+Two distinct bugs sat between the playground and the circomlib SHA-256 examples:
+
+**1. Eager unrolling on dispatched templates.** When `.ach prove` imported a circomlib template like `Sha256`, the dispatcher inlined the template's body with all loops fully unrolled before handing it to ProveIR. For `Sha256(64)` that meant a flat body of ~280 K instructions, which would later force Lysis to spill the entire frame in one go and trip the 255-slot ceiling.
+
+**2. Outer SsaVars dropped on mid-iter splits.** Even with the For loops preserved, the per-iter walker that materializes wide loop bodies had a live-set predicate that only kept variables *referenced inside the loop body*. A `Const(Field(0))` bound in the outer scope of the synthetic ProveIR (used to wire up constant inputs) was never referenced inside the round loop, so the first mid-iter split filtered it out of the live set, never spilled it to heap, and it vanished from both `ssa_to_reg` and `ssa_to_heap`. The first outer `AssertEq(?, %0)` after the loop then faulted with `walker: undefined SsaVar %0`.
+
+`Sha256(64)` was lucky — split ordering happened to route `%0` through the cold partition before the predicate dropped it. `Sha256(N)` for `N` < 64 wasn't lucky, and `cli/tests/sha256_via_ach_prove.rs::sha256_8_compiles` was `#[ignore]`-pinned to document the gap.
+
+## What changed
+
+- **`instantiate_template_into` now routes through `lower_library_template`** — the same For-preserving primitive top-level circom compiles use. Loops stay rolled, Lysis lifts uniform iterations into reusable templates, the frame stays under cap. SHA-256(64) round bodies that previously needed 1799 splits now compile cleanly.
+- **`split_in_per_iter`'s live-set predicate gained `!body_defined.contains(v)`.** Anything in `ssa_to_reg` that wasn't defined inside the loop body came from the outer scope, so its only post-split fate is a downstream consumer outside the loop. The predicate now keeps those vars in the live set, partition routes them to cold, `perform_split` spills them to heap, and `resolve()` faults them in via `LoadHeap` from any subsequent template.
+- **`feat(wasm): expose circom-specific LSP entry points`** — the in-browser editor's WASM LSP now exposes diagnostics for `.circom` files the same way the native binary does (E100-E102 soundness, W101-W103 unverified-signal warnings, E300-E306 parser).
+
+## Verification
+
+- 7/7 SHA-256 dispatch probes pass Lysis (probe_dispatch_path_diff)
+- 5/5 `.ach prove` SHA-256 cli regressions (`sha256_via_ach_prove.rs`), including the previously `#[ignore]`-pinned `sha256_8_compiles` and a new mixed-input variant
+- 4068/4068 workspace unit + 2/2 doc tests + 182/182 integration tests
+- `cross_path_prove_baseline` byte-identical: the fix is internal frame allocation only, not a constraint-output change
+- `perf_external` SHA-256(64) end-to-end ratio 0.96× vs circom+snarkjs (no regression)
+
+## Where to go next
+
+- [Playground](/playground/) — try `Sha256(N)` with the new `.ach prove` example.
+- [Lysis VM](/docs/architecture/lysis-vm/) — the spill-and-chain mechanism the fix lives inside.
+- [Circom Interop Overview](/docs/circom/overview/) — selective imports and library-template dispatch.
+- [Changelog](/docs/releases/changelog/) — full commit-level release notes.

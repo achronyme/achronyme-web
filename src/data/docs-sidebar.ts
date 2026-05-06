@@ -126,6 +126,7 @@ export const sidebarConfig: SidebarConfig = [
     label: 'Releases',
     translations: { es: 'Releases' },
     items: [
+      { label: 'beta.21 — SHA-256 in the playground', slug: 'releases/beta21', translations: { es: 'beta.21 — SHA-256 en el playground' } },
       { label: 'beta.20 — Circom frontend', slug: 'releases/beta20', translations: { es: 'beta.20 — Frontend de Circom' } },
       { label: 'Changelog', slug: 'releases/changelog' },
     ],
