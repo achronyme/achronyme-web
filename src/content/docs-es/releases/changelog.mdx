@@ -5,6 +5,38 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
+## 0.1.0-beta.21 — 2026-05-05
+
+**SHA-256 desde circomlib ahora compila de extremo a extremo a través de bloques `.ach prove` para todo `N` en `Sha256(N)`.** Un release de fixes enfocado que cierra dos bugs distintos entre el playground y los templates pesados de circomlib.
+
+### Corregido: la instanciación de templates de librería pasa por lowering que preserva el For
+
+Los bloques `.ach prove` que importaban un template de circomlib (`Sha256`, `Poseidon`, etc.) antes pasaban el cuerpo del template a ProveIR con todos los loops totalmente desenrollados. Para `Sha256(64)` eso era un cuerpo plano de ~280 K instrucciones, forzando a Lysis a asignar el frame entero de una sola vez y tropezar con el techo de 255 slots.
+
+`instantiate_template_into` ahora pasa por la misma primitiva `lower_library_template` que usa el camino standalone de `ach circom`. Los loops quedan enrollados, Lysis liftea iteraciones uniformes en templates reusables, y el presupuesto de frame por template se queda bajo el cap.
+
+### Corregido: SsaVars definidos en el scope exterior preservados en splits intermedios
+
+Aun con loops For preservados, el walker per-iter que materializa cuerpos de loop anchos tenía un predicado de live-set que solo conservaba variables *referenciadas dentro del cuerpo del loop*. Un `Const(Field(0))` enlazado en el scope exterior del ProveIR sintético (usado para cablear entradas constantes) nunca era referenciado dentro del loop de rondas, así que el primer split intermedio lo filtraba fuera, nunca lo desplazaba al heap, y desaparecía de ambos `ssa_to_reg` y `ssa_to_heap`. El primer `AssertEq(?, %0)` exterior tras el loop fallaba entonces con `walker: undefined SsaVar %0`.
+
+El predicado ganó una tercera cláusula — `!body_defined.contains(v)` — para que cualquier var en `ssa_to_reg` que no se haya definido dentro del cuerpo del loop persista por la partición cold, se desplace al heap, y se recupere vía `LoadHeap` desde cualquier template subsecuente.
+
+`Sha256(64)` tuvo suerte con el predicado viejo: el orden de los splits enrutaba `%0` por cold antes de que el predicado lo descartara. `Sha256(N)` con `N` en {8, 16, 32} no tuvo esa suerte — ahora compilan.
+
+### Nuevo: entry points del LSP WASM para `.circom`
+
+El LSP WASM del editor en el navegador expone diagnósticos de `.circom` con la misma superficie que el binario nativo: E100-E102 (soundness de constraints), W101-W103 (advertencias de signals no verificados), E300-E306 (parser).
+
+### Verificación
+
+- 7/7 probes de dispatch SHA-256 pasan Lysis
+- 5/5 regresiones cli SHA-256 vía `.ach prove`, incluyendo el `sha256_8_compiles` antes pineado con `#[ignore]` y una nueva variante con entradas mixtas
+- 4068/4068 unit tests + 2/2 doc tests + 182/182 tests de integración
+- `cross_path_prove_baseline` byte-idéntico (el fix es solo asignación interna de frame)
+- Ratio end-to-end de `perf_external` SHA-256(64) 0.96× vs circom+snarkjs
+
+---
+
 ## 0.1.0-beta.20 — 2026-05-03
 
 **Frontend Circom, Lysis (tercera VM), descomposición del workspace en 19 crates, optimizador R1CS iterativo y SHA-256(64) end-to-end. Compila archivos `.circom` a través del pipeline de Achronyme con garantías de seguridad estructural que el compilador de referencia no provee.**

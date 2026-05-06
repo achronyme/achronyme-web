@@ -5,6 +5,38 @@ description: Release history for Achronyme.
 
 All notable changes to Achronyme are documented here. Each release bumps every workspace crate to the same version.
 
+## 0.1.0-beta.21 — 2026-05-05
+
+**SHA-256 from circomlib now compiles end-to-end through `.ach prove` blocks for every `N` in `Sha256(N)`.** A focused fix release that closes two distinct bugs sitting between the playground and circomlib's heavy templates.
+
+### Fixed: library template instantiation routes through For-preserving lowering
+
+`.ach prove` blocks importing a circomlib template (`Sha256`, `Poseidon`, etc.) previously fed the template's body to ProveIR with all loops fully unrolled. For `Sha256(64)` that meant a flat body of ~280 K instructions, forcing Lysis to allocate the entire frame in one shot and trip the 255-slot frame ceiling.
+
+`instantiate_template_into` now routes through the same `lower_library_template` primitive the standalone `ach circom` path uses. Loops stay rolled, Lysis lifts uniform iterations into reusable templates, and the per-template frame budget stays under cap.
+
+### Fixed: outer-defined SsaVars preserved across mid-iter splits
+
+Even with For loops preserved, the per-iter walker that materializes wide loop bodies had a live-set predicate that only kept variables *referenced inside the loop body*. A `Const(Field(0))` bound in the outer scope of the synthetic ProveIR (used to wire constant inputs) was never referenced inside the round loop, so the first mid-iter split filtered it out, never spilled it to heap, and it vanished from both `ssa_to_reg` and `ssa_to_heap`. The first outer `AssertEq(?, %0)` after the loop then faulted with `walker: undefined SsaVar %0`.
+
+The predicate gained a third clause — `!body_defined.contains(v)` — so any var in `ssa_to_reg` that wasn't defined inside the loop body persists through the cold partition, gets spilled to heap, and faults in via `LoadHeap` from any subsequent template.
+
+`Sha256(64)` was lucky on the old predicate: split ordering happened to route `%0` into cold before the predicate dropped it. `Sha256(N)` for `N` in {8, 16, 32} wasn't lucky — these now compile.
+
+### New: WASM LSP entry points for `.circom`
+
+The in-browser editor's WASM LSP exposes `.circom` diagnostics with the same surface as the native binary: E100-E102 (constraint soundness), W101-W103 (unverified-signal warnings), E300-E306 (parser).
+
+### Verification
+
+- 7/7 SHA-256 dispatch probes pass Lysis
+- 5/5 `.ach prove` SHA-256 cli regressions, including the previously `#[ignore]`-pinned `sha256_8_compiles` and a new mixed-input variant
+- 4068/4068 unit + 2/2 doc + 182/182 integration tests
+- `cross_path_prove_baseline` byte-identical (the fix is internal frame allocation only)
+- `perf_external` SHA-256(64) end-to-end ratio 0.96× vs circom+snarkjs
+
+---
+
 ## 0.1.0-beta.20 — 2026-05-03
 
 **Circom frontend, Lysis (third VM), workspace decomposition into 19 crates, iterative R1CS optimizer, and SHA-256(64) end-to-end. Compile `.circom` files through Achronyme's pipeline with structural safety guarantees the reference compiler doesn't provide.**
