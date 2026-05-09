@@ -1,6 +1,6 @@
 ---
 title: "Lysis VM"
-description: "Tercera VM: instanciación estructural de plantillas con hash-consing y heap de spill."
+description: "Tercera VM: instanciación estructural de plantillas con hash-consing y heap de spill. El ejemplo canónico de Bytecode-Oriented Compilation en Achronyme."
 ---
 
 import AchDiagram from '../../../components/docs/AchDiagram.astro';
@@ -11,6 +11,23 @@ import { lysisArchitectureSvgEs } from '../../../lib/diagrams/lysis-architecture
 Akron y Artik **ejecutan ambos una vez por prueba**. Lysis es diferente: separa **compile/instantiate** de la **emisión en runtime**. El walker emite un programa Lysis que, al correr, produce IR SSA — y el sink interning del ejecutor colapsa sub-árboles estructuralmente idénticos durante la emisión.
 
 Concretamente: el expansor ávido legacy desenrollaba todos los loops e inlineaba todos los sub-templates por adelantado. Lysis difiere esa expansión a runtime y deduplica sub-grafos redundantes vía hash-consing. El mismo esqueleto de SHA-256(64) que antes se quedaba sin memoria ahora compila end-to-end en ~50 ms tras el lift, con un conteo de constraints dentro de un pequeño porcentaje de circom O2.
+
+## Bytecode-Oriented Compilation (BOC)
+
+Lysis es el ejemplo canónico de lo que llamamos **Bytecode-Oriented Compilation (BOC)** dentro de Achronyme: una arquitectura de compilador en la que el paso de compilación es *él mismo* un programa en bytecode, y la *salida de la compilación* es el efecto lateral de correr ese bytecode sobre una VM.
+
+La forma:
+
+```text
+Fuente → Bytecode → Correr sobre la VM → Salida de compilación
+```
+
+Dos distinciones que conviene hacer explícitas, porque BOC vive al lado de varios patrones con nombres parecidos:
+
+- **BOC no es "un compilador que emite bytecode".** `javac` y CPython producen bytecode como artefacto final — ese bytecode es dato, consumido después por un runtime separado. En BOC el bytecode se consume *como parte de la compilación misma*: cada paso que la VM ejecuta empuja una entrada hacia la salida. En el caso de Lysis, esas entradas son nodos SSA IR que terminan convertidos en constraints R1CS. El bytecode es el motor de la compilación, no su producto.
+- **BOC es staged compilation heterogénea.** Los vecinos más cercanos en la literatura son multi-stage programming (MetaOCaml, Template Haskell), compile-time function execution (Zig comptime, D CTFE) y metacompilación (Forth). Todos ellos son típicamente *homogéneos* — el stage-2 produce código con la forma del stage-1, horneado en el mismo binario destino. BOC es heterogéneo: el bytecode de Lysis es un ISA distinto del de su salida, y la salida es un sistema de constraints, no un ejecutable.
+
+La consecuencia práctica es que las pipelines BOC fallan y escalan como *programas*, no como *estructuras de dato*. El manejo de frame overflow, el heap de spill, la regla single-static-store del validador, la profundidad de llamada por defecto de 8192 — nada de eso existiría para un IR pasivo. Existen porque el meta-programa es un programa real sometido a límites de recurso reales, y el compile-time del compilador queda reificado como el runtime de esta VM. Cuando Lysis choca contra un límite, la solución rara vez es "cambiar la forma del dato"; suele ser "darle más capacidad al ejecutor" o "enseñarle un opcode nuevo al ejecutor". Esa es la firma de BOC.
 
 ## Dónde se ubica Lysis
 

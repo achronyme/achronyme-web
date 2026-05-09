@@ -216,7 +216,7 @@ pub enum ExtendedInstruction<F: FieldBackend = Bn254Fr> {
 }
 ```
 
-This wrapper layer enables the [Lysis VM](/docs/architecture/lysis-vm/) walker to lift loops and templates without inlining them in IR — a prerequisite for structural deduplication via the interner.
+This wrapper layer enables the [Lysis VM](/docs/architecture/lysis-vm/) walker to lift loops and templates without inlining them in IR — a prerequisite for structural deduplication via the interner. Instantiation in this path is **Bytecode-Oriented**: ProveIR is lifted to a Lysis bytecode program whose execution emits the SSA IR. See [Bytecode-Oriented Compilation](/docs/architecture/lysis-vm/#bytecode-oriented-compilation-boc) for the architectural framing.
 
 ## Source files
 

@@ -61,7 +61,7 @@ Los bloques `prove {}` pasan por un pipeline de 8 fases:
 | A | Compilar | AST → ProveIR (expresiones de circuito tipadas con spans) |
 | B | Serializar | ProveIR → bytes (almacenados en el constant pool del bytecode) |
 | C | Deserializar | bytes → ProveIR (en runtime de la VM, cuando el bloque prove se ejecuta) |
-| D | Instanciar | ProveIR + valores capturados del scope → SSA IR |
+| D | Instanciar | ProveIR + valores capturados del scope → SSA IR (Bytecode-Oriented: liftado a un programa de [Lysis VM](/docs/architecture/lysis-vm/) cuya ejecución emite SSA) |
 | E | Optimizar | Pases estándar de IR (const fold, CSE, DCE) |
 | F | Backend | IR → restricciones R1CS o Plonkish |
 | G | Testigo | Llenar testigo desde valores capturados |

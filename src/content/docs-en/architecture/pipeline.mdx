@@ -61,7 +61,7 @@ For `ach circuit`, the AST is lowered directly to SSA IR. Key behaviors:
 | A | Compile | AST → ProveIR (typed circuit expressions with source spans) |
 | B | Serialize | ProveIR → bytes (stored in bytecode constant pool) |
 | C | Deserialize | bytes → ProveIR (at VM runtime, when prove block executes) |
-| D | Instantiate | ProveIR + captured scope values → SSA IR |
+| D | Instantiate | ProveIR + captured scope values → SSA IR (Bytecode-Oriented: lifted to a [Lysis VM](/docs/architecture/lysis-vm/) program whose execution emits SSA) |
 | E | Optimize | Standard IR passes (const fold, CSE, DCE) |
 | F | Backend | IR → R1CS or Plonkish constraints |
 | G | Witness | Fill witness from captured values |

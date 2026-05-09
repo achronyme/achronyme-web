@@ -216,7 +216,7 @@ pub enum ExtendedInstruction<F: FieldBackend = Bn254Fr> {
 }
 ```
 
-Esta capa wrapper habilita al walker de la [Lysis VM](/docs/architecture/lysis-vm/) hacer lift de loops y plantillas sin inlinearlas en IR — un prerrequisito para la deduplicación estructural vía el interner.
+Esta capa wrapper habilita al walker de la [Lysis VM](/docs/architecture/lysis-vm/) hacer lift de loops y plantillas sin inlinearlas en IR — un prerrequisito para la deduplicación estructural vía el interner. La instanciación en esta ruta es **Bytecode-Oriented**: el ProveIR se liftea a un programa de bytecode de Lysis cuya ejecución emite el IR SSA. Ver [Bytecode-Oriented Compilation](/docs/architecture/lysis-vm/#bytecode-oriented-compilation-boc) para el encuadre arquitectural.
 
 ## Archivos fuente
 

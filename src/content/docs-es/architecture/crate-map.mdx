@@ -20,13 +20,13 @@ El workspace de Achronyme contiene **19 crates**. Todos comparten la misma versi
 | `lysis-types` | `lysis-types/` | `InstructionKind<F>`, `NodeId` compartidos con la [Lysis VM](/docs/architecture/lysis-vm/) |
 | `constraints` | `constraints/` | `Variable`, `LinearCombination`, sistemas R1CS + Plonkish, Poseidon, exportación binaria |
 | `ir-core` | `ir-core/` | Hoja SSA: `Instruction<F>`, `SsaVar`, `Visibility`, `IrType` |
-| `ir-forge` | `ir-forge/` | Plantillas ProveIR, compilador AST→ProveIR, walker del lift de Lysis |
+| `ir-forge` | `ir-forge/` | Plantillas ProveIR, compilador AST→ProveIR, walker del lift de Lysis (liftea ProveIR a bytecode BOC para la [Lysis VM](/docs/architecture/lysis-vm/)) |
 | `ir` | `ir/` | Pases de IR (DCE, CSE, const-fold, taint), module loader, inspector, orquestación de ProveIR |
 | `zkc` | `zkc/` | Compilador de constraints: backend R1CS, backend Plonkish, witness ops, andamiaje del oracle |
 | `akronc` | `akronc/` | Compilador de bytecode para la [Akron VM](/docs/architecture/akron-vm/) (antes `compiler`) |
 | `akron` | `akron/` | VM de bytecode de propósito general basada en registros (antes `vm`) |
 | `artik` | `artik/` | VM SSA de cómputo de testigos (antes `witness`) — ver [Artik](/docs/architecture/artik-vm/) |
-| `lysis` | `lysis/` | Tercera VM, instanciador estructural de plantillas con hash-consing — **en progreso** |
+| `lysis` | `lysis/` | Tercera VM, ejecutor [BOC](/docs/architecture/lysis-vm/#bytecode-oriented-compilation-boc): corre el bytecode lifteado y emite IR SSA vía el sink interning — **en progreso** |
 | `circom` | `circom/` | Frontend de Circom 2.x: lexer, parser, análisis, lowering — ver [Frontend de Circom](/docs/architecture/circom-frontend/) |
 | `proving` | `proving/` | Groth16 (arkworks), PlonK (halo2-KZG), generación de verificadores Solidity |
 | `achronyme-std` | `std/` | Biblioteca estándar vía el trait `NativeModule` |
@@ -65,7 +65,7 @@ Los nombres antiguos aparecen en el historial de git previo al 2026-04-18 y en a
 
 `ir-forge` (depende de `ir-core`, `achronyme-parser`, `resolve`, `diagnostics`, `lysis-types`, `circom` para hooks de lowering)
 
-Tipos de datos de ProveIR (`ProveIR`, `CircuitExpr`, `CircuitNode`, `CaptureDef`), compilador AST→ProveIR (`ProveIrCompiler`), walker del lift de Lysis. La única capa donde sucede el razonamiento simbólico de circuitos en tiempo de compilación. Ver [ProveIR](/docs/architecture/prove-ir/).
+Tipos de datos de ProveIR (`ProveIR`, `CircuitExpr`, `CircuitNode`, `CaptureDef`), compilador AST→ProveIR (`ProveIrCompiler`), walker del lift de Lysis (la mitad AST→Bytecode del pipeline [BOC](/docs/architecture/lysis-vm/#bytecode-oriented-compilation-boc)). La única capa donde sucede el razonamiento simbólico de circuitos en tiempo de compilación. Ver [ProveIR](/docs/architecture/prove-ir/).
 
 `ir` (depende de `ir-core`, `ir-forge`, `resolve`)
 
@@ -95,7 +95,7 @@ VM dedicada al cómputo de testigos. ~25 opcodes, registros estilo SSA, sin heap
 
 `lysis` (depende de `memory`, `artik`, `lysis-types`)
 
-Tercera VM — **en progreso**. Instanciador estructural de plantillas con interner de hash-consing. Ver [Lysis VM](/docs/architecture/lysis-vm/). El walker vive en `ir-forge::lysis_lift`; el andamiaje del oracle en `zkc::lysis_oracle`.
+Tercera VM — **en progreso**. Ejecutor [BOC](/docs/architecture/lysis-vm/#bytecode-oriented-compilation-boc): instanciador estructural de plantillas con interner de hash-consing que corre el bytecode lifteado y emite IR SSA vía el sink interning. Ver [Lysis VM](/docs/architecture/lysis-vm/). El walker vive en `ir-forge::lysis_lift`; el andamiaje del oracle en `zkc::lysis_oracle`.
 
 ### Nivel 4 — Orquestación de alto nivel
 
