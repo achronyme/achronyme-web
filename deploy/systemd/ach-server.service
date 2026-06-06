@@ -1,12 +1,12 @@
 # ach-server systemd unit (canonical source).
 #
 # BEFORE INSTALLING: confirm `User=` / `Group=` below match the account
-# that owns /opt/achronyme-web on vps1. The default (`github-runner`)
+# that owns /opt/achronyme-web on the deploy VPS. The default (`github-runner`)
 # is the self-hosted runner identity used in the deploy.yml workflow;
 # change only if a dedicated service account replaces the runner-as-
 # deployer pattern. Wrong identity = failed start on first install.
 #
-# Provisioning (one-time, on vps1):
+# Provisioning (one-time, on the deploy VPS):
 #
 #   sudo install -m 0644 /opt/achronyme-web/deploy/systemd/ach-server.service \
 #         /etc/systemd/system/ach-server.service
@@ -16,14 +16,9 @@
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now ach-server
 #
-# Update flow: the deploy.yml workflow only `cargo build --release &&
-# systemctl restart ach-server` — that does NOT replace this file.
-# After editing the unit, push the change, then on vps1:
-#
-#   sudo cp /opt/achronyme-web/deploy/systemd/ach-server.service \
-#           /etc/systemd/system/ach-server.service
-#   sudo systemctl daemon-reload
-#   sudo systemctl restart ach-server
+# Update flow: deploy.yml builds the checked-out commit, mirrors it to
+# /opt/achronyme-web, syncs this unit into /etc when it drifts, reloads
+# systemd, and restarts ach-server.
 
 [Unit]
 Description=Achronyme server (ach-server) — playground compilation API
@@ -77,7 +72,7 @@ SystemCallArchitectures=native
 
 # MemoryDenyWriteExecute=true is a known footgun for Rust crypto
 # binaries (ark-bn254 / halo2 use memory regions this rejects). Test
-# under realistic /api/prove load on vps1 before enabling — failure
+# under realistic /api/prove load on the deploy VPS before enabling — failure
 # mode is mid-request SIGSYS/abort, not a startup error, so
 # `systemctl status` would look healthy while proofs crash.
 # MemoryDenyWriteExecute=true

@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+env:
+  ACH_SERVER_DEPLOY_DIR: /opt/achronyme-web
+  ACH_SERVER_SERVICE: ach-server
+
 jobs:
   frontend:
     name: Deploy Frontend
@@ -27,42 +31,56 @@ jobs:
     name: Deploy ach-server
     runs-on: self-hosted
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Build and restart
         run: |
-          # Fail fast on any error; bare `git pull` could silently pick up a
-          # commit other than the one that triggered the workflow if another
-          # push lands between now and the checkout.
+          # Fail fast on any error. This job intentionally builds the
+          # checked-out commit from GitHub Actions instead of relying on a
+          # long-lived clone under /opt; vps2 did not have that legacy vps1
+          # checkout, and a bare `git pull` there would also risk deploying a
+          # different commit if another push landed mid-run.
           set -euo pipefail
 
-          cd /opt/achronyme-web
-          git fetch --tags origin main
-          git checkout "${GITHUB_SHA}"
-
-          # Pull in (or update) vendored submodules — currently
-          # vendor/circomlib, served read-only via @circomlib in
-          # achronyme.toml. A missing submodule wouldn't break the
-          # build but would break every workspace that imports
-          # circomlib at runtime, so fail fast here instead.
-          git submodule update --init --recursive
-
+          cd "$GITHUB_WORKSPACE"
           source ~/.cargo/env
+
           cd server
           # --locked rejects Cargo.lock drift between the committed state
           # and whatever the build host happens to have cached.
           cargo build --release --locked
+          cd "$GITHUB_WORKSPACE"
+
+          # The service needs a stable runtime path outside the ephemeral
+          # runner workspace. Mirror the checked-out commit to /opt and copy
+          # the freshly built binary into the path used by systemd.
+          sudo install -d -o "$USER" -g "$USER" "$ACH_SERVER_DEPLOY_DIR"
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='dist/' \
+            --exclude='node_modules/' \
+            --exclude='server/target/' \
+            "$GITHUB_WORKSPACE"/ "$ACH_SERVER_DEPLOY_DIR"/
+          install -d "$ACH_SERVER_DEPLOY_DIR/server/target/release"
+          install -m 0755 \
+            "$GITHUB_WORKSPACE/server/target/release/ach-server" \
+            "$ACH_SERVER_DEPLOY_DIR/server/target/release/ach-server"
 
           # Sync the systemd unit if the canonical source in the repo
           # has drifted from what's installed. Background: this
           # workflow used to only restart the service, so changes to
           # deploy/systemd/ach-server.service required a manual
-          # `sudo cp + daemon-reload` on vps1, easy to forget. The
+          # `sudo cp + daemon-reload` on the VPS, easy to forget. The
           # block below makes the repo authoritative; on commits that
           # don't touch the unit, `cmp` is a no-op and no sudo fires.
           #
-          # Operator setup (one-time, on vps1): add to
+          # Operator setup (one-time, on the VPS): add to
           # /etc/sudoers.d/github-runner, otherwise the first drift
           # deploy fails with "a password is required":
           #
+          #   github-runner ALL=(ALL) NOPASSWD: /usr/bin/install -d -o github-runner -g github-runner /opt/achronyme-web
           #   github-runner ALL=(ALL) NOPASSWD: /usr/bin/install -m 0644 -o root -g root /opt/achronyme-web/deploy/systemd/ach-server.service /etc/systemd/system/ach-server.service
           #   github-runner ALL=(ALL) NOPASSWD: /usr/bin/systemctl daemon-reload
           #
@@ -70,7 +88,7 @@ jobs:
           # unit aborts the deploy before /etc gets touched, and the
           # health probe below catches any runtime regression. Git
           # history is the rollback path; intentionally no .bak file.
-          CANONICAL=/opt/achronyme-web/deploy/systemd/ach-server.service
+          CANONICAL="$ACH_SERVER_DEPLOY_DIR/deploy/systemd/ach-server.service"
           INSTALLED=/etc/systemd/system/ach-server.service
           if ! cmp -s "$CANONICAL" "$INSTALLED"; then
             echo "::notice::ach-server.service drifted; syncing canonical → /etc"
@@ -83,7 +101,7 @@ jobs:
             echo "ach-server unit synced"
           fi
 
-          sudo systemctl restart ach-server
+          sudo systemctl restart "$ACH_SERVER_SERVICE"
 
           # Health gate: if the new binary refuses to serve /health within
           # 10 seconds, dump the journal and fail the workflow so we don't
@@ -96,6 +114,6 @@ jobs:
             sleep 1
           done
           echo "::error::ach-server did not report healthy within 10s"
-          systemctl status ach-server --no-pager || true
-          journalctl -u ach-server -n 50 --no-pager || true
+          systemctl status "$ACH_SERVER_SERVICE" --no-pager || true
+          journalctl -u "$ACH_SERVER_SERVICE" -n 50 --no-pager || true
           exit 1
