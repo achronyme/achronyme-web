@@ -9,7 +9,7 @@ Esta guía explica cómo extender Achronyme con nuevas instrucciones IR, funcion
 
 ### 1. Definir la variante
 
-En `ir/src/types.rs`, agrega una nueva variante al enum `Instruction`:
+En `ir-core/src/types/instruction.rs`, agrega una nueva variante al enum `Instruction`:
 
 ```rust
 pub enum Instruction {
@@ -35,7 +35,7 @@ Instruction::MyOp { operand, .. } => vec![*operand],
 
 ### 3. Emitir desde la bajada a IR
 
-En `ir/src/lower.rs`, maneja la nueva instrucción en el método apropiado (ej., `lower_call` para funciones integradas, `lower_expr` para operadores):
+En `ir/src/lower/`, maneja la nueva instrucción en el método apropiado (ej., `lower_call` para funciones integradas, `lower_expr` para operadores):
 
 ```rust
 "my_op" => {
@@ -48,7 +48,7 @@ En `ir/src/lower.rs`, maneja la nueva instrucción en el método apropiado (ej.,
 
 ### 4. Agregar lógica de evaluación
 
-En `ir/src/eval.rs`, maneja la instrucción en la función `evaluate`:
+En `ir/src/eval/`, maneja la instrucción en el evaluador apropiado:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -81,7 +81,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 7. Compilar a Plonkish
 
-En `zkc/src/plonkish_backend.rs`, agrega un brazo de match en `compile_ir`:
+En `zkc/src/plonkish_backend/`, agrega un brazo de match en `compile_ir`:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -93,7 +93,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 8. Agregar generación de testigos
 
-Si la instrucción asigna variables intermedias, registra un `WitnessOp` en `zkc/src/r1cs_witness.rs`.
+Si la instrucción asigna variables intermedias, registra un `WitnessOp` en `zkc/src/witness/`.
 
 ## Agregar una Función Integrada de Circuito
 
@@ -105,7 +105,7 @@ No se necesitan cambios — el parser ya maneja llamadas a funciones genéricame
 
 ### 2. Manejar en la bajada a IR
 
-En `ir/src/lower.rs`, agrega un brazo de match en `lower_call`:
+En `ir/src/lower/`, agrega un brazo de match en `lower_call`:
 
 ```rust
 "my_builtin" => {
@@ -128,7 +128,7 @@ Sigue los pasos 4-8 de "Agregar una Nueva Instrucción IR" arriba.
 
 ### 1. Crear el archivo del pase
 
-Crea `ir/src/passes/my_pass.rs`:
+Crea un archivo de pase bajo `ir/src/passes/`, por ejemplo `my_pass.rs`:
 
 ```rust
 use crate::types::{IrProgram, Instruction, SsaVar};
@@ -217,7 +217,7 @@ pub const MY_OP: u8 = /* siguiente número disponible */;
 
 ### 2. Emitir en el compilador de bytecode
 
-En `akronc/src/codegen.rs`, emite el opcode durante la compilación:
+En `akronc/src/codegen/`, emite el opcode durante la compilación:
 
 ```rust
 // En el método de compilación apropiado
@@ -251,13 +251,13 @@ Esto habilita el rastreo de ubicación de errores (`[line N] in func: Error`).
 
 Al agregar una nueva instrucción o función integrada, verifica:
 
-- [ ] `ir/src/types.rs` — enum `Instruction` + `result_var` + `has_side_effects` + `operands`
-- [ ] `ir/src/lower.rs` — emitir instrucción desde AST
-- [ ] `ir/src/eval.rs` — evaluación concreta
+- [ ] `ir-core/src/types/instruction.rs` — enum `Instruction` + `result_var` + `has_side_effects` + `operands`
+- [ ] `ir/src/lower/` — emitir instrucción desde AST
+- [ ] `ir/src/eval/` — evaluación concreta
 - [ ] `ir/src/passes/const_fold.rs` — plegar sobre constantes (si aplica)
 - [ ] `ir/src/passes/dce.rs` — marcar como eliminable o conservadora
 - [ ] `ir/src/passes/bool_prop.rs` — propagar booleano (si aplica)
 - [ ] `zkc/src/r1cs_backend.rs` — generación de restricciones R1CS
-- [ ] `zkc/src/plonkish_backend.rs` — emisión de puertas Plonkish
-- [ ] `zkc/src/r1cs_witness.rs` — computación de testigo (si hay cables intermedios)
+- [ ] `zkc/src/plonkish_backend/` — emisión de puertas Plonkish
+- [ ] `zkc/src/witness/` — computación de testigo (si hay cables intermedios)
 - [ ] Pruebas en todos los crates relevantes

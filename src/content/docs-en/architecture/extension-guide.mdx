@@ -9,7 +9,7 @@ This guide explains how to extend Achronyme with new IR instructions, circuit bu
 
 ### 1. Define the variant
 
-In `ir/src/types.rs`, add a new variant to the `Instruction` enum:
+In `ir-core/src/types/instruction.rs`, add a new variant to the `Instruction` enum:
 
 ```rust
 pub enum Instruction {
@@ -35,7 +35,7 @@ Instruction::MyOp { operand, .. } => vec![*operand],
 
 ### 3. Emit from IR lowering
 
-In `ir/src/lower.rs`, handle the new instruction in the appropriate method (e.g., `lower_call` for builtins, `lower_expr` for operators):
+In `ir/src/lower/`, handle the new instruction in the appropriate method (e.g., `lower_call` for builtins, `lower_expr` for operators):
 
 ```rust
 "my_op" => {
@@ -48,7 +48,7 @@ In `ir/src/lower.rs`, handle the new instruction in the appropriate method (e.g.
 
 ### 4. Add evaluation logic
 
-In `ir/src/eval.rs`, handle the instruction in the `evaluate` function:
+In `ir/src/eval/`, handle the instruction in the appropriate evaluator:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -81,7 +81,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 7. Compile to Plonkish
 
-In `zkc/src/plonkish_backend.rs`, add a match arm in `compile_ir`:
+In `zkc/src/plonkish_backend/`, add a match arm in `compile_ir`:
 
 ```rust
 Instruction::MyOp { result, operand } => {
@@ -93,7 +93,7 @@ Instruction::MyOp { result, operand } => {
 
 ### 8. Add witness generation
 
-If the instruction allocates intermediate variables, record a `WitnessOp` in `zkc/src/r1cs_witness.rs`.
+If the instruction allocates intermediate variables, record a `WitnessOp` in `zkc/src/witness/`.
 
 ## Adding a Circuit Builtin
 
@@ -105,7 +105,7 @@ No changes needed — the parser already handles function calls generically.
 
 ### 2. Handle in IR lowering
 
-In `ir/src/lower.rs`, add a match arm in `lower_call`:
+In `ir/src/lower/`, add a match arm in `lower_call`:
 
 ```rust
 "my_builtin" => {
@@ -128,7 +128,7 @@ Follow steps 4-8 from "Adding a New IR Instruction" above.
 
 ### 1. Create the pass file
 
-Create `ir/src/passes/my_pass.rs`:
+Create a pass file under `ir/src/passes/`, for example `my_pass.rs`:
 
 ```rust
 use crate::types::{IrProgram, Instruction, SsaVar};
@@ -217,7 +217,7 @@ pub const MY_OP: u8 = /* next available number */;
 
 ### 2. Emit in the bytecode compiler
 
-In `akronc/src/codegen.rs`, emit the opcode during compilation:
+In `akronc/src/codegen/`, emit the opcode during compilation:
 
 ```rust
 // In the appropriate compilation method
@@ -251,13 +251,13 @@ This enables error location tracking (`[line N] in func: Error`).
 
 When adding a new instruction or builtin, verify:
 
-- [ ] `ir/src/types.rs` — `Instruction` enum + `result_var` + `has_side_effects` + `operands`
-- [ ] `ir/src/lower.rs` — emit instruction from AST
-- [ ] `ir/src/eval.rs` — concrete evaluation
+- [ ] `ir-core/src/types/instruction.rs` — `Instruction` enum + `result_var` + `has_side_effects` + `operands`
+- [ ] `ir/src/lower/` — emit instruction from AST
+- [ ] `ir/src/eval/` — concrete evaluation
 - [ ] `ir/src/passes/const_fold.rs` — fold on constants (if applicable)
 - [ ] `ir/src/passes/dce.rs` — mark as eliminable or conservative
 - [ ] `ir/src/passes/bool_prop.rs` — propagate boolean-ness (if applicable)
 - [ ] `zkc/src/r1cs_backend.rs` — R1CS constraint generation
-- [ ] `zkc/src/plonkish_backend.rs` — Plonkish gate emission
-- [ ] `zkc/src/r1cs_witness.rs` — witness computation (if intermediate wires)
+- [ ] `zkc/src/plonkish_backend/` — Plonkish gate emission
+- [ ] `zkc/src/witness/` — witness computation (if intermediate wires)
 - [ ] Tests in all relevant crates
