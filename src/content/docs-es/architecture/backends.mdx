@@ -3,7 +3,7 @@ title: "Backends"
 description: "Backends de compilación de restricciones R1CS y Plonkish."
 ---
 
-Achronyme compila el mismo IR SSA en dos backends de sistema de restricciones: **R1CS** (para Groth16) y **Plonkish** (para KZG-PlonK). Ambos residen en los crates `akronc` (bytecode) y `zkc` (constraints).
+Achronyme compila el mismo IR SSA en dos backends de sistema de restricciones en el crate `zkc`: **R1CS** (para Groth16) y **Plonkish** (para KZG-PlonK). El compilador de bytecode (`akronc`) es un compilador separado para modo VM y no es donde vive la emisión de backends de constraints.
 
 ## Backend R1CS
 
@@ -17,8 +17,8 @@ El backend R1CS compila instrucciones IR en restricciones del sistema de restric
 R1CSCompiler {
     cs: ConstraintSystem,          // restricciones A×B=C
     bindings: HashMap<String, Variable>,  // var declarada → cable
-    vars: HashMap<SsaVar, LinearCombination>,  // var SSA → CL
-    witness_ops: Vec<WitnessOp>,   // traza para generación de testigos
+    lc_map: LcMap,                 // var SSA → combinación lineal
+    witness_ops: SegmentedVec<WitnessOp>,   // traza para generación de testigos
     proven_boolean: HashSet<SsaVar>,  // omitir verificación booleana
 }
 ```
@@ -72,7 +72,7 @@ Si una variable está en el conjunto `proven_boolean` (del pase `bool_prop`), el
 
 ## Backend Plonkish
 
-**Archivo:** `zkc/src/plonkish_backend.rs`
+**Archivo:** `zkc/src/plonkish_backend/`
 
 El backend Plonkish compila IR en una tabla de filas de puerta con columnas, restricciones de copia y tablas de lookup.
 
@@ -112,7 +112,7 @@ Esto significa que una cadena de sumas como `a + b + c + d` emite menos filas qu
 
 ### Verificaciones de Rango vía Lookups
 
-A diferencia de R1CS (que usa n+1 restricciones de descomposición de bits), las verificaciones de rango Plonkish usan una **tabla de lookup**: 1 fila por verificación independientemente del ancho de bits. La tabla de rango se pre-llena con valores `[0, 2^bits)`.
+A diferencia de R1CS (que usa n+1 restricciones de descomposición de bits), las verificaciones de rango Plonkish usan una **tabla de lookup**: 1 fila por verificación soportada. La tabla de rango se pre-llena con valores `[0, 2^bits)`, así que anchos de bit muy grandes se rechazan en vez de materializar una tabla impráctica.
 
 ### Operaciones de Comparación
 
@@ -125,12 +125,14 @@ A diferencia de R1CS (que usa n+1 restricciones de descomposición de bits), las
 `PlonkishWitnessGenerator` reproduce entradas `PlonkWitnessOp` para llenar la tabla de asignación:
 
 ```ach
-PlonkWitnessOp::AssignInput { column, row, name }
-PlonkWitnessOp::CopyValue { dst_col, dst_row, src_col, src_row }
-PlonkWitnessOp::SetConstant { column, row, value }
+PlonkWitnessOp::AssignInput { cell, name }
+PlonkWitnessOp::CopyValue { from, to }
+PlonkWitnessOp::SetConstant { cell, value }
 PlonkWitnessOp::ArithRow { row }       // calcular d = a*b + c
 PlonkWitnessOp::InverseRow { row }     // calcular inverso
+PlonkWitnessOp::IsZeroRow { row }      // calcular celdas auxiliares de IsZero
 PlonkWitnessOp::BitExtract { ... }     // extraer bit del valor
+PlonkWitnessOp::IntDivMod { ... }      // cociente y residuo enteros
 ```
 
 ## Comparación de Backends
@@ -150,7 +152,7 @@ PlonkWitnessOp::BitExtract { ... }     // extraer bit del valor
 | Componente | Archivo |
 |-----------|------|
 | Backend R1CS | `zkc/src/r1cs_backend.rs` |
-| Backend Plonkish | `zkc/src/plonkish_backend.rs` |
-| Sistema de restricciones | `constraints/src/r1cs.rs` |
-| Sistema Plonkish | `constraints/src/plonkish.rs` |
-| Errores R1CS | `zkc/src/r1cs_error.rs` |
+| Backend Plonkish | `zkc/src/plonkish_backend/` |
+| Sistema de restricciones | `constraints/src/r1cs/` |
+| Sistema Plonkish | `constraints/src/plonkish/` |
+| Errores de backend | `zkc/src/error.rs` |

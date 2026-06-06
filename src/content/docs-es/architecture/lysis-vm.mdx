@@ -10,7 +10,7 @@ import { lysisArchitectureSvgEs } from '../../../lib/diagrams/lysis-architecture
 
 Akron y Artik **ejecutan ambos una vez por prueba**. Lysis es diferente: separa **compile/instantiate** de la **emisión en runtime**. El walker emite un programa Lysis que, al correr, produce IR SSA — y el sink interning del ejecutor colapsa sub-árboles estructuralmente idénticos durante la emisión.
 
-Concretamente: el expansor ávido legacy desenrollaba todos los loops e inlineaba todos los sub-templates por adelantado. Lysis difiere esa expansión a runtime y deduplica sub-grafos redundantes vía hash-consing. El mismo esqueleto de SHA-256(64) que antes se quedaba sin memoria ahora compila end-to-end en ~50 ms tras el lift, con un conteo de constraints dentro de un pequeño porcentaje de circom O2.
+Concretamente: el expansor ávido legacy desenrollaba todos los loops e inlineaba todos los sub-templates por adelantado. Lysis difiere esa expansión a runtime y deduplica sub-grafos redundantes vía hash-consing. Los comentarios y tests actuales del árbol identifican circuitos con forma SHA-256(64) como el objetivo de escala motivador; las cifras exactas de tiempo y delta de constraints son salidas de benchmark, no invariantes arquitecturales.
 
 ## Bytecode-Oriented Compilation (BOC)
 
@@ -41,24 +41,25 @@ Archivo: `ir-forge/src/lysis_lift/mod.rs`. Cinco etapas:
 
 | Etapa | Módulo | Entregable |
 |-------|--------|------------|
-| Recorrido simbólico | `symbolic.rs` | `SymbolicTree` con slots placeholder para derivativas de variables de loop |
-| Diff estructural | `diff.rs` | `Diff` con identidad de slot por ruta de AST |
-| Binding-Time Analysis | `bta.rs` | Clasificación de 3 puntos (Constant / Invariant / DataDependent) |
-| Extracción de plantillas | `extract.rs` | Lambda lifting + tamaño de frame, layout de capturas |
-| Walker (driver) | `walker.rs` | Orquesta el pase completo de lift |
+| Recorrido simbólico | `ir-forge/src/lysis_lift/symbolic.rs` | `SymbolicTree` con slots placeholder para derivativas de variables de loop |
+| Diff estructural | `ir-forge/src/lysis_lift/diff.rs` | `Diff` con identidad de slot por ruta de AST |
+| Binding-Time Analysis | `ir-forge/src/lysis_lift/bta.rs` | Clasificación de 3 puntos (Constant / Invariant / DataDependent) |
+| Extracción de plantillas | `ir-forge/src/lysis_lift/extract/` | Lambda lifting + tamaño de frame, layout de capturas |
+| Walker (driver) | `ir-forge/src/lysis_lift/walker/` | Orquesta el pase completo de lift |
 
 Las cinco implementan evaluación diferida — las plantillas permanecen simbólicas hasta proof-time.
 
 ## Encabezado del bytecode
 
 ```text
-0..4    magic "AALSS"  (0xAA 0x4C 0x53 0x53)
-4..5    version (u8)              — actual: 2 (los streams v1 decodifican con heap_size_hint = 0)
-5..6    field_family (u8)         — BnLike256 | Goldilocks64
-6..14   const_pool_len (u32 LE) + body_len (u32 LE)
-14..16  reservado
-16..18  heap_size_hint (u16 LE)   — tamaño del heap de spill en entradas (sólo v2)
-18..…   const_pool (entradas FieldConst + bytecode blobs para llamadas a Artik)
+0..4    magic "LYSI"
+4..6    version (u16 LE)          — actual: 2 (los streams v1 decodifican con heap_size_hint = 0)
+6       field_family (u8)         — BnLike256 | Goldilocks64
+7       flags (u8)                — bit 0: has_witness_calls
+8..12   const_pool_len (u32 LE)
+12..16  body_len (u32 LE)
+16..20  heap_size_hint (u32 LE)   — tamaño del heap de spill en entradas (sólo v2)
+20..…   const_pool (entradas FieldConst + bytecode blobs para llamadas a Artik)
 …..     body (stream de instrucciones)
 ```
 
@@ -77,7 +78,7 @@ El heap del frame es un `Vec<FieldElement<F>>` plano alocado por ejecución del 
 
 Cada slot del heap está gobernado por un **invariante de single-static-store**: un slot se escribe exactamente una vez por ejecución. El validador rechaza programas que emiten dos `StoreHeap` al mismo slot, y el ejecutor trapea ante un `LoadHeap` desde un slot no escrito. Esto hace que el heap se comporte como registros SSA extendidos a un espacio de direcciones más ancho, con las mismas garantías de dataflow que el resto de la VM asume.
 
-## Tabla de opcodes (36 opcodes)
+## Tabla de opcodes (37 opcodes)
 
 Archivo: `lysis/src/bytecode/opcode.rs`.
 
@@ -119,6 +120,7 @@ Archivo: `lysis/src/bytecode/opcode.rs`.
 | 0x51 | `LoadHeap` | dst, slot | lee un slot del heap de vuelta a un registro |
 | 0x52 | `EmitWitnessCallHeap` | bytecode_idx, in_descs, out_regs | `WitnessCall` cuyas entradas pueden vivir en slots del heap |
 | 0x53 | `EmitAssertEqMsg` | lhs, rhs, msg_idx | `AssertEq` con un id de mensaje del const pool |
+| 0x54 | `EmitIsLtBounded` | dst, lhs, rhs, max_bits | emite `IsLt` acotado |
 
 Los opcodes `Emit*` no computan resultados — empujan entradas al **sink**.
 
@@ -154,7 +156,7 @@ Sin GC. Los registros del frame viven en la struct del frame. El interner usa in
 
 ## Salida del lift → walker
 
-Archivo: `ir-forge/src/lysis_lift/walker.rs`. Driver que consume `Vec<ExtendedInstruction<F>>`:
+Archivo: `ir-forge/src/lysis_lift/walker/`. Driver que consume `Vec<ExtendedInstruction<F>>`:
 
 | Variante | Acción del walker |
 |----------|-------------------|
@@ -169,11 +171,15 @@ Cuando un body es demasiado ancho para mantener sus valores en la ventana de 256
 
 | Circuito | Pipeline | Resultado |
 |----------|----------|-----------|
-| SHA-256(64) | walker (unroll por iteración, ruteado por heap) → optimize → R1CS | digest bit-exacto vs `sha2::Sha256::digest`, ~30k constraints post-O1, dentro de un pequeño porcentaje de circom O2 |
-| Poseidon(2) | lift estructural → R1CS → Groth16 | verificado on-chain |
+| SHA-256(64) | walker (unroll por iteración, ruteado por heap) → optimize → R1CS | equivalencia de digest y verificación completa de witness R1CS cubiertas por tests de regresión ignorados en `circom/tests/e2e_sha256/witness.rs` |
+| Poseidon(2) | lift estructural → R1CS → Groth16 | ruta de generación de prueba cubierta por tests E2E de Groth16 y Solidity |
 | EdDSAPoseidon | lift estructural + capturas en heap | compile + R1CS limpio |
-| MiMCSponge(2,220,1) | lift estructural → R1CS | 1317 constraints post-O1 (3 menos que circom O2) |
-| Preservación de constraints adversarial | 8/8 benchmark + 3/3 cross-mode | R1CS byte-idéntico entre las rutas rolled y per-iter |
+| MiMCSponge(2,220,1) | lift estructural → R1CS | cubierto por E2E circomlib y harnesses de benchmark; los conteos exactos pertenecen a la salida del benchmark |
+| Preservación de constraints adversarial | benchmark + tests cross-mode | tests de round-trip y preservación revisan R1CS byte-idéntico donde esa propiedad es requerida |
+
+## Preguntas abiertas
+
+- Los números actuales de benchmark para SHA-256(64), MiMCSponge y deltas contra circom O2 deben regenerarse desde el harness de benchmarks antes de publicarse como conteos exactos o tiempos de pared.
 
 ## Archivos fuente
 
@@ -186,14 +192,14 @@ Cuando un body es demasiado ancho para mantener sus valores en la ventana de 256
 | Encabezado (v1/v2) | `lysis/src/header.rs` |
 | Despachador | `lysis/src/execute/mod.rs` |
 | Frame | `lysis/src/execute/frame.rs` |
-| Heap | `lysis/src/execute/heap.rs` |
+| Dispatch de heap | `lysis/src/execute/dispatch/heap.rs` |
 | Sink interning | `lysis/src/execute/interning_sink.rs` |
-| Interner | `lysis/src/intern/interner.rs` |
+| Interner | `lysis/src/intern/interner/` |
 | Builder | `lysis/src/builder.rs` |
-| Walker (lift) | `ir-forge/src/lysis_lift/walker.rs` |
+| Walker (lift) | `ir-forge/src/lysis_lift/walker/` |
 | Clasificador BTA | `ir-forge/src/lysis_lift/bta.rs` |
 | Árbol simbólico | `ir-forge/src/lysis_lift/symbolic.rs` |
 | Diff estructural | `ir-forge/src/lysis_lift/diff.rs` |
-| Extracción de plantillas | `ir-forge/src/lysis_lift/extract.rs` |
+| Extracción de plantillas | `ir-forge/src/lysis_lift/extract/` |
 
 Ver [ProveIR](/docs/architecture/prove-ir/) para la capa que alimenta a Lysis. Ver [Akron VM](/docs/architecture/akron-vm/) y [Artik Witness VM](/docs/architecture/artik-vm/) para las otras dos VMs.
