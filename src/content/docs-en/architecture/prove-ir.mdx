@@ -47,10 +47,11 @@ pub struct ProveIR {
     pub captures: Vec<CaptureDef>,
     pub body: Vec<CircuitNode>,
     pub capture_arrays: Vec<CaptureArrayDef>,
+    pub component_bodies: HashMap<String, Vec<CircuitNode>>,
 }
 
 pub const PROVE_IR_MAGIC: &[u8; 4] = b"ACHP";
-pub const PROVE_IR_FORMAT_VERSION: u8 = 5;
+pub const PROVE_IR_FORMAT_VERSION: u8 = 6;
 ```
 
 Serialization layout:
@@ -59,12 +60,13 @@ Serialization layout:
 [MAGIC: 4 = "ACHP"][VERSION: 1][PRIME_ID: 1][BINCODE_PAYLOAD]
 ```
 
-Version history (only v5 is currently accepted):
+Version history (only v6 is currently accepted):
 
 - v2 — added `capture_arrays`
 - v3 — added `message` to `CircuitNode::AssertEq`
 - v4 — added `PrimeId` byte (multi-prime)
 - v5 — `CircuitExpr::Const` switched to `FieldConst` (32-byte canonical LE)
+- v6 — added the `component_bodies` table for deferred component instances
 
 ## CircuitExpr (expression tree)
 
@@ -145,6 +147,7 @@ pub enum CircuitNode {
     LetIndexed { array, index, value, span },                              // arr[i] = expr
     WitnessHintIndexed { array, index, hint, span },                       // arr[i] <-- expr
     WitnessCall { output_bindings, input_signals, program_bytes, span },   // Artik dispatch
+    ComponentCall { body_key, comp_name, param_subs, span },                // deferred component instance
 }
 
 pub enum ForRange {
@@ -157,7 +160,7 @@ pub enum ForRange {
 
 `Decompose` is the bit-decomposition primitive: `name` is bound as a length-`num_bits` array of bool signals, with witness hints derived from `value`.
 
-`WitnessCall` carries an embedded Artik bytecode blob — see [Artik Witness VM](/docs/architecture/artik-vm/).
+`WitnessCall` carries an embedded Artik bytecode blob — see [Artik Witness VM](/docs/architecture/artik-vm/). `ComponentCall` points into `ProveIR::component_bodies`; instantiation expands the shared body with the component name and parameter substitutions instead of serializing another inlined copy.
 
 ## Captures
 
@@ -175,7 +178,7 @@ pub struct CaptureArrayDef {
 }
 ```
 
-Captures stay symbolic in ProveIR (the `Capture(name)` leaf). They are bound at instantiation by `ProveIR::instantiate(captures, ...)`.
+Captures stay symbolic in ProveIR (the `Capture(name)` leaf). They are bound by the Lysis-backed instantiation entry points such as `ProveIR::instantiate_lysis(captures)` and `ProveIR::instantiate_lysis_with_outputs(captures, output_names)`.
 
 ## Compiler entry point
 
@@ -191,17 +194,17 @@ ProveIrCompiler::compile_prove_block(
 
 Submodules:
 
-- `ast_lower/exprs.rs` — `CircuitExpr` lowering (literals, ops, calls)
-- `ast_lower/calls.rs` — function/component dispatch (resolves through `BuiltinRegistry` + module loader)
-- `ast_lower/stmts.rs` — `CircuitNode` lowering (let, mut, for, if, assert)
-- `ast_lower/methods.rs` — method desugaring (`x.abs()` → builtin-call)
-- `ast_lower/state.rs` — compiler state (scope, witness auto-inference)
+- `ir-forge/src/ast_lower/exprs/` — `CircuitExpr` lowering (literals, ops, calls)
+- `ir-forge/src/ast_lower/calls/` — function/component dispatch (resolves through `BuiltinRegistry` + module loader)
+- `ir-forge/src/ast_lower/stmts/` — `CircuitNode` lowering (let, mut, for, if, assert)
+- `ir-forge/src/ast_lower/methods.rs` — method desugaring (`x.abs()` → builtin-call)
+- `ir-forge/src/ast_lower/state.rs` — compiler state (scope, witness auto-inference)
 
 ## Instantiation
 
-`ProveIR::instantiate(captures, public_values, witness_values)` walks the ProveIR body and emits SSA IR. Loop unrolling, capture substitution, and array index resolution all happen here.
+`ProveIR::instantiate_extended(captures)` first walks the ProveIR body into `ExtendedInstruction<F>`. The production entry points, `instantiate_lysis` and `instantiate_lysis_with_outputs`, then lower that extended form through Lysis into a flat `IrProgram<F>`. Loop handling, capture substitution, array index resolution, deferred component expansion, and Circom output projection all happen in this instantiation layer.
 
-For Circom templates, instantiation is driven by the `circom` crate's `instantiate.rs` which knows about component composition and parameter passing.
+For Circom template libraries, `circom/src/library/instantiate.rs` handles component composition and parameter passing before producing the ProveIR nodes that use the same instantiation layer.
 
 ## ExtendedInstruction (Lysis bridge)
 
@@ -226,8 +229,8 @@ This wrapper layer enables the [Lysis VM](/docs/architecture/lysis-vm/) walker t
 | `CircuitExpr` | `ir-forge/src/types/expressions.rs` |
 | `CircuitNode` | `ir-forge/src/types/nodes.rs` |
 | Compiler API | `ir-forge/src/ast_lower/api.rs` |
-| Instantiation | `ir/src/prove_ir/instantiate.rs` |
+| Instantiation | `ir-forge/src/instantiate/` |
 | ExtendedInstruction | `ir-forge/src/extended.rs` |
-| Format constants | `ir-forge/src/types/prove_ir.rs:17-43` |
+| Format constants | `ir-forge/src/types/prove_ir.rs` |
 
 See [Pipeline Overview](/docs/architecture/pipeline/) for the full compile path. See [IR & Optimization](/docs/architecture/ir-and-optimization/) for what runs after instantiation. See [Circom Frontend](/docs/architecture/circom-frontend/) for how .circom files reach ProveIR.

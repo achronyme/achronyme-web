@@ -10,7 +10,7 @@ import { lysisArchitectureSvgEn } from '../../../lib/diagrams/lysis-architecture
 
 Akron and Artik both **execute once per proof**. Lysis is different: it separates **compile/instantiate** from **runtime emission**. The walker emits a Lysis program that, when run, produces SSA IR — and the executor's interning sink collapses structurally identical sub-trees during emission.
 
-Concretely: the legacy eager template expander unrolled every loop and inlined every sub-template up front. Lysis defers that expansion to runtime and dedupes redundant sub-graphs via hash-consing. The same SHA-256(64) skeleton that previously ran out of memory now compiles end-to-end in ~50 ms after the lift, with a constraint count within a few percent of circom O2.
+Concretely: the legacy eager template expander unrolled every loop and inlined every sub-template up front. Lysis defers that expansion to runtime and dedupes redundant sub-graphs via hash-consing. Current in-tree comments and tests identify SHA-256(64)-shaped circuits as the motivating scale target; exact wall-clock and constraint-delta figures are benchmark outputs, not architectural invariants.
 
 ## Bytecode-Oriented Compilation (BOC)
 
@@ -41,24 +41,25 @@ File: `ir-forge/src/lysis_lift/mod.rs`. Five stages:
 
 | Stage | Module | Deliverable |
 |-------|--------|-------------|
-| Symbolic walk | `symbolic.rs` | `SymbolicTree` with placeholder slots for loop-var derivatives |
-| Structural diff | `diff.rs` | `Diff` with AST-path slot identity |
-| Binding-Time Analysis | `bta.rs` | 3-point classification (Constant / Invariant / DataDependent) |
-| Template extraction | `extract.rs` | Lambda lifting + frame size, capture layout |
-| Walker (driver) | `walker.rs` | Orchestrates the full lift pass |
+| Symbolic walk | `ir-forge/src/lysis_lift/symbolic.rs` | `SymbolicTree` with placeholder slots for loop-var derivatives |
+| Structural diff | `ir-forge/src/lysis_lift/diff.rs` | `Diff` with AST-path slot identity |
+| Binding-Time Analysis | `ir-forge/src/lysis_lift/bta.rs` | 3-point classification (Constant / Invariant / DataDependent) |
+| Template extraction | `ir-forge/src/lysis_lift/extract/` | Lambda lifting + frame size, capture layout |
+| Walker (driver) | `ir-forge/src/lysis_lift/walker/` | Orchestrates the full lift pass |
 
 All five implement deferred evaluation — templates remain symbolic until proof-time.
 
 ## Bytecode header
 
 ```text
-0..4    magic "AALSS"  (0xAA 0x4C 0x53 0x53)
-4..5    version (u8)              — current: 2 (v1 streams decode with heap_size_hint = 0)
-5..6    field_family (u8)         — BnLike256 | Goldilocks64
-6..14   const_pool_len (u32 LE) + body_len (u32 LE)
-14..16  reserved
-16..18  heap_size_hint (u16 LE)   — spill heap size in entries (v2 only)
-18..…   const_pool (FieldConst entries + bytecode blobs for Artik calls)
+0..4    magic "LYSI"
+4..6    version (u16 LE)          — current: 2 (v1 streams decode with heap_size_hint = 0)
+6       field_family (u8)         — BnLike256 | Goldilocks64
+7       flags (u8)                — bit 0: has_witness_calls
+8..12   const_pool_len (u32 LE)
+12..16  body_len (u32 LE)
+16..20  heap_size_hint (u32 LE)   — spill heap size in entries (v2 only)
+20..…   const_pool (FieldConst entries + bytecode blobs for Artik calls)
 …..     body (instruction stream)
 ```
 
@@ -77,7 +78,7 @@ The frame heap is a flat `Vec<FieldElement<F>>` allocated per program execution,
 
 Each heap slot is governed by a **single-static-store invariant**: a slot is written exactly once per execution. The validator rejects programs that emit two `StoreHeap` to the same slot, and the executor traps on a `LoadHeap` from an unwritten slot. This makes the heap behave like SSA registers extended into a wider address space, with the same dataflow guarantees the rest of the VM relies on.
 
-## Opcode table (36 opcodes)
+## Opcode table (37 opcodes)
 
 File: `lysis/src/bytecode/opcode.rs`.
 
@@ -119,6 +120,7 @@ File: `lysis/src/bytecode/opcode.rs`.
 | 0x51 | `LoadHeap` | dst, slot | read heap slot back into a register |
 | 0x52 | `EmitWitnessCallHeap` | bytecode_idx, in_descs, out_regs | `WitnessCall` whose inputs may live in heap slots |
 | 0x53 | `EmitAssertEqMsg` | lhs, rhs, msg_idx | `AssertEq` carrying a constant-pool message id |
+| 0x54 | `EmitIsLtBounded` | dst, lhs, rhs, max_bits | emit bounded `IsLt` |
 
 `Emit*` opcodes don't compute results — they push entries into the **sink**.
 
@@ -154,7 +156,7 @@ No GC. Frame registers live in the frame struct. The interner internally uses `I
 
 ## Lift output → walker
 
-File: `ir-forge/src/lysis_lift/walker.rs`. Driver that consumes `Vec<ExtendedInstruction<F>>`:
+File: `ir-forge/src/lysis_lift/walker/`. Driver that consumes `Vec<ExtendedInstruction<F>>`:
 
 | Variant | Walker action |
 |---------|---------------|
@@ -169,11 +171,15 @@ When a body is too wide to keep its values in the 256-register window — the SH
 
 | Circuit | Pipeline | Result |
 |---------|----------|--------|
-| SHA-256(64) | walker (per-iter unroll, heap-routed) → optimize → R1CS | digest bit-exact vs `sha2::Sha256::digest`, ~30k constraints post-O1, within a few percent of circom O2 |
-| Poseidon(2) | structural lift → R1CS → Groth16 | verified on-chain |
+| SHA-256(64) | walker (per-iter unroll, heap-routed) → optimize → R1CS | digest equivalence and full R1CS witness verification are covered by ignored regression tests in `circom/tests/e2e_sha256/witness.rs` |
+| Poseidon(2) | structural lift → R1CS → Groth16 | proof-generation path covered by Groth16 and Solidity E2E tests |
 | EdDSAPoseidon | structural lift + heap captures | compile + R1CS clean |
-| MiMCSponge(2,220,1) | structural lift → R1CS | 1317 constraints post-O1 (3 fewer than circom O2) |
-| Adversarial constraint preservation | 8/8 benchmark + 3/3 cross-mode | byte-identical R1CS across the rolled and per-iter paths |
+| MiMCSponge(2,220,1) | structural lift → R1CS | covered by circomlib E2E and benchmark harnesses; exact constraint counts belong in benchmark output |
+| Adversarial constraint preservation | benchmark + cross-mode tests | round-trip and preservation tests check byte-identical R1CS where that property is required |
+
+## Open questions
+
+- Current benchmark numbers for SHA-256(64), MiMCSponge, and circom O2 deltas should be regenerated from the benchmark harness before publishing exact counts or wall-clock timings as facts.
 
 ## Source files
 
@@ -186,14 +192,14 @@ When a body is too wide to keep its values in the 256-register window — the SH
 | Header (v1/v2) | `lysis/src/header.rs` |
 | Dispatcher | `lysis/src/execute/mod.rs` |
 | Frame | `lysis/src/execute/frame.rs` |
-| Heap | `lysis/src/execute/heap.rs` |
+| Heap dispatch | `lysis/src/execute/dispatch/heap.rs` |
 | Interning sink | `lysis/src/execute/interning_sink.rs` |
-| Interner | `lysis/src/intern/interner.rs` |
+| Interner | `lysis/src/intern/interner/` |
 | Builder | `lysis/src/builder.rs` |
-| Walker (lift) | `ir-forge/src/lysis_lift/walker.rs` |
+| Walker (lift) | `ir-forge/src/lysis_lift/walker/` |
 | BTA classifier | `ir-forge/src/lysis_lift/bta.rs` |
 | Symbolic tree | `ir-forge/src/lysis_lift/symbolic.rs` |
 | Structural diff | `ir-forge/src/lysis_lift/diff.rs` |
-| Template extraction | `ir-forge/src/lysis_lift/extract.rs` |
+| Template extraction | `ir-forge/src/lysis_lift/extract/` |
 
 See [ProveIR](/docs/architecture/prove-ir/) for the layer feeding Lysis. See [Akron VM](/docs/architecture/akron-vm/) and [Artik Witness VM](/docs/architecture/artik-vm/) for the other two VMs.

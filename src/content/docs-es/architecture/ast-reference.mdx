@@ -122,7 +122,7 @@ De `achronyme-parser/src/ast.rs:188-331`. Cada variante lleva `id: ExprId` y `sp
 
 | Variante | Campos extra | Notas |
 |----------|--------------|-------|
-| `Error` | — | Emitido por puntos de sincronización del parser (`synchronize()` en `parser/core.rs`). |
+| `Error` | — | Emitido por puntos de sincronización del parser (`synchronize()` en `achronyme-parser/src/parser/core.rs`). |
 
 ## Operadores
 
@@ -214,7 +214,7 @@ pub enum BaseType {
 - IDs `u32` densos, asignados por el parser a medida que recorre el código fuente.
 - El `Program` completo es la arena de IDs; las comparaciones cross-program no son significativas (p.ej., `ExprId(42)` en `foo.ach` y `ExprId(42)` en `bar.ach` no están relacionados).
 - `ExprId::SYNTHETIC = 0` está reservado para nodos generados por el compilador (principalmente dentro del lowering de Circom y el compilador de ProveIR cuando sintetiza expresiones auxiliares durante la instanciación de plantillas).
-- El pase del resolver anota cada `ExprId` con un `SymbolId` en `SymbolTable`. Ver `resolve/src/annotate.rs`. El resolver **no** muta el AST — construye una tabla lateral indexada por `ExprId`.
+- El pase del resolver anota cada `ExprId` con un `SymbolId` en `SymbolTable`. Ver `resolve/src/annotate/`. El resolver **no** muta el AST — construye una tabla lateral indexada por `ExprId`.
 - Esta forma (AST inmutable + anotaciones de tabla lateral) es lo que hace barato al LSP: el resolver corre en microsegundos y descarta sus tablas cuando el AST es invalidado.
 
 ## Archivos fuente
@@ -224,7 +224,7 @@ pub enum BaseType {
 | Tipos del AST         | `achronyme-parser/src/ast.rs` |
 | Span                  | `diagnostics/src/span.rs` |
 | Entrada del parser    | `achronyme-parser/src/lib.rs` |
-| Anotación del resolver | `resolve/src/annotate.rs` |
+| Anotación del resolver | `resolve/src/annotate/` |
 | Tabla de símbolos     | `resolve/src/table.rs` |
 
 Ver [Gramática y Lexer](/docs/architecture/grammar/) para la sintaxis de superficie. Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para qué pasa después del parseo.

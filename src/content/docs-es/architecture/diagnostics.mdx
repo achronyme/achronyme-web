@@ -81,7 +81,7 @@ Un input de testigo fluye sin llegar a ninguna aserción. Surfaceado por el pase
 
 ### Sugerencias "Did you mean?"
 
-Archivo: `diagnostics/src/suggest.rs`. Búsqueda por distancia de Levenshtein contra una lista de identificadores válidos (nombres de builtins, variables en alcance, nombres de plantillas). Umbral: distancia ≤ 2 y >= 50% de similitud.
+El crate compartido de diagnósticos lleva payloads `Suggestion` en `diagnostics/src/diagnostic.rs`. La búsqueda fuzzy "did you mean?" vive en los crates productores, por ejemplo `akronc/src/suggest.rs`, `ir-forge/src/suggest.rs` y `circom/src/lowering/suggest.rs`, donde cada llamador compara el nombre no resuelto contra su propio namespace válido.
 
 ## Política de severidad
 
@@ -91,20 +91,18 @@ Archivo: `diagnostics/src/suggest.rs`. Búsqueda por distancia de Levenshtein co
 
 ## Renderer
 
-Archivo: `diagnostics/src/renderer.rs`.
+Archivo: `diagnostics/src/render.rs`.
 
 ```rust
-pub struct DiagnosticRenderer {
-    pub color_mode: ColorMode,
-    pub source_lines: HashMap<String, Vec<String>>,
+pub struct DiagnosticRenderer<'a> { /* source, lines, color */ }
+
+impl<'a> DiagnosticRenderer<'a> {
+    pub fn new(source: &'a str, color_mode: ColorMode) -> Self;
+    pub fn render(&self, diag: &Diagnostic) -> String;
+    pub fn render_to(&self, out: &mut String, diag: &Diagnostic);
 }
 
-impl DiagnosticRenderer {
-    pub fn render(&self, diag: &Diagnostic, source_path: &str) -> String;
-    pub fn render_json(&self, diag: &Diagnostic) -> serde_json::Value;
-}
-
-pub enum ColorMode { Auto, Force, Never }
+pub enum ColorMode { Always, Never, Auto }
 ```
 
 La salida imita rustc:
@@ -134,11 +132,10 @@ El parser usa sincronización en límites `;` y `}` para seguir produciendo plac
    ```rust
    Diagnostic::error("circuit cannot use mut bindings")
        .with_code("E412")
-       .with_span(stmt.span)
-       .with_suggestion(Suggestion::from_replacement("let", stmt.span, Applicability::MachineApplicable))
+       .with_suggestion(stmt.span, "let", "replace `mut` with `let`")
    ```
 3. Emitir a través del canal de error local que sea (`Vec<Diagnostic>` o `Result<_, Diagnostic>`).
-4. Agregar un test bajo `tests/diagnostics_*.rs` en el crate productor.
+4. Agregar un test enfocado en diagnósticos en la suite de tests del crate productor.
 5. Si es de cara al usuario, agregar una fila al índice de diagnósticos en `/docs/language/diagnostics/` (achronyme-web).
 
 ## Archivos fuente
@@ -147,10 +144,10 @@ El parser usa sincronización en límites `;` y `}` para seguir produciendo plac
 |------------|---------|
 | Tipo `Diagnostic` | `diagnostics/src/lib.rs` |
 | `Span` / `SpanRange` | `diagnostics/src/span.rs` |
-| Renderer | `diagnostics/src/renderer.rs` |
-| `Suggestion` + applicability | `diagnostics/src/suggest.rs` |
+| Renderer | `diagnostics/src/render.rs` |
+| Payload `Suggestion` | `diagnostics/src/diagnostic.rs` |
 | Diagnósticos del parser | `achronyme-parser/src/parser/core.rs` |
-| Diagnósticos de Circom | `circom/src/diagnostics.rs` |
-| Diagnósticos de IR | `ir/src/diagnostics.rs` |
+| Diagnósticos de Circom | `circom/src/lib.rs`, `circom/src/analysis/`, `circom/src/lowering/error.rs` |
+| Diagnósticos de IR | `ir-core/src/error.rs`, `ir-forge/src/error.rs`, `ir/src/eval/error.rs` |
 
 Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para dónde dispara cada fase de diagnósticos. Ver [Guía de Extensión](/docs/architecture/extension-guide/) para cómo registrar un nuevo código en el pase correspondiente.

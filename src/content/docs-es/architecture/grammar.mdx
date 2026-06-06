@@ -7,7 +7,7 @@ description: "Tipos de tokens, precedencia de operadores y gramática EBNF del l
 
 Escáner de bytes single-pass escrito a mano. Sin dependencias externas (sin `pest`, sin `logos`).
 
-- Archivo: `achronyme-parser/src/lexer.rs`
+- Archivo: `achronyme-parser/src/lexer/`
 - Entrada: `Lexer::tokenize(source: &str) -> Result<Vec<Token>, ParseError>`
 - Maneja entrada UTF-8 multibyte vía `advance_multibyte()`; rastrea `(line, col, byte_offset)` para cada token producido para que los diagnósticos posteriores puedan renderizar carets en la columna visual correcta incluso cuando el código fuente contiene identificadores no ASCII.
 - Los comentarios se eliminan en tiempo de lexeo:
@@ -108,7 +108,7 @@ Parser Pratt. Fuente: `achronyme-parser/src/parser/tables.rs`. El loop de Pratt 
 | 5     | `&&`                                | izquierda     |
 | 6     | `\|\|`                              | izquierda     |
 
-Número de nivel más bajo = poder de enlace **más alto**. La exponenciación es asociativa por la derecha porque en `tables.rs` su `left_bp > right_bp`, entonces `a ^ b ^ c` se parsea como `a ^ (b ^ c)`.
+Número de nivel más bajo = poder de enlace **más alto**. La exponenciación es asociativa por la derecha porque en `achronyme-parser/src/parser/tables.rs` su `left_bp > right_bp`, entonces `a ^ b ^ c` se parsea como `a ^ (b ^ c)`.
 
 Los unarios `-` y `!` se manejan en la tabla de prefijos y se enlazan más fuerte que cualquier operador binario. El ternario `cond ? a : b` se maneja a nivel del tope de expresión (más bajo que `||`) y es asociativo por la derecha para el caso de ternarios encadenados.
 
@@ -248,7 +248,7 @@ Para errores de expresión dentro de una sentencia, el parser retorna `Expr::Err
 
 | Componente                    | Archivo |
 |-------------------------------|---------|
-| Lexer                         | `achronyme-parser/src/lexer.rs` |
+| Lexer                         | `achronyme-parser/src/lexer/` |
 | Tokens                        | `achronyme-parser/src/token.rs` |
 | Núcleo del parser (Pratt)     | `achronyme-parser/src/parser/core.rs` |
 | Parseo de expresiones         | `achronyme-parser/src/parser/exprs.rs` |

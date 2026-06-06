@@ -87,7 +87,7 @@ Compilador de bytecode para la Akron VM. Aloja el optimizador de bytecode (peeph
 
 `akron` (depende de `memory`, `constraints`, `ir`, `ir-forge`)
 
-VM de propósito general basada en registros. 42 opcodes, GC tri-color de marcado y barrido, valores etiquetados (tagged values) de 64 bits. Carga archivos `.achb` vía `akron::loader`. Aloja la ejecución de `prove {}` en runtime vía el trait `ProveHandler`.
+VM de propósito general basada en registros. 34 variantes de opcode asignadas, GC bitmap de marcado y barrido, valores etiquetados (tagged values) de 64 bits. Carga archivos `.achb` vía `akron::loader`. Despacha la ejecución de `prove {}` en runtime vía el trait `ProveHandler` inyectado.
 
 `artik` (depende de `memory`)
 
@@ -124,7 +124,7 @@ Binario de cara al usuario. Despacha `ach run`, `ach circuit`, `ach circom`, `ac
 | Compilar bytecode | `akronc` | `Compiler::compile(&program)` |
 | Compilar bloque prove | `ir-forge` | `ProveIrCompiler::compile_prove_block(...)` |
 | Compilar plantilla circom | `circom` | `compile_to_prove_ir(source)` |
-| Instanciar ProveIR | `ir` | `ProveIR::instantiate(captures, ...)` |
+| Instanciar ProveIR | `ir-forge` | `ProveIR::instantiate_lysis(captures)` / `instantiate_lysis_with_outputs(...)` |
 | Lower de AST a IR (circuito) | `ir` | `IrLowering::lower_circuit(source, pub, wit)` |
 | Optimizar IR | `ir` | `passes::optimize(&mut program)` |
 | Compilar a R1CS | `zkc` | `compile_to_r1cs(program)` |

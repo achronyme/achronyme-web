@@ -248,7 +248,7 @@ Ver [Generación de Testigos](./witness-generation) para el modelo completo de r
 | Validador | `artik/src/validate.rs` |
 | Ejecutor | `artik/src/executor.rs` |
 | API Builder (usada por lift) | `artik/src/builder.rs` |
-| Lift Circom | `circom/src/lowering/artik_lift.rs` |
+| Lift Circom | `circom/src/lowering/artik_lift/` |
 | Despacho IR | `ir/src/eval/mod.rs::dispatch_witness_call` |
-| Despacho R1CS | `zkc/src/r1cs_witness.rs::dispatch_artik_call` |
-| Variante IR | `ir/src/types.rs` — `Instruction::WitnessCall` |
+| Despacho R1CS | `zkc/src/witness/artik.rs::dispatch_artik_call` |
+| Variante IR | `ir-core/src/types/instruction.rs` — `Instruction::WitnessCall` |

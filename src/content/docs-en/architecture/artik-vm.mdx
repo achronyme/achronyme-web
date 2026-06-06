@@ -248,7 +248,7 @@ See [Witness Generation](./witness-generation) for the full trace replay model.
 | Validator | `artik/src/validate.rs` |
 | Executor | `artik/src/executor.rs` |
 | Builder API (used by lift) | `artik/src/builder.rs` |
-| Circom lift | `circom/src/lowering/artik_lift.rs` |
+| Circom lift | `circom/src/lowering/artik_lift/` |
 | IR dispatch | `ir/src/eval/mod.rs::dispatch_witness_call` |
-| R1CS dispatch | `zkc/src/r1cs_witness.rs::dispatch_artik_call` |
-| IR variant | `ir/src/types.rs` — `Instruction::WitnessCall` |
+| R1CS dispatch | `zkc/src/witness/artik.rs::dispatch_artik_call` |
+| IR variant | `ir-core/src/types/instruction.rs` — `Instruction::WitnessCall` |

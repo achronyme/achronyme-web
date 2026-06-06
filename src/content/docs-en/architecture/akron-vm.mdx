@@ -3,7 +3,7 @@ title: "Akron VM & Bytecode"
 description: "Register-based general-purpose bytecode VM: opcodes, value encoding, and binary format."
 ---
 
-**Akron** is Achronyme's general-purpose bytecode VM — a register-based interpreter that runs `.achb` files produced by the bytecode compiler. It executes the Achronyme language at runtime (`ach run`) and evaluates `prove {}` blocks in VM mode.
+**Akron** is Achronyme's general-purpose bytecode VM — a register-based interpreter that runs `.achb` files produced by the bytecode compiler. It executes the Achronyme language at runtime (`ach run`) and dispatches serialized `prove {}` blocks to an injected proof handler in VM mode.
 
 Akron is paired with [Artik](./artik-vm), the dedicated witness-computation VM. The split is deliberate: Akron handles scripting and mutable heap state with a GC, while Artik handles side-effect-free witness math with no heap or GC.
 
@@ -30,12 +30,15 @@ Interpreter -> Register-based execution
 ```ach
 Akron {
     heap: Heap,              // typed arenas + GC
-    stack: [Value; 65536],   // fixed-size register stack
+    stack: Box<[Value]>,     // fixed-size register stack (65,536 slots)
     frames: Vec<CallFrame>,  // call stack
     globals: Vec<GlobalEntry>,  // global variables
     natives: Vec<NativeObj>,    // built-in functions
+    prototypes: Vec<u32>,       // function handles for CLOSURE lookup
     open_upvalues: linked list, // captured stack variables
     stress_mode: bool,          // force GC every cycle
+    prove_handler: Option<Box<dyn ProveHandler>>,
+    circom_handler: Option<Box<dyn CircomWitnessHandler>>,
 }
 ```
 
@@ -78,6 +81,11 @@ Bits 59..0  = 60-bit payload
 | 8 | `FIELD` | u32 handle -> fields arena |
 | 9 | `PROOF` | u32 handle -> proofs arena |
 | 10 | `NATIVE` | u32 handle -> natives table |
+| 11 | `CLOSURE` | u32 handle -> closures arena |
+| 12 | `ITER` | u32 handle -> iterators arena |
+| 13 | `BIGINT` | u32 handle -> bigints arena |
+| 14 | `BYTES` | u32 handle -> bytes arena |
+| 15 | `CIRCOM_HANDLE` | u32 handle -> circom_handles arena |
 | 11 | `CLOSURE` | u32 handle -> closures arena |
 | 12 | `ITER` | u32 handle -> iterators arena |
 | 14 | `BYTES` | u32 handle -> bytes arena (ProveIR constants) |
@@ -275,7 +283,7 @@ Akron and [Artik](./artik-vm) are sibling VMs with disjoint roles:
 | General-purpose scripting + `prove {}` | Witness computation for circuits |
 | Tagged values, 13+ type tags | Field elements + fixed-width ints only |
 | Mark-sweep GC, typed arenas | No heap, no GC |
-| ~42 opcodes, 3-operand format | ~25 opcodes, typed registers |
+| 34 assigned opcode variants, 3-operand format | ~25 opcodes, typed registers |
 | Invoked by `ach run`, VM mode | Dispatched from R1CS witness-gen (`WitnessOp::ArtikCall`) |
 
 See [Artik Witness VM](./artik-vm) for details on the witness path.
@@ -289,10 +297,10 @@ See [Artik Witness VM](./artik-vm) for details on the witness path.
 | Call frames | `akron/src/machine/frame.rs` |
 | Interpreter loop | `akron/src/machine/interpreter.rs` |
 | Native dispatch | `akron/src/specs.rs` |
-| Prototype methods | `akron/src/machine/methods/` |
+| Prototype methods | `akron/src/machine/prototype.rs` and `akron/src/stdlib/` |
 | Value encoding | `memory/src/value.rs` |
-| Function struct | `memory/src/heap.rs` |
-| Bytecode compiler | `akronc/src/codegen.rs` |
+| Function struct | `memory/src/heap/objects.rs` |
+| Bytecode compiler | `akronc/src/codegen/` |
 | Function compiler | `akronc/src/function_compiler.rs` |
 | Binary serializer | `cli/src/commands/compile.rs` |
 | Binary loader | `akron/src/loader.rs` |

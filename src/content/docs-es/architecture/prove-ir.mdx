@@ -47,10 +47,11 @@ pub struct ProveIR {
     pub captures: Vec<CaptureDef>,
     pub body: Vec<CircuitNode>,
     pub capture_arrays: Vec<CaptureArrayDef>,
+    pub component_bodies: HashMap<String, Vec<CircuitNode>>,
 }
 
 pub const PROVE_IR_MAGIC: &[u8; 4] = b"ACHP";
-pub const PROVE_IR_FORMAT_VERSION: u8 = 5;
+pub const PROVE_IR_FORMAT_VERSION: u8 = 6;
 ```
 
 Layout de serialización:
@@ -59,12 +60,13 @@ Layout de serialización:
 [MAGIC: 4 = "ACHP"][VERSION: 1][PRIME_ID: 1][BINCODE_PAYLOAD]
 ```
 
-Historial de versiones (solo v5 está actualmente aceptada):
+Historial de versiones (solo v6 está actualmente aceptada):
 
 - v2 — añadió `capture_arrays`
 - v3 — añadió `message` a `CircuitNode::AssertEq`
 - v4 — añadió byte `PrimeId` (multi-prime)
 - v5 — `CircuitExpr::Const` cambiado a `FieldConst` (32 bytes canónico LE)
+- v6 — añadió la tabla `component_bodies` para instancias de componente diferidas
 
 ## CircuitExpr (árbol de expresiones)
 
@@ -145,6 +147,7 @@ pub enum CircuitNode {
     LetIndexed { array, index, value, span },                              // arr[i] = expr
     WitnessHintIndexed { array, index, hint, span },                       // arr[i] <-- expr
     WitnessCall { output_bindings, input_signals, program_bytes, span },   // Artik dispatch
+    ComponentCall { body_key, comp_name, param_subs, span },                // instancia de componente diferida
 }
 
 pub enum ForRange {
@@ -157,7 +160,7 @@ pub enum ForRange {
 
 `Decompose` es la primitiva de descomposición en bits: `name` se enlaza como un array de longitud `num_bits` de señales bool, con witness hints derivadas de `value`.
 
-`WitnessCall` lleva un blob de bytecode Artik embebido — ver [Artik Witness VM](/docs/architecture/artik-vm/).
+`WitnessCall` lleva un blob de bytecode Artik embebido — ver [Artik Witness VM](/docs/architecture/artik-vm/). `ComponentCall` apunta a `ProveIR::component_bodies`; la instanciación expande el cuerpo compartido con el nombre del componente y las sustituciones de parámetros en vez de serializar otra copia inlineada.
 
 ## Capturas
 
@@ -175,7 +178,7 @@ pub struct CaptureArrayDef {
 }
 ```
 
-Las capturas permanecen simbólicas en ProveIR (la hoja `Capture(name)`). Se enlazan en la instanciación por `ProveIR::instantiate(captures, ...)`.
+Las capturas permanecen simbólicas en ProveIR (la hoja `Capture(name)`). Se enlazan mediante los puntos de entrada de instanciación respaldados por Lysis, como `ProveIR::instantiate_lysis(captures)` y `ProveIR::instantiate_lysis_with_outputs(captures, output_names)`.
 
 ## Punto de entrada del compilador
 
@@ -191,17 +194,17 @@ ProveIrCompiler::compile_prove_block(
 
 Submódulos:
 
-- `ast_lower/exprs.rs` — lowering de `CircuitExpr` (literales, ops, llamadas)
-- `ast_lower/calls.rs` — dispatch de funciones/componentes (resuelve a través de `BuiltinRegistry` + module loader)
-- `ast_lower/stmts.rs` — lowering de `CircuitNode` (let, mut, for, if, assert)
-- `ast_lower/methods.rs` — desugaring de métodos (`x.abs()` → llamada a builtin)
-- `ast_lower/state.rs` — estado del compilador (alcance, auto-inferencia de testigos)
+- `ir-forge/src/ast_lower/exprs/` — lowering de `CircuitExpr` (literales, ops, llamadas)
+- `ir-forge/src/ast_lower/calls/` — dispatch de funciones/componentes (resuelve a través de `BuiltinRegistry` + module loader)
+- `ir-forge/src/ast_lower/stmts/` — lowering de `CircuitNode` (let, mut, for, if, assert)
+- `ir-forge/src/ast_lower/methods.rs` — desugaring de métodos (`x.abs()` → llamada a builtin)
+- `ir-forge/src/ast_lower/state.rs` — estado del compilador (alcance, auto-inferencia de testigos)
 
 ## Instanciación
 
-`ProveIR::instantiate(captures, public_values, witness_values)` recorre el cuerpo del ProveIR y emite IR SSA. El desenrollado de loops, sustitución de capturas y resolución de índices de arrays ocurren todos aquí.
+`ProveIR::instantiate_extended(captures)` primero recorre el cuerpo de ProveIR hacia `ExtendedInstruction<F>`. Los puntos de entrada de producción, `instantiate_lysis` e `instantiate_lysis_with_outputs`, bajan esa forma extendida a través de Lysis hasta un `IrProgram<F>` plano. El manejo de loops, sustitución de capturas, resolución de índices de arrays, expansión de componentes diferidos y proyección de outputs Circom ocurren en esta capa de instanciación.
 
-Para plantillas de Circom, la instanciación es manejada por `instantiate.rs` del crate `circom`, que sabe sobre composición de componentes y paso de parámetros.
+Para librerías de plantillas Circom, `circom/src/library/instantiate.rs` maneja composición de componentes y paso de parámetros antes de producir los nodos ProveIR que usan la misma capa de instanciación.
 
 ## ExtendedInstruction (puente a Lysis)
 
@@ -226,8 +229,8 @@ Esta capa wrapper habilita al walker de la [Lysis VM](/docs/architecture/lysis-v
 | `CircuitExpr` | `ir-forge/src/types/expressions.rs` |
 | `CircuitNode` | `ir-forge/src/types/nodes.rs` |
 | API del compilador | `ir-forge/src/ast_lower/api.rs` |
-| Instanciación | `ir/src/prove_ir/instantiate.rs` |
+| Instanciación | `ir-forge/src/instantiate/` |
 | ExtendedInstruction | `ir-forge/src/extended.rs` |
-| Constantes de formato | `ir-forge/src/types/prove_ir.rs:17-43` |
+| Constantes de formato | `ir-forge/src/types/prove_ir.rs` |
 
 Ver [Visión General del Pipeline](/docs/architecture/pipeline/) para la ruta completa de compilación. Ver [IR y Optimización](/docs/architecture/ir-and-optimization/) para qué corre después de la instanciación. Ver [Frontend de Circom](/docs/architecture/circom-frontend/) para cómo los archivos .circom llegan a ProveIR.
