@@ -87,7 +87,7 @@ Bytecode compiler for the Akron VM. Owns the bytecode optimizer (peephole, const
 
 `akron` (depends on `memory`, `constraints`, `ir`, `ir-forge`)
 
-Register-based general-purpose VM. 42 opcodes, mark-sweep tri-color GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Hosts `prove {}` execution at runtime via the `ProveHandler` trait.
+Register-based general-purpose VM. 34 assigned opcode variants, bitmap mark-and-sweep GC, 64-bit tagged values. Loads `.achb` files via `akron::loader`. Dispatches `prove {}` execution at runtime via the injected `ProveHandler` trait.
 
 `artik` (depends on `memory`)
 
@@ -124,7 +124,7 @@ User-facing binary. Dispatches `ach run`, `ach circuit`, `ach circom`, `ach prov
 | Compile bytecode | `akronc` | `Compiler::compile(&program)` |
 | Compile prove block | `ir-forge` | `ProveIrCompiler::compile_prove_block(...)` |
 | Compile circom template | `circom` | `compile_to_prove_ir(source)` |
-| Instantiate ProveIR | `ir` | `ProveIR::instantiate(captures, ...)` |
+| Instantiate ProveIR | `ir-forge` | `ProveIR::instantiate_lysis(captures)` / `instantiate_lysis_with_outputs(...)` |
 | Lower AST to IR (circuit) | `ir` | `IrLowering::lower_circuit(source, pub, wit)` |
 | Optimize IR | `ir` | `passes::optimize(&mut program)` |
 | Compile to R1CS | `zkc` | `compile_to_r1cs(program)` |

@@ -30,7 +30,7 @@ Operator precedence (high to low):
 
 **Entry point:** `akronc::Compiler::compile()`
 
-For `ach run`, the AST is compiled to bytecode for the register-based VM (42 opcodes). A 3-pass bytecode optimizer runs after compilation:
+For `ach run`, the AST is compiled to bytecode for the register-based VM (34 assigned opcode variants). A 3-pass bytecode optimizer runs after compilation:
 
 - **Peephole** — fuses common instruction sequences
 - **Constant folding** — evaluates arithmetic on known constants
@@ -73,7 +73,7 @@ This design means prove blocks are **pre-compiled at compile time** — no re-pa
 
 **Crate:** `circom` — **Entry point:** `circom::parser::parse_circom(source)`
 
-Compiles `.circom` files through the same ProveIR → IR → Backend pipeline. The Circom frontend adds structural safety: `<--` (unconstrained signal assignment) without a corresponding `===` constraint produces a hard compile-time error (E100), catching under-constrained signals that are the #1 source of ZK vulnerabilities.
+Compiles `.circom` files through the same ProveIR → IR → Backend pipeline. The Circom frontend adds structural safety: a `<--` / `-->` witness hint that is not pinned by a corresponding constraint is reported as E100. Double assignments are reported separately as W103 warnings, so the docs should not treat W103 as a constraint.
 
 | Stage | Module | Description |
 |-------|--------|-------------|
@@ -163,21 +163,21 @@ Field selection is resolved once at the session boundary; monomorphization elimi
 |-------|------|
 | Parser | `achronyme-parser/src/parser/` |
 | AST | `achronyme-parser/src/ast.rs` |
-| Symbol resolution | `resolve/src/annotate.rs` |
-| Circom Lexer | `circom/src/lexer.rs` |
+| Symbol resolution | `resolve/src/annotate/` |
+| Circom Lexer | `circom/src/lexer/` |
 | Circom Parser | `circom/src/parser/` |
 | Circom Analysis | `circom/src/analysis/` |
 | Circom Lowering | `circom/src/lowering/` |
-| Bytecode Compiler | `akronc/src/codegen.rs` |
-| Bytecode Optimizer | `akronc/src/optimizer.rs` |
+| Bytecode Compiler | `akronc/src/codegen/` |
+| Bytecode Optimizer | `akronc/src/optimizer/` |
 | ProveIR Compiler | `ir-forge/src/ast_lower/api.rs` |
-| ProveIR Instantiation | `ir/src/prove_ir/instantiate.rs` |
-| Lysis Lift | `ir-forge/src/lysis_lift/walker.rs` |
+| ProveIR Instantiation | `ir-forge/src/instantiate/` |
+| Lysis Lift | `ir-forge/src/lysis_lift/` |
 | IR Lowering | `ir/src/lower/mod.rs` |
 | Optimization Passes | `ir/src/passes/` |
 | R1CS Backend | `zkc/src/r1cs_backend.rs` |
 | Plonkish Backend | `zkc/src/plonkish_backend/` |
-| Witness Generation | `zkc/src/r1cs_witness.rs` |
+| Witness Generation | `zkc/src/witness/` |
 | Binary Export | `constraints/src/export.rs` |
 | Proving | `proving/src/` |
 | CLI Dispatch | `cli/src/commands/circuit.rs` |
