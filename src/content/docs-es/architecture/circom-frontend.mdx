@@ -31,7 +31,7 @@ API multi-archivo: `compile_file(path, library_dirs)` resuelve cadenas de `inclu
 
 ## Lexer
 
-Archivo: `circom/src/lexer.rs`. Escáner de bytes single-pass. Desambiguación maximal-munch para la familia de operadores de señales:
+Archivo: `circom/src/lexer/`. Escáner de bytes single-pass. Desambiguación maximal-munch para la familia de operadores de señales:
 
 | Tokens | Significado |
 |--------|-------------|
@@ -81,7 +81,7 @@ La forma de sentencia pura es soportada (Circom 2.1+): `for (...) stmt;` sin lla
 
 Archivo: `circom/src/analysis/`. Corre después del parseo:
 
-1. **Verificación de emparejamiento de constraints** — cada `<--` / `-->` (asignación sin constraint) debe tener un constraint correspondiente `===` sobre la misma señal. Un `<--` puro sin `===` es la fuente #1 de vulnerabilidades de bajo-constraint — emitido como advertencia **W103** (rebajado de error duro E101 en beta.20 para permitir patrones de ramificación if-else donde una rama añade el constraint).
+1. **Verificación de emparejamiento de constraints** — las asignaciones `<--` / `-->` son witness hints, no constraints. Si la señal asignada no queda fijada directamente por `===` o indirectamente a través de un acumulador `var` rastreado, el analizador emite **E100**. La asignación doble es una advertencia separada **W103**.
 2. **Resolución de includes** — recorre como DAG las cadenas `include "file.circom";`, detecta ciclos, deduplica includes mutuos.
 3. **Validación del componente main** — exactamente una declaración `component main { … }` es requerida (E210 si falta, E211 si referencia una plantilla indefinida).
 
@@ -91,14 +91,14 @@ Archivo: `circom/src/lowering/`. Traduce el AST de Circom validado a ProveIR.
 
 Submódulos (split post-auditoría, 21 módulos):
 
-- `lowering/mod.rs` — driver
-- `lowering/components.rs` — instanciación de componentes, enlace de parámetros
-- `lowering/signals.rs` — extracción de dimensiones de señales
-- `lowering/expressions.rs` — lowering de `CircuitExpr`
-- `lowering/statements.rs` — lowering de `CircuitNode`
-- `lowering/const_fold.rs` — evaluación de constantes en tiempo de compilación (BigVal, fold de ternarios, constantes de array)
-- `lowering/artik_lift.rs` — cuerpos de funciones que no pueden inlinearse → bytecode Artik
-- `lowering/context.rs` — entorno, capturas, known_constants
+- `circom/src/lowering/mod.rs` — driver
+- `circom/src/lowering/components.rs` — instanciación de componentes, enlace de parámetros
+- `circom/src/lowering/signals.rs` — extracción de dimensiones de señales
+- `circom/src/lowering/expressions/` — lowering de `CircuitExpr`
+- `circom/src/lowering/statements/` — lowering de `CircuitNode`
+- `circom/src/lowering/const_fold.rs` — evaluación de constantes en tiempo de compilación (BigVal, fold de ternarios, constantes de array)
+- `circom/src/lowering/artik_lift/` — cuerpos de funciones que no pueden inlinearse → bytecode Artik
+- `circom/src/lowering/context.rs` — entorno, capturas, known_constants
 
 Comportamientos importantes:
 
@@ -175,11 +175,11 @@ El frontend de Circom produce ProveIR que, después de la instanciación, es opt
 | Manejo de zero-product | Elimina `x · y == 0` redundantes cuando un lado es probadamente cero |
 | DEDUCE | Heurística de frecuencia + remoción de lineales tautológicos |
 
-Resultado: Achronyme iguala o supera a `circom --O2` en cada plantilla de referencia (Num2Bits 9 vs 17, LessThan 10 vs 20, MiMCSponge 1317 vs 1320, EscalarMulAny 2310 = circom).
+El harness de benchmarks registra conteos de constraints contra `circom --O2` para plantillas de referencia como Num2Bits, LessThan, MiMCSponge y EscalarMulAny. Trata los conteos exactos como salida de benchmark, no como arquitectura: vuelve a correr `circom/tests/e2e_optimization/benchmark/` antes de publicar números actuales.
 
 ## Tests adversariales de soundness
 
-Archivo: `circom/tests/adversarial.rs`. Cuatro tests prueban que los deltas de constraints vs circom O2 son ganancias de folding LC, no bugs de bajo-constraint:
+Archivo: `circom/tests/adversarial.rs`. Los tests adversariales cubren testigos forjados para primitivas representativas para que las ganancias del optimizador no se conviertan silenciosamente en circuitos bajo-restringidos. Ejemplos:
 
 1. Forjar bits no-bool en `Num2Bits` → la aserción falla.
 2. Forjar violación de suma en `Num2Bits` → la aserción falla.
@@ -189,20 +189,20 @@ Archivo: `circom/tests/adversarial.rs`. Cuatro tests prueban que los deltas de c
 
 | Componente | Archivo |
 |------------|---------|
-| Lexer | `circom/src/lexer.rs` |
+| Lexer | `circom/src/lexer/` |
 | Parser | `circom/src/parser/` |
 | Análisis | `circom/src/analysis/` |
 | Driver del lowering | `circom/src/lowering/mod.rs` |
 | Componentes | `circom/src/lowering/components.rs` |
 | Señales | `circom/src/lowering/signals.rs` |
-| Expresiones | `circom/src/lowering/expressions.rs` |
-| Sentencias | `circom/src/lowering/statements.rs` |
+| Expresiones | `circom/src/lowering/expressions/` |
+| Sentencias | `circom/src/lowering/statements/` |
 | Const fold | `circom/src/lowering/const_fold.rs` |
-| Lift a Artik | `circom/src/lowering/artik_lift.rs` |
+| Lift a Artik | `circom/src/lowering/artik_lift/` |
 | Context | `circom/src/lowering/context.rs` |
-| Diagnósticos | `circom/src/diagnostics.rs` |
+| Diagnósticos | `diagnostics/src/` y `circom/src/lib.rs` |
 | Tests adversariales | `circom/tests/adversarial.rs` |
-| Tests E2E | `circom/tests/e2e.rs` |
+| Tests E2E | `circom/tests/` |
 | API pública | `circom/src/lib.rs` |
 
 Ver [Interoperabilidad con Circom](/docs/circom/overview/) para uso de cara al usuario. Ver [ProveIR](/docs/architecture/prove-ir/) para el formato producido por lowering. Ver [Artik Witness VM](/docs/architecture/artik-vm/) para cuerpos de funciones no inlinables.
