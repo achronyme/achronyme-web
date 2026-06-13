@@ -7,7 +7,7 @@
     "banner": "Introducing Achronyme — a language for zero-knowledge proofs. Read the announcement"
   },
   "hero": {
-    "badge": "v0.1.0-beta.19 — Public beta",
+    "badge": "v0.1.0-beta.22 — Public beta",
     "eyebrow": "The Tri-Architecture",
     "headline1": "Three machines.",
     "headline2": "One language.",
@@ -77,7 +77,7 @@
     "achSteps": "6 lines, 1 file"
   },
   "stats": {
-    "tests": "4,000+ tests",
+    "tests": "4,400+ tests",
     "backends": "2 proof backends",
     "natives": "50 methods",
     "deps": "0 JS deps"
@@ -85,7 +85,7 @@
   "roadmap": {
     "title": "Roadmap",
     "subtitle": "Real receipts, not promises. Versioned milestones, shipped commits, and what comes next.",
-    "livingPill": "Living roadmap · updated Apr 2026",
+    "livingPill": "Living roadmap · updated Jun 2026",
     "metrics": {
       "started": "Started",
       "startedValue": "Jan 2026",
@@ -112,13 +112,13 @@
     "phases": {
       "now": {
         "label": "Now shipping",
-        "anchor": "v0.1.0-beta.19",
-        "desc": "Latest stable release."
+        "anchor": "v0.1.0-beta.22",
+        "desc": "Latest release."
       },
       "wip": {
         "label": "Active development",
-        "anchor": "v0.1.0-beta.20",
-        "desc": "Branch: feature/circom-frontend"
+        "anchor": "0.1.0",
+        "desc": "Production trusted setup — ingesting external Powers-of-Tau."
       },
       "next": {
         "label": "Next milestone",
@@ -137,8 +137,8 @@
       }
     },
     "items": {
-      "multiPrime": "Generic FieldBackend",
-      "multiPrimeDesc": "Monomorphized constraint pipeline over F: FieldBackend. BN254, BLS12-381, and Goldilocks compile natively. 162 E2E cross-prime tests.",
+      "multiPrime": "secp256k1 ECDSAVerify(64,4) end-to-end",
+      "multiPrimeDesc": "The heaviest circomlib reference circuit now compiles, generates a witness, and proves end-to-end. Optimized R1CS lands at ~1.49M constraints — below circom's own count — the witness verifies, and Groth16 prove + verify are measured. 162 E2E cross-prime tests still green.",
       "proveIR": "ProveIR pipeline",
       "proveIRDesc": "Pre-compiled circuit templates serialized in bytecode. prove {} blocks are first-class values.",
       "solidity": "Solidity verifier generation",
@@ -150,7 +150,7 @@
       "adversarialTests": "Adversarial soundness suite",
       "adversarialTestsDesc": "Tests that try to forge proofs prove constraint deltas are real LC folding wins, not under-constrained bugs.",
       "playground": "Web Playground",
-      "playgroundDesc": "WASM-compiled compiler + VM running in the browser. Write, run, and prove circuits online — no install. WASM feasibility verified beta.16.",
+      "playgroundDesc": "In-browser WASM powers editor intelligence — instant LSP-grade diagnostics, hover, and completions as you type. Compilation, execution, and proving run on the server, with browser-session projects. Write and prove circuits online — no install.",
       "multiFieldVM": "Multi-field VM",
       "multiFieldVMDesc": "VM runtime parameterized over FieldBackend. prove {} blocks use native field arithmetic for any curve.",
       "starkBackend": "STARK backend (Goldilocks)",

@@ -41,19 +41,19 @@ const r = t(locale).roadmap;
       </div>
       <div class="rounded-2xl bg-proof/[0.05] ring-1 ring-proof/15 p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
-          <span class="block text-base sm:text-lg font-bold font-mono tracking-tight text-proof-light">v0.1.0-beta.20</span>
+          <span class="block text-base sm:text-lg font-bold font-mono tracking-tight text-proof-light">v0.1.0-beta.22</span>
           <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.version}</span>
         </div>
       </div>
       <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
-          <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">11</span>
+          <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">19</span>
           <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.crates}</span>
         </div>
       </div>
       <div class="rounded-2xl bg-white/[0.025] ring-1 ring-white/[0.05] p-1.5">
         <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] py-4 px-4 text-center">
-          <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">2,700+</span>
+          <span class="block text-xl sm:text-2xl font-bold tracking-tight text-text-primary">4,400+</span>
           <span class="mt-1 block text-xs text-text-muted uppercase tracking-[0.2em]">{r.metrics.tests}</span>
         </div>
       </div>
@@ -99,13 +99,11 @@ const r = t(locale).roadmap;
             <h3 class="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">{r.items.multiPrime}</h3>
             <p class="mt-3 text-base sm:text-base text-text-secondary leading-relaxed max-w-3xl">{r.items.multiPrimeDesc}</p>
             <div class="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm font-mono text-text-muted items-center">
-              <span><span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> {r.receipts.released} v0.1.0-beta.19</span>
+              <span><span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> {r.receipts.released} v0.1.0-beta.22</span>
               <span class="text-text-muted/60">·</span>
-              <span>+43 commits</span>
+              <span>2026-06-12</span>
               <span class="text-text-muted/60">·</span>
-              <span>2026-04-02</span>
-              <span class="text-text-muted/60">·</span>
-              <a href="https://github.com/achronyme/achronyme/releases/tag/v0.1.0-beta.19" target="_blank" rel="noopener noreferrer" class="receipt-link group inline-flex items-center gap-1 text-proof-light hover:text-proof active:scale-[0.97]">
+              <a href="https://github.com/achronyme/achronyme/releases/tag/v0.1.0-beta.22" target="_blank" rel="noopener noreferrer" class="receipt-link group inline-flex items-center gap-1 text-proof-light hover:text-proof active:scale-[0.97]">
                 <span>{r.receipts.viewRelease}</span>
                 <span class="receipt-arrow ms-icon ms-icon-sm">arrow_outward</span>
               </a>
@@ -168,8 +166,8 @@ const r = t(locale).roadmap;
 
       <div class="px-6 sm:px-8 md:pl-20 md:pr-16 pb-10 grid gap-4 lg:grid-cols-12">
         <!-- FEATURED: Circom Frontend with split text/code (full row) -->
-        <article class="reveal lg:col-span-12 rounded-2xl bg-proof/[0.06] ring-1 ring-proof/25 shadow-[inset_0_1px_0_rgba(168,85,247,0.08)] p-1.5">
-          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-proof/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden grid lg:grid-cols-5">
+        <article class="reveal lg:col-span-12 rounded-2xl bg-valid/[0.04] ring-1 ring-valid/15 shadow-[inset_0_1px_0_rgba(52,211,153,0.06)] p-1.5">
+          <div class="rounded-[calc(1rem-0.375rem)] bg-[#0C0C12] ring-1 ring-valid/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden grid lg:grid-cols-5">
             <div class="lg:col-span-3 p-6 lg:p-8">
               <h3 class="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">{r.items.circomFrontend}</h3>
               <p class="mt-3 text-base sm:text-base text-text-secondary leading-relaxed">{r.items.circomFrontendDesc}</p>
@@ -178,15 +176,13 @@ const r = t(locale).roadmap;
                 <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">MiMCSponge <span class="ms-icon ms-icon-sm">check</span></span>
                 <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">EscalarMulAny <span class="ms-icon ms-icon-sm">check</span></span>
                 <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">BabyJubjub <span class="ms-icon ms-icon-sm">check</span></span>
-                <span class="rounded-md bg-warn/10 ring-1 ring-warn/20 px-2 py-0.5 text-xs font-mono text-warn">EdDSA · pending</span>
+                <span class="inline-flex items-center gap-1 rounded-md bg-valid/10 ring-1 ring-valid/20 px-2 py-0.5 text-xs font-mono text-valid">EdDSAPoseidon <span class="ms-icon ms-icon-sm">check</span></span>
               </div>
               <div class="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-mono text-text-muted items-center">
-                <span><span class="ms-icon ms-icon-sm text-proof-light">bolt</span> {r.receipts.branch}: main</span>
+                <span><span class="ms-icon ms-icon-sm text-valid">arrow_right_alt</span> {r.receipts.released} v0.1.0-beta.20</span>
                 <span class="text-text-muted/60">·</span>
-                <span>180+ circom commits</span>
-                <span class="text-text-muted/60">·</span>
-                <a href="https://github.com/achronyme/achronyme/commits/main?path=circom" target="_blank" rel="noopener noreferrer" class="receipt-link group inline-flex items-center gap-1 text-proof-light hover:text-proof active:scale-[0.97]">
-                  <span>{r.receipts.viewBranch}</span>
+                <a href="https://github.com/achronyme/achronyme/releases/tag/v0.1.0-beta.20" target="_blank" rel="noopener noreferrer" class="receipt-link group inline-flex items-center gap-1 text-proof-light hover:text-proof active:scale-[0.97]">
+                  <span>{r.receipts.viewRelease}</span>
                   <span class="receipt-arrow ms-icon ms-icon-sm">arrow_outward</span>
                 </a>
               </div>
@@ -246,7 +242,7 @@ const r = t(locale).roadmap;
             <h3 class="text-base font-semibold text-text-primary tracking-tight">{r.items.playground}</h3>
             <p class="mt-2 text-sm text-text-secondary leading-relaxed flex-1">{r.items.playgroundDesc}</p>
             <div class="mt-4 text-xs font-mono text-text-muted">
-              <span class="ms-icon ms-icon-sm text-info">radio_button_unchecked</span> WASM feasibility verified · beta.16
+              <span class="ms-icon ms-icon-sm text-info">radio_button_unchecked</span> server-side execution · in-browser LSP
             </div>
           </div>
         </article>

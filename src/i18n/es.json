@@ -7,7 +7,7 @@
     "banner": "Presentamos Achronyme — un lenguaje para pruebas zero-knowledge. Lee el anuncio"
   },
   "hero": {
-    "badge": "v0.1.0-beta.19 — Beta publica",
+    "badge": "v0.1.0-beta.22 — Beta publica",
     "eyebrow": "La Tri-Arquitectura",
     "headline1": "Tres maquinas.",
     "headline2": "Un lenguaje.",
@@ -77,7 +77,7 @@
     "achSteps": "6 lineas, 1 archivo"
   },
   "stats": {
-    "tests": "4,000+ tests",
+    "tests": "4,400+ tests",
     "backends": "2 proof backends",
     "natives": "50 metodos",
     "deps": "0 JS deps"
@@ -85,7 +85,7 @@
   "roadmap": {
     "title": "Roadmap",
     "subtitle": "Recibos reales, no promesas. Hitos versionados, commits enviados, y lo que sigue.",
-    "livingPill": "Roadmap vivo · actualizado abr 2026",
+    "livingPill": "Roadmap vivo · actualizado jun 2026",
     "metrics": {
       "started": "Inicio",
       "startedValue": "Ene 2026",
@@ -112,13 +112,13 @@
     "phases": {
       "now": {
         "label": "Ahora en produccion",
-        "anchor": "v0.1.0-beta.19",
-        "desc": "Ultimo release estable."
+        "anchor": "v0.1.0-beta.22",
+        "desc": "Ultimo release."
       },
       "wip": {
         "label": "Desarrollo activo",
-        "anchor": "v0.1.0-beta.20",
-        "desc": "Rama: feature/circom-frontend"
+        "anchor": "0.1.0",
+        "desc": "Trusted setup de produccion — ingiriendo Powers-of-Tau externos."
       },
       "next": {
         "label": "Siguiente hito",
@@ -137,8 +137,8 @@
       }
     },
     "items": {
-      "multiPrime": "FieldBackend generico",
-      "multiPrimeDesc": "Pipeline de restricciones monomorfizado sobre F: FieldBackend. BN254, BLS12-381 y Goldilocks compilan nativamente. 162 tests E2E cross-curva.",
+      "multiPrime": "secp256k1 ECDSAVerify(64,4) de extremo a extremo",
+      "multiPrimeDesc": "El circuito de referencia mas pesado de circomlib ahora compila, genera witness y prueba de extremo a extremo. El R1CS optimizado llega a ~1.49M restricciones — por debajo del propio conteo de circom — el witness verifica, y Groth16 prove + verify estan medidos. 162 tests E2E cross-curva siguen en verde.",
       "proveIR": "Pipeline ProveIR",
       "proveIRDesc": "Plantillas de circuito pre-compiladas serializadas en bytecode. Los bloques prove {} son valores first-class.",
       "solidity": "Generacion de verificadores Solidity",
@@ -150,7 +150,7 @@
       "adversarialTests": "Suite adversarial de soundness",
       "adversarialTestsDesc": "Tests que intentan forjar pruebas demuestran que las reducciones de restricciones son ganancias reales de plegado LC, no bugs de under-constraining.",
       "playground": "Playground Web",
-      "playgroundDesc": "Compilador + VM compilados a WASM corriendo en el navegador. Escribe, ejecuta y prueba circuitos online — sin instalar. Viabilidad WASM verificada en beta.16.",
+      "playgroundDesc": "El WASM en el navegador impulsa la inteligencia del editor — diagnosticos nivel LSP, hover y autocompletado instantaneos mientras escribes. La compilacion, ejecucion y generacion de pruebas corren en el servidor, con proyectos por sesion en el navegador. Escribe y prueba circuitos online — sin instalar.",
       "multiFieldVM": "VM multi-campo",
       "multiFieldVMDesc": "Runtime de la VM parametrizado sobre FieldBackend. Los bloques prove {} usan aritmetica nativa del campo para cualquier curva.",
       "starkBackend": "Backend STARK (Goldilocks)",
