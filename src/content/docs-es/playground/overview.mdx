@@ -1,6 +1,6 @@
 ---
 title: Playground
-description: Escribe, ejecuta y prueba programas Achronyme directamente en tu navegador.
+description: Escribe, ejecuta y prueba programas Achronyme desde tu navegador.
 ---
 
 El [Playground de Achronyme](https://achrony.me/playground) es un IDE en el navegador para escribir y ejecutar código Achronyme. No requiere instalación.
@@ -36,8 +36,8 @@ El playground opera en dos capas:
 
 **Navegador (lado del cliente):**
 - Editor CodeMirror con soporte del lenguaje Achronyme
-- Features LSP (diagnósticos, completado, hover) vía WASM — el parser y compilador corren localmente en el navegador con cero latencia
-- Gestión de sesiones y persistencia de archivos vía localStorage
+- La inteligencia del editor (diagnósticos, completado, hover, ir-a-definición, símbolos) corre localmente en el navegador vía WASM con cero latencia; la compilación, ejecución y generación de pruebas se delegan al servidor
+- Gestión de sesiones y respaldo de archivos vía localStorage
 
 **Servidor (play.achrony.me):**
 - Compilador + VM de Achronyme corriendo nativamente en un servidor

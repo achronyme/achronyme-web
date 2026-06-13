@@ -1,6 +1,6 @@
 ---
 title: Playground
-description: Write, run, and prove Achronyme programs directly in your browser.
+description: Write, run, and prove Achronyme programs from your browser.
 ---
 
 The [Achronyme Playground](https://achrony.me/playground) is a browser-based IDE for writing and running Achronyme code. No installation required.
@@ -36,8 +36,8 @@ The playground runs on two layers:
 
 **Browser (client-side):**
 - CodeMirror editor with Achronyme language support
-- LSP features (diagnostics, completions, hover) via WASM — the parser and compiler run locally in the browser with zero latency
-- Session management and file persistence via localStorage
+- Editor intelligence (diagnostics, completions, hover, go-to-definition, symbols) runs locally in the browser via WASM with zero latency; compilation, execution, and proving are delegated to the server
+- Session management and file backup via localStorage
 
 **Server (play.achrony.me):**
 - Achronyme compiler + VM running natively on a server
