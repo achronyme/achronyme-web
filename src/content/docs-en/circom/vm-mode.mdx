@@ -5,7 +5,7 @@ description: Calling imported Circom templates from regular Achronyme code runni
 
 VM mode is the second way to reach imported Circom templates: calling them from **regular Achronyme code** that runs under `ach run`, not from inside a `prove {}` block. This lets you precompute values, sanity-check a template's witness, or wire Circom gadgets into imperative programs without constructing a full proof.
 
-VM mode is new in beta.20 and intentionally narrower in scope than [Circuit Mode](/docs/circom/circuit-mode/).
+VM mode was introduced with the circom frontend and is intentionally narrower in scope than [Circuit Mode](/docs/circom/circuit-mode/).
 
 ## Why VM Mode
 
@@ -142,8 +142,8 @@ Things that work today:
 Things that are not yet supported:
 
 - **Constant folding for template arguments** — `let N = 8; Num2Bits(N)(x)` in VM mode.
-- **Array signal inputs** — calling a template that takes `signal input in[n]`.
+- **Array signal inputs** — calling a template that takes `signal input in[n]`. This is a VM-mode-only restriction tied to the `CallCircomTemplate` opcode's register layout, not a witness-evaluation limit.
 - **Cross-process persistence of `.achb`** — the bytecode file does not yet serialize circom handles or libraries; you must re-run `ach run` against the source `.ach`, not a pre-compiled `.achb`.
 - **Runtime library loading** — the circom registry is fixed at compile time; there is no way to load a new `.circom` file at runtime.
 
-All of these are tracked in [Limitations and Roadmap](/docs/circom/limitations/). None of them affect circuit-mode dispatch, which remains the primary supported path.
+These are scoping limits of VM-mode *dispatch*. The underlying witness evaluator itself is fully general — circuit-mode witness generation already handles array template parameters and multi-limb bignum routines (for example, secp256k1 ECDSA witnesses run through the Artik VM). All of these are tracked in [Limitations and Roadmap](/docs/circom/limitations/). None of them affect circuit-mode dispatch, which remains the primary supported path.

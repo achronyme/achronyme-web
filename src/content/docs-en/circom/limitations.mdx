@@ -63,7 +63,10 @@ The following circomlib primitives have been compiled end-to-end, run through R1
 | `EscalarMulFix(253)` | 11 | 11 | ✓ Matches circom O2 |
 | `EscalarMulAny(254)` | 2310 | 2310 | ✓ Matches circom O2 |
 | `EdDSAPoseidonVerifier` | — | — | ✓ Compile + instantiate (31,685 IR nodes → 22,271 instructions after optimisation); R1CS test passes with `enabled=0` |
+| `ECDSAVerify(64, 4)` / secp256k1 ECDSA | — | — | ✓ Compiles + generates a witness + proves end-to-end (Groth16); ~1.49M optimized R1CS constraints, below circom for the same circuit; witness verifies |
 | Mux, gates, bitify, comparators | — | — | ✓ Used transitively by the above |
+
+`ECDSAVerify(64, 4)` is the heaviest circomlib reference circuit, and its witness depends on secp256k1 multi-limb arithmetic — modular inverse and exponentiation, schoolbook product, and long division. Achronyme now generates that witness natively through Artik VM intrinsics, instead of an interpreted Fermat modular-inverse path, so the full circuit compiles, witnesses, and proves without manual intervention.
 
 End-to-end Groth16 proof verification has been done on-chain for `Num2Bits`, `IsZero`, `LessThan`, `Poseidon(2)` and `EscalarMulAny(254)`.
 
@@ -87,13 +90,15 @@ Every unsupported feature below is parsed correctly and rejected with a dedicate
 | **Anonymous components** (`Template()(...)` inline call without a name binding) | Rarely used; the explicit-name form always works. |
 | **Array literal as signal assignment** (`signal z <== [a, b, c]`) | Element-by-element assignment is the documented workaround. |
 
-### Structural — by design
+### Structural — by design (circuit mode)
 
-These restrictions come from Achronyme's lowering model (fully-unrolled IR, R1CS-first), not from missing work:
+These restrictions come from Achronyme's **circuit-mode** lowering model (fully-unrolled IR, R1CS-first), not from missing work. They apply to constraint generation; witness computation is handled separately by the Artik VM, which is more permissive (see the note below):
 
 - **Recursive `function` bodies** — functions are imperative compile-time evaluators. Non-terminating recursion and recursion whose depth the lowerer cannot prove bounded are rejected at evaluation time.
 - **Non-constant array dimensions** outside of `for`-loop unrolling contexts — the IR is statically shaped.
 - **Runtime-variable array indices in circuit mode** — the IR is fully unrolled, so array indices must be compile-time known. This mirrors the restriction circom itself applies; circomlib follows the same discipline.
+
+The unrolling restriction is specific to the R1CS/Plonkish constraint IR. **Witness functions lifted into the Artik VM do support runtime-bound loops and variable-index access** — that is exactly how secp256k1 ECDSA witness generation works, where multi-limb bignum routines (modular inverse, long division) run with loop bounds and array indices that are only known at runtime. The constraint system stays fully unrolled; the witness side does not need to be.
 
 If any of these are blocking a real circuit for you, please open an issue with the `.circom` source — most cases resolve to a structural workaround rather than a language extension.
 

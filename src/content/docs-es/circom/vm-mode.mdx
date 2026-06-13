@@ -5,7 +5,7 @@ description: Llamando templates Circom importados desde codigo Achronyme regular
 
 El modo VM es la segunda forma de alcanzar templates Circom importados: llamarlos desde **codigo Achronyme regular** que corre bajo `ach run`, no desde dentro de un bloque `prove {}`. Esto te deja precomputar valores, hacer sanity-check del testigo de un template, o cablear gadgets Circom en programas imperativos sin construir una prueba completa.
 
-El modo VM es nuevo en beta.20 e intencionalmente mas angosto en alcance que el [Modo Circuito](/docs/circom/circuit-mode/).
+El modo VM se introdujo con el frontend de circom e intencionalmente es mas angosto en alcance que el [Modo Circuito](/docs/circom/circuit-mode/).
 
 ## Por Que Modo VM
 
@@ -142,8 +142,8 @@ Cosas que funcionan hoy:
 Cosas que aun no estan soportadas:
 
 - **Constant folding para template arguments** — `let N = 8; Num2Bits(N)(x)` en modo VM.
-- **Signal inputs de array** — llamar un template que toma `signal input in[n]`.
+- **Signal inputs de array** — llamar un template que toma `signal input in[n]`. Esta es una restriccion solo del modo VM atada al layout de registros del opcode `CallCircomTemplate`, no un limite de la evaluacion del testigo.
 - **Persistencia cross-process de `.achb`** — el archivo de bytecode aun no serializa handles circom ni librerias; debes re-correr `ach run` contra el fuente `.ach`, no un `.achb` pre-compilado.
 - **Carga de libreria en runtime** — el registro circom esta fijo en tiempo de compilacion; no hay forma de cargar un nuevo archivo `.circom` en runtime.
 
-Todo esto esta trackeado en [Limitaciones y Roadmap](/docs/circom/limitations/). Ninguno de estos afecta el dispatch del modo circuito, que permanece como el path principal soportado.
+Estos son limites de alcance del *dispatch* del modo VM. El evaluador de testigo subyacente es completamente general — la generacion de testigo en modo circuito ya maneja parametros de template de array y rutinas bignum multi-limb (por ejemplo, los testigos de ECDSA secp256k1 corren a traves de la VM Artik). Todo esto esta trackeado en [Limitaciones y Roadmap](/docs/circom/limitations/). Ninguno de estos afecta el dispatch del modo circuito, que permanece como el path principal soportado.
