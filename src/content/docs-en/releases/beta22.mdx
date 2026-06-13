@@ -1,0 +1,45 @@
+---
+title: "beta.22 — ECDSAVerify end-to-end"
+description: "The release where secp256k1 ECDSAVerify(64,4) — the heaviest circomlib reference circuit — compiles, generates a witness, and proves end-to-end at ~1.49M constraints, below circom."
+---
+
+Achronyme **0.1.0-beta.22** is the release where secp256k1 `ECDSAVerify(64, 4)` — the heaviest circuit in the circomlib reference set — compiles, generates a witness, and proves end-to-end. The optimized R1CS lands at **~1.49M constraints, below circom's own count** for the same circuit; the witness verifies and a Groth16 proof is produced and checked.
+
+## TL;DR
+
+- **`ECDSAVerify(64, 4)` works end-to-end.** Compile → witness → prove, all the way through, at ~1.49M optimized constraints below circom.
+- **Native Artik bignum intrinsics** (`ModInv`, `ModExp`, `Prod`, `LongDiv`) replace an interpreted Fermat modular-inverse path. The ECDSA witness walk drops from ~226s to ~64s with no change to the constraint count or verification result.
+- **An R1CS substitution soundness fix** closes a forgeable-witness hazard. Security-relevant; witnesses stay bit-identical.
+- **Peak resident memory on ECDSA-scale circuits is roughly halved** through instantiate fusion, witness-environment slot replay, fused optimization, and jemalloc.
+
+No breaking changes to the language. Bumping the workspace version is the entire upgrade.
+
+## What changed
+
+**Native bignum intrinsics in the Artik witness VM.** ECDSA witness generation previously evaluated a Fermat modular inverse through the interpreter. The Artik VM now provides native `ModInv`, `ModExp`, `Prod`, and `LongDiv` intrinsics that replace that inner loop directly. The end-to-end witness walk for `ECDSAVerify(64, 4)` drops from ~226s to ~64s, and the constraint count and verification result are unchanged.
+
+**Multi-subprogram Artik programs.** The Artik builder now emits multi-subprogram programs with cross-frame `Call`/`Return`, 2D row slices, descending and runtime-bound loops, array parameters, and field-precision bigint operations. A field-level unsigned ordered compare (`FCmpLt`) keeps signed and unsigned comparisons at full field precision. New opcodes since the previous docs: `Call`, `FIDiv`, `FIRem`, `FShr`, `FAnd`, `FPow2`, `FCmpLt`, `ArrayId`, `ArrayFromId`.
+
+**R1CS substitution soundness.** The greedy substitution path could leave eliminated wires still referenced after optimization — a forgeable-witness class. Per-cluster cycle resolution closes it fully: witnesses stay bit-identical and the optimized constraint count holds below circom.
+
+**Memory and compile-time.** Instantiate fusion, witness-environment slot replay, a fused optimizer over interner events, compile-axis amortization, and a jemalloc allocator together roughly halve peak resident memory on ECDSA-scale circuits.
+
+**Coverage and tooling.** The benchmark corpus adds the Semaphore main circuit and more circomlib templates. CI now runs on a self-hosted runner with a pinned toolchain.
+
+## Why it matters
+
+`ECDSAVerify(64, 4)` is the integration probe for the whole circom frontend — it forces every heavy path at once: bignum witness computation, multi-subprogram dispatch, large-scale R1CS optimization, and proving at scale. Compiling and proving it end-to-end, *and* landing below circom's constraint count, is the strongest single signal that the pipeline holds at production-circuit scale.
+
+## Known limitations
+
+- **Trusted setup is development-only.** Proof setup uses a local CSPRNG (`OsRng`), not a production ceremony. Ingesting external Powers-of-Tau is the path to production and is not yet wired.
+- **Warm-prove proving-key load** does a checked deserialization that can take ~100s on ECDSA-scale circuits.
+- **Witness variable bit-ops** (`<<`, `|`, `^`, two-variable `&`) run at u32 width by design — SHA-256 and BLAKE2s rely on it. This is a width/precision tradeoff, not a soundness issue; constant shifts/masks and ordered comparisons run at full field precision.
+- `.achb`/`.artik` bytecode and inspector JSON are internal formats and may change between releases.
+
+## Where to go next
+
+- [Artik Witness VM](/docs/architecture/artik-vm/) — the witness VM that gained the native bignum intrinsics.
+- [Backends](/docs/architecture/backends/) — where the R1CS substitution and soundness fix live.
+- [Circom Interop Overview](/docs/circom/overview/) — compiling circomlib templates like the ECDSA reference.
+- [Changelog](/docs/releases/changelog/) — full release notes.

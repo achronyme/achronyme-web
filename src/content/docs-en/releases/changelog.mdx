@@ -5,6 +5,52 @@ description: Release history for Achronyme.
 
 All notable changes to Achronyme are documented here. Each release bumps every workspace crate to the same version.
 
+## 0.1.0-beta.22 — 2026-06-12
+
+**secp256k1 `ECDSAVerify(64, 4)` — the heaviest circomlib reference circuit — now compiles, generates a witness, and proves end-to-end.** The optimized R1CS lands at ~1.49M constraints, below circom's own count for the same circuit; the witness verifies and a Groth16 proof is produced and checked.
+
+### New: native Artik bignum intrinsics
+
+ECDSA witness generation used to lean on an interpreted Fermat modular-inverse path. The Artik VM now ships native bignum intrinsics — `ModInv`, `ModExp`, `Prod`, and `LongDiv` — that replace the interpreted inner loop. The `ECDSAVerify(64, 4)` witness walk drops from ~226s to ~64s end-to-end with the constraint count and verification result unchanged.
+
+### New: multi-subprogram Artik VM
+
+The Artik builder now emits multi-subprogram programs with cross-frame `Call`/`Return`, 2D row slices, descending and runtime-bound loops, array parameters, and field-precision bigint ops. A field-level unsigned ordered compare (`FCmpLt`) was added so signed/unsigned comparisons stay at full field precision. New opcodes since the previous docs: `Call`, `FIDiv`, `FIRem`, `FShr`, `FAnd`, `FPow2`, `FCmpLt`, `ArrayId`, `ArrayFromId`.
+
+### Security: R1CS substitution soundness fix
+
+The greedy R1CS substitution path could leave eliminated wires still referenced after optimization — a forgeable-witness hazard. This is fully closed via per-cluster cycle resolution: witnesses stay bit-identical and the optimized constraint count holds below circom. This is a security-relevant correctness fix, not a performance change.
+
+### Performance
+
+- **Instantiate fusion**, **witness-environment slot replay**, and a **fused optimizer over interner events** cut redundant per-instance work along the lean prove path.
+- **Compile-axis amortization** plus a **jemalloc** allocator reduce fragmentation and repeated walks.
+- Peak resident memory on ECDSA-scale circuits is roughly halved.
+
+### New: benchmark coverage
+
+The benchmark corpus adds the **Semaphore** main circuit and more circomlib templates alongside the ECDSA reference.
+
+### Tooling
+
+- CI now runs on a **self-hosted runner with a pinned toolchain**, eliminating clippy drift between releases.
+
+### Known limitations
+
+- Trusted setup is **development-only**: proof setup uses a local CSPRNG (`OsRng`), not a production ceremony. Ingesting external Powers-of-Tau is the path to production and is not yet wired.
+- Warm-prove proving-key load does a checked deserialization that can take ~100s on ECDSA-scale circuits.
+- Witness variable bit-ops (`<<`, `|`, `^`, two-variable `&`) run at u32 width by design — SHA-256 and BLAKE2s rely on it. This is a width/precision tradeoff, **not** a soundness issue; constant shifts/masks and ordered comparisons run at full field precision.
+- `.achb`/`.artik` bytecode and inspector JSON are internal formats and may change between releases.
+
+### Verification
+
+- `ECDSAVerify(64, 4)` compiles, generates a verifying witness, and produces a Groth16 proof that verifies on BN254.
+- Optimized R1CS ~1.49M constraints, below circom for the same circuit.
+- Workspace test gate 4,400+ passing across 19 crates.
+- Witness output bit-identical before and after the substitution soundness fix.
+
+---
+
 ## 0.1.0-beta.21 — 2026-05-05
 
 **SHA-256 from circomlib now compiles end-to-end through `.ach prove` blocks for every `N` in `Sha256(N)`.** A focused fix release that closes two distinct bugs sitting between the playground and circomlib's heavy templates.

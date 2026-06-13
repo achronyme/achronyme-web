@@ -1,0 +1,45 @@
+---
+title: "beta.22 — ECDSAVerify de extremo a extremo"
+description: "El release donde secp256k1 ECDSAVerify(64,4) — el circuito de referencia mas pesado de circomlib — compila, genera testigo y prueba de extremo a extremo con ~1.49M de constraints, por debajo de circom."
+---
+
+Achronyme **0.1.0-beta.22** es el release donde secp256k1 `ECDSAVerify(64, 4)` — el circuito más pesado del set de referencia de circomlib — compila, genera testigo y prueba de extremo a extremo. El R1CS optimizado llega a **~1.49M de constraints, por debajo del conteo del propio circom** para el mismo circuito; el testigo verifica y se produce y comprueba una prueba Groth16.
+
+## Resumen rápido
+
+- **`ECDSAVerify(64, 4)` funciona de extremo a extremo.** Compila → testigo → prueba, todo el camino, con ~1.49M de constraints optimizados por debajo de circom.
+- **Intrínsecos bignum nativos en Artik** (`ModInv`, `ModExp`, `Prod`, `LongDiv`) reemplazan un camino interpretado de inverso modular de Fermat. El walk de testigo de ECDSA baja de ~226s a ~64s sin cambios en el conteo de constraints ni en el resultado de verificación.
+- **Un fix de soundness en la sustitución R1CS** cierra un peligro de testigo falsificable. Relevante a seguridad; los testigos quedan byte-idénticos.
+- **La memoria residente pico en circuitos a escala ECDSA se reduce aproximadamente a la mitad** vía fusión de instantiate, replay de slots del entorno de testigo, optimización fusionada y jemalloc.
+
+Sin cambios rompedores en el lenguaje. Subir la versión del workspace es toda la actualización.
+
+## Qué cambió
+
+**Intrínsecos bignum nativos en la VM de testigos Artik.** La generación de testigo de ECDSA antes evaluaba un inverso modular de Fermat a través del intérprete. La VM Artik ahora provee intrínsecos nativos `ModInv`, `ModExp`, `Prod` y `LongDiv` que reemplazan ese loop interno directamente. El walk de testigo de extremo a extremo de `ECDSAVerify(64, 4)` baja de ~226s a ~64s, y el conteo de constraints y el resultado de verificación quedan sin cambios.
+
+**Programas Artik con múltiples subprogramas.** El builder de Artik ahora emite programas con múltiples subprogramas con `Call`/`Return` entre frames, slices de fila 2D, loops descendentes y con cota en runtime, parámetros de array y operaciones bignum con precisión de campo. Una comparación ordenada sin signo a nivel de campo (`FCmpLt`) mantiene las comparaciones con y sin signo a precisión completa de campo. Nuevos opcodes desde los docs anteriores: `Call`, `FIDiv`, `FIRem`, `FShr`, `FAnd`, `FPow2`, `FCmpLt`, `ArrayId`, `ArrayFromId`.
+
+**Soundness de la sustitución R1CS.** El camino greedy de sustitución podía dejar wires eliminados aún referenciados tras la optimización — una clase de testigo falsificable. La resolución de ciclos por cluster la cierra por completo: los testigos quedan byte-idénticos y el conteo de constraints optimizado se mantiene por debajo de circom.
+
+**Memoria y tiempo de compilación.** La fusión de instantiate, el replay de slots del entorno de testigo, un optimizador fusionado sobre eventos del interner, la amortización del eje de compilación y un allocator jemalloc juntos reducen aproximadamente a la mitad la memoria residente pico en circuitos a escala ECDSA.
+
+**Cobertura y herramientas.** El corpus de benchmarks añade el circuito principal de Semaphore y más templates de circomlib. El CI ahora corre en un runner self-hosted con toolchain pineado.
+
+## Por qué importa
+
+`ECDSAVerify(64, 4)` es la prueba de integración de todo el frontend de circom — fuerza cada camino pesado a la vez: cómputo de testigo bignum, dispatch entre múltiples subprogramas, optimización R1CS a gran escala y proving a escala. Compilarlo y probarlo de extremo a extremo, *y* además quedar por debajo del conteo de constraints de circom, es la señal individual más fuerte de que el pipeline aguanta a escala de circuito de producción.
+
+## Limitaciones conocidas
+
+- **El trusted setup es solo para desarrollo.** El setup de la prueba usa un CSPRNG local (`OsRng`), no una ceremonia de producción. Ingerir Powers-of-Tau externos es el camino a producción y aún no está conectado.
+- **La carga de la proving key en warm-prove** hace una deserialización chequeada que puede tomar ~100s en circuitos a escala ECDSA.
+- **Las operaciones de bits sobre variables de testigo** (`<<`, `|`, `^`, `&` de dos variables) corren a ancho u32 por diseño — SHA-256 y BLAKE2s dependen de ello. Es un tradeoff de ancho/precisión, no un problema de soundness; los shifts/masks constantes y las comparaciones ordenadas corren a precisión completa de campo.
+- Los bytecodes `.achb`/`.artik` y el JSON del inspector son formatos internos y pueden cambiar entre releases.
+
+## Adónde ir después
+
+- [VM de Testigos Artik](/es/docs/architecture/artik-vm/) — la VM de testigos que ganó los intrínsecos bignum nativos.
+- [Backends](/es/docs/architecture/backends/) — donde vive la sustitución R1CS y el fix de soundness.
+- [Resumen de Interop con Circom](/es/docs/circom/overview/) — compilando templates de circomlib como la referencia de ECDSA.
+- [Changelog](/es/docs/releases/changelog/) — notas de release completas.

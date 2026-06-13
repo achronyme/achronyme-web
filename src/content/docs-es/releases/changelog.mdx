@@ -5,6 +5,52 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
+## 0.1.0-beta.22 — 2026-06-12
+
+**secp256k1 `ECDSAVerify(64, 4)` — el circuito de referencia más pesado de circomlib — ahora compila, genera testigo y prueba de extremo a extremo.** El R1CS optimizado llega a ~1.49M de constraints, por debajo del conteo del propio circom para el mismo circuito; el testigo verifica y se produce y comprueba una prueba Groth16.
+
+### Nuevo: intrínsecos bignum nativos en Artik
+
+La generación de testigo de ECDSA antes dependía de un camino interpretado de inverso modular de Fermat. La VM Artik ahora incluye intrínsecos bignum nativos — `ModInv`, `ModExp`, `Prod` y `LongDiv` — que reemplazan el loop interno interpretado. El walk de testigo de `ECDSAVerify(64, 4)` baja de ~226s a ~64s de extremo a extremo, sin cambios en el conteo de constraints ni en el resultado de verificación.
+
+### Nuevo: VM Artik con múltiples subprogramas
+
+El builder de Artik ahora emite programas con múltiples subprogramas con `Call`/`Return` entre frames, slices de fila 2D, loops descendentes y con cota en runtime, parámetros de array y operaciones bignum con precisión de campo. Se añadió una comparación ordenada sin signo a nivel de campo (`FCmpLt`) para que las comparaciones con y sin signo se queden a precisión completa de campo. Nuevos opcodes desde los docs anteriores: `Call`, `FIDiv`, `FIRem`, `FShr`, `FAnd`, `FPow2`, `FCmpLt`, `ArrayId`, `ArrayFromId`.
+
+### Seguridad: fix de soundness en la sustitución R1CS
+
+El camino greedy de sustitución R1CS podía dejar wires eliminados aún referenciados tras la optimización — un peligro de testigo falsificable. Esto se cierra por completo vía resolución de ciclos por cluster: los testigos quedan byte-idénticos y el conteo de constraints optimizado se mantiene por debajo de circom. Es un fix de correctitud relevante a seguridad, no un cambio de rendimiento.
+
+### Rendimiento
+
+- **Fusión de instantiate**, **replay de slots del entorno de testigo** y un **optimizador fusionado sobre eventos del interner** recortan trabajo redundante por instancia en el camino lean de prove.
+- **Amortización del eje de compilación** más un allocator **jemalloc** reducen la fragmentación y los walks repetidos.
+- La memoria residente pico en circuitos a escala ECDSA se reduce aproximadamente a la mitad.
+
+### Nuevo: cobertura de benchmarks
+
+El corpus de benchmarks añade el circuito principal de **Semaphore** y más templates de circomlib junto a la referencia de ECDSA.
+
+### Herramientas
+
+- El CI ahora corre en un **runner self-hosted con toolchain pineado**, eliminando el drift de clippy entre releases.
+
+### Limitaciones conocidas
+
+- El trusted setup es **solo para desarrollo**: el setup de la prueba usa un CSPRNG local (`OsRng`), no una ceremonia de producción. Ingerir Powers-of-Tau externos es el camino a producción y aún no está conectado.
+- La carga de la proving key en warm-prove hace una deserialización chequeada que puede tomar ~100s en circuitos a escala ECDSA.
+- Las operaciones de bits sobre variables de testigo (`<<`, `|`, `^`, `&` de dos variables) corren a ancho u32 por diseño — SHA-256 y BLAKE2s dependen de ello. Es un tradeoff de ancho/precisión, **no** un problema de soundness; los shifts/masks constantes y las comparaciones ordenadas corren a precisión completa de campo.
+- Los bytecodes `.achb`/`.artik` y el JSON del inspector son formatos internos y pueden cambiar entre releases.
+
+### Verificación
+
+- `ECDSAVerify(64, 4)` compila, genera un testigo que verifica y produce una prueba Groth16 que verifica en BN254.
+- R1CS optimizado ~1.49M de constraints, por debajo de circom para el mismo circuito.
+- Gate de tests del workspace 4,400+ pasando a través de 19 crates.
+- Salida de testigo byte-idéntica antes y después del fix de soundness en la sustitución.
+
+---
+
 ## 0.1.0-beta.21 — 2026-05-05
 
 **SHA-256 desde circomlib ahora compila de extremo a extremo a través de bloques `.ach prove` para todo `N` en `Sha256(N)`.** Un release de fixes enfocado que cierra dos bugs distintos entre el playground y los templates pesados de circomlib.
