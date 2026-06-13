@@ -83,6 +83,8 @@ Dispatch to the [Artik witness VM](./artik-vm). Emitted whenever the IR carries 
 
 At witness-gen time, the generator decodes `program_bytes`, wires `input_vars` into Artik's read-only signal slice, and runs the program. Each value Artik writes via `WriteWitness` lands in one of the `outputs` wires. See [Artik Witness VM](./artik-vm) for the bytecode format and lift surface.
 
+When a lifted body matches a known multi-limb bignum routine, Artik takes a **native intrinsic fast path** (`ModInv`, `ModExp`, `Prod`, `LongDiv`) instead of interpreting it limb-by-limb — replacing an interpreted Fermat modular inverse cut the `ECDSAVerify(64,4)` witness walk from roughly 226 s to 64 s end-to-end with no change to constraint count or verification. With this path, **secp256k1 ECDSA witness generation now works end-to-end**: the heaviest circomlib reference circuit lifts, generates a witness, and proves through Groth16 with the witness verifying.
+
 ## WitnessGenerator
 
 ```rust

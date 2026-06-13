@@ -159,6 +159,10 @@ Un pase hacia adelante O(n) que calcula el conjunto de variables SSA probadas co
 - `Or(a, b)` → resultado es booleano si ambos son booleanos
 - `Mux(c, t, f)` → resultado es booleano si tanto `t` como `f` son booleanos
 
+### Eliminación a nivel de R1CS (más allá de los pases de IR)
+
+Los tres pases anteriores operan sobre el IR SSA. Más allá de ellos, el backend R1CS ejecuta optimización a **nivel de restricciones** (O1/O2): eliminación lineal y sustitución que pliegan cables redundantes después de la emisión de restricciones. Este es el paso crítico para la solidez — las sustituciones se resuelven con **resolución de ciclos por clúster** (SCC de Tarjan + RREF, incluyendo auto-ciclos) para que ningún cable eliminado sobreviva como referencia colgante en una restricción superviviente (un peligro de testigo falsificable). Los testigos se mantienen bit-idénticos y el conteo optimizado para `ECDSAVerify(64,4)` se sostiene en ~1.49M, por debajo de circom. Ver [Backends](./backends) para los detalles.
+
 ## Análisis de Contaminación (`taint`)
 
 Un pase de análisis adicional (no parte de `optimize()`) que se ejecuta como diagnóstico:

@@ -11,7 +11,7 @@ Artik is paired with [Akron](./akron-vm), the general-purpose bytecode VM. Unlik
 
 Before Artik, any non-trivial function body with signal arguments surfaced as `E212 — function body not inlineable with runtime signal arguments`. Circom solves the same problem with **witness calculators** executed at prove time; SHA-256, Pedersen, and EdDSA-family primitives all need this.
 
-Artik lifts those function bodies to a compact bytecode, emits an `Instruction::WitnessCall` in the IR, and executes the bytecode at R1CS witness-gen time against the live witness vector.
+Artik lifts those function bodies to a compact bytecode, emits an `Instruction::WitnessCall` in the IR, and executes the bytecode at R1CS witness-gen time against the live witness vector. The most demanding workload it now carries end-to-end is **`ECDSAVerify(64,4)`** — the heaviest circomlib reference circuit (secp256k1 ECDSA) — which lifts, generates a witness, and proves through Groth16 with the witness verifying (optimized R1CS ~1.49M constraints, below circom's own count for the same circuit).
 
 ## Architecture
 
@@ -94,7 +94,7 @@ Integer ops are bit-exact with wrapping semantics; width-specific mask is applie
 
 ## Opcodes
 
-~25 opcodes, grouped by category. Encoding is `<opcode tag>(1 byte) + operands`.
+32 opcodes, grouped by category. Encoding is `<opcode tag>(1 byte) + operands`.
 
 ### Control flow
 
@@ -104,6 +104,9 @@ Integer ops are bit-exact with wrapping semantics; width-specific mask is applie
 | 0x02 | `JumpIf` | cond: Reg, target: u32 |
 | 0x03 | `Return` | - |
 | 0x04 | `Trap` | code: u16 |
+| 0x05 | `Call` | func_id: u32, args: Vec&lt;Reg&gt;, rets: Vec&lt;Reg&gt; |
+
+`Call` invokes another subprogram by `func_id`: argument registers are copied cell-for-cell into the callee's parameter registers and return values land back in the caller's `rets`. Array cells carry a handle into the program-global array store, so array arguments and returns cross frames with no backing copy. This is what makes Artik a **multi-subprogram** VM — a lifted Circom body can call sibling functions instead of forcing everything to inline.
 
 ### Constants & signals
 
@@ -125,6 +128,14 @@ Signals are read-only; witness slots are the sole output channel.
 | 0x23 | `FDiv` | dst, a, b |
 | 0x24 | `FInv` | dst, src |
 | 0x25 | `FEq` | dst, a, b (dst is U8: 0 or 1) |
+| 0x26 | `FIDiv` | dst, a, b (field-precision integer quotient, traps on b == 0) |
+| 0x27 | `FIRem` | dst, a, b (field-precision integer remainder, traps on b == 0) |
+| 0x28 | `FShr` | dst, src, amount: u32 (field-precision right shift) |
+| 0x29 | `FAnd` | dst, src, mask_const_id: u32 (field-precision bitmask) |
+| 0x2A | `FPow2` | dst, amount: Reg (computes `1 << amount` at full field width) |
+| 0x2B | `FCmpLt` | dst, a, b (field-precision unsigned ordered compare, dst is U8) |
+
+`FIDiv`, `FIRem`, `FShr`, `FAnd`, and `FPow2` operate at full field precision rather than demoting to a fixed integer width, so bignum-style limb arithmetic stays exact. `FCmpLt` is the field-level unsigned ordered comparison that the secp256k1 long-division and modular-reduction bodies depend on — an ordered `<` that holds across the full 256-bit field value, not a U64-truncated compare.
 
 ### Integer ops
 
@@ -152,8 +163,23 @@ Signals are read-only; witness slots are the sole output channel.
 | 0x50 | `AllocArray` | dst, len: u32, elem: ElemT |
 | 0x51 | `LoadArr` | dst, arr, idx |
 | 0x52 | `StoreArr` | arr, idx, val |
+| 0x53 | `ArrayId` | dst, arr (read an array's store handle into a register) |
+| 0x54 | `ArrayFromId` | dst, id, elem: ElemT (rebind a register-carried handle as a typed array) |
 
-Arrays live in a bump-allocated `Vec` managed by the executor — no GC.
+Arrays live in a bump-allocated `Vec` managed by the executor — no GC. `ArrayId` / `ArrayFromId` pass array handles through scalar registers, which is how arrays travel across `Call` frames and how 2D row slices are addressed without copying the backing cells.
+
+## Native bignum intrinsics
+
+A handful of multi-limb bignum routines (secp256k1's Fermat-style modular inverse, modular exponentiation, schoolbook product, and long division) are too slow to interpret limb-by-limb. The lift **fingerprints** these function bodies and, on a match, executes them natively as `ModInv`, `ModExp`, `Prod`, or `LongDiv` instead of walking the interpreted bytecode:
+
+| Intrinsic | Recognized body |
+|-----------|-----------------|
+| `ModInv` | Fermat modular inverse (`a^(p−2) mod p`) |
+| `ModExp` | square-and-multiply modular exponentiation |
+| `Prod` | schoolbook multi-limb product |
+| `LongDiv` | schoolbook long division (quotient + remainder) |
+
+Each recognized body still falls back to the interpreted path if its fingerprint does not match exactly, so soundness is unchanged. The native path is what dropped the `ECDSAVerify(64,4)` witness walk from roughly 226 s to 64 s end-to-end — the interpreted Fermat inversion was 98.6% of the walk — with constraint count and verification identical.
 
 ## Static & runtime limits
 
@@ -221,17 +247,23 @@ See [Witness Generation](./witness-generation) for the full trace replay model.
 - **BN-family check via `F::PRIME_ID`, not `type_name`.** Cleaner and catches Goldilocks as unsupported rather than silently accepting.
 - **No heap, no GC.** Arrays are bump-allocated into a single `Vec` owned by the executor. A program is one-shot: it runs once per proof, then drops.
 
-## Current limits
+## Recently closed gaps
 
-- **Array parameters** — biggest remaining gap. `sha256compression(hin[256], inp[512])` bails to E212 because the lift maps each param to a single `ReadSignal`. Needs call-site dimension inference + N-signal allocation + array binding.
-- **Multi-dim arrays** (`var M[t][t]`) — current support is 1D only.
-- **Runtime loop bounds** — loops with signal-dependent end are not unrolled; Artik's `JumpIf` is not yet used by the lift.
+The three biggest historical lift gaps are all closed — they are exactly what enabled the secp256k1 ECDSA witness closure:
+
+- **Array parameters** — function bodies with array params (`sha256compression(hin[256], inp[512])`, secp256k1 helpers) lift via call-site dimension inference + array binding, no longer bailing to E212.
+- **Multi-dimensional arrays** — 2D row slices (`var M[t][t]`, `pubkey[2][k]`) are addressed and passed through array handles, not just 1D.
+- **Runtime loop bounds** — loops with a signal-dependent or descending end are lifted using Artik's `JumpIf` instead of requiring a compile-time unroll.
+
+## Remaining limits
+
 - **Plonkish backend** — returns a clean error on `WitnessCall`. R1CS is the sole proving path for Artik this release.
 
 ## E2E coverage
 
 | Case | Path |
 |------|------|
+| `ECDSAVerify(64,4)` (secp256k1) | lift -> R1CS -> witness -> Groth16 (verified, ~1.49M constraints, below circom) |
 | SHA-256 `sigma0` | lift -> R1CS -> witness (end-to-end verified) |
 | Pedersen_old(8) | field-aware BigVal + lift -> R1CS |
 | EdDSaMiMCVerifier | lift + R1CS with `enabled=0` |

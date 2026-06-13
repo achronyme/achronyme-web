@@ -70,6 +70,12 @@ The backend maps each `SsaVar` to a `LinearCombination` (sparse `Vec<(Variable, 
 
 If a variable is in the `proven_boolean` set (from the `bool_prop` pass), the backend skips its boolean enforcement constraint. This saves 1 constraint per known-boolean variable used in `Mux`, `And`, `Or`, or `Not`.
 
+### R1CS Substitution Soundness
+
+After IR-level optimization, an R1CS-level pass performs linear elimination and substitution to shrink the constraint count (this is what brings `ECDSAVerify(64,4)` to ~1.49M constraints, below circom's own count). The greedy eliminator could previously leave a *surviving* constraint that still referenced a wire the pass had already eliminated — a forgeable-witness hazard, because the eliminated wire was no longer pinned by any constraint.
+
+This is now closed via **per-cluster cycle resolution**: substitutions are resolved cluster-by-cluster (Tarjan SCC + RREF, including self-loops) on the un-composed substitution map, then the driver flattens the closure so no eliminated wire survives as a dangling reference. Generated witnesses are bit-identical to the pre-fix path and the optimized constraint count still holds below circom — the fix is purely a soundness repair, not a count regression.
+
 ## Plonkish Backend
 
 **File:** `zkc/src/plonkish_backend/`

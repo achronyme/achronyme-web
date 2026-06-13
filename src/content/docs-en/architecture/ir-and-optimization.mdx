@@ -159,6 +159,10 @@ A forward O(n) pass that computes the set of SSA variables proven to be boolean 
 - `Or(a, b)` → result is boolean if both are boolean
 - `Mux(c, t, f)` → result is boolean if both `t` and `f` are boolean
 
+### R1CS-level elimination (beyond the IR passes)
+
+The three passes above operate on the SSA IR. Beyond them, the R1CS backend runs **constraint-level** optimization (O1/O2): linear elimination and substitution that fold away redundant wires after constraint emission. This is the soundness-critical step — substitutions are resolved with **per-cluster cycle resolution** (Tarjan SCC + RREF, including self-loops) so no eliminated wire survives as a dangling reference in a surviving constraint (a forgeable-witness hazard). Witnesses stay bit-identical and the optimized count for `ECDSAVerify(64,4)` holds at ~1.49M, below circom. See [Backends](./backends) for details.
+
 ## Taint Analysis (`taint`)
 
 An additional analysis pass (not part of `optimize()`) that runs as a diagnostic:

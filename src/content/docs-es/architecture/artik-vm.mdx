@@ -11,7 +11,7 @@ Artik está emparejado con [Akron](./akron-vm), la VM de bytecode de propósito 
 
 Antes de Artik, cualquier cuerpo de función no trivial con argumentos de señal surgía como `E212 — function body not inlineable with runtime signal arguments`. Circom resuelve el mismo problema con **calculadoras de testigos** ejecutadas en tiempo de prueba; SHA-256, Pedersen y primitivas de la familia EdDSA lo necesitan.
 
-Artik compila esos cuerpos de función a un bytecode compacto, emite una `Instruction::WitnessCall` en el IR, y ejecuta el bytecode en tiempo de generación de testigos R1CS contra el vector de testigos vivo.
+Artik compila esos cuerpos de función a un bytecode compacto, emite una `Instruction::WitnessCall` en el IR, y ejecuta el bytecode en tiempo de generación de testigos R1CS contra el vector de testigos vivo. La carga de trabajo más exigente que ahora lleva end-to-end es **`ECDSAVerify(64,4)`** — el circuito de referencia de circomlib más pesado (ECDSA secp256k1) — que se liftea, genera un testigo, y prueba a través de Groth16 con el testigo verificando (R1CS optimizado ~1.49M restricciones, por debajo del propio conteo de circom para el mismo circuito).
 
 ## Arquitectura
 
@@ -94,7 +94,7 @@ Las operaciones enteras son bit-exactas con semántica de wrapping; se aplica un
 
 ## Opcodes
 
-~25 opcodes, agrupados por categoría. La codificación es `<opcode tag>(1 byte) + operandos`.
+32 opcodes, agrupados por categoría. La codificación es `<opcode tag>(1 byte) + operandos`.
 
 ### Flujo de Control
 
@@ -104,6 +104,9 @@ Las operaciones enteras son bit-exactas con semántica de wrapping; se aplica un
 | 0x02 | `JumpIf` | cond: Reg, target: u32 |
 | 0x03 | `Return` | - |
 | 0x04 | `Trap` | code: u16 |
+| 0x05 | `Call` | func_id: u32, args: Vec&lt;Reg&gt;, rets: Vec&lt;Reg&gt; |
+
+`Call` invoca otro subprograma por `func_id`: los registros de argumento se copian celda por celda en los registros de parámetro del callee y los valores de retorno regresan a los `rets` del llamador. Las celdas de array cargan un handle hacia el almacén global de arrays del programa, así que los argumentos y retornos de array cruzan los frames sin copia de respaldo. Esto es lo que hace a Artik una VM **multi-subprograma** — un cuerpo Circom lifteado puede llamar a funciones hermanas en vez de forzar que todo se inlinee.
 
 ### Constantes y Señales
 
@@ -125,6 +128,14 @@ Las señales son de solo lectura; los slots de testigo son el único canal de sa
 | 0x23 | `FDiv` | dst, a, b |
 | 0x24 | `FInv` | dst, src |
 | 0x25 | `FEq` | dst, a, b (dst es U8: 0 o 1) |
+| 0x26 | `FIDiv` | dst, a, b (cociente entero a precisión de field, trapea si b == 0) |
+| 0x27 | `FIRem` | dst, a, b (residuo entero a precisión de field, trapea si b == 0) |
+| 0x28 | `FShr` | dst, src, amount: u32 (desplazamiento a la derecha a precisión de field) |
+| 0x29 | `FAnd` | dst, src, mask_const_id: u32 (máscara de bits a precisión de field) |
+| 0x2A | `FPow2` | dst, amount: Reg (calcula `1 << amount` al ancho completo del field) |
+| 0x2B | `FCmpLt` | dst, a, b (comparación ordenada sin signo a precisión de field, dst es U8) |
+
+`FIDiv`, `FIRem`, `FShr`, `FAnd` y `FPow2` operan a precisión completa de field en vez de demotar a un ancho entero fijo, así que la aritmética de limbs estilo bignum se mantiene exacta. `FCmpLt` es la comparación ordenada sin signo a nivel de field de la que dependen los cuerpos de división larga y reducción modular de secp256k1 — un `<` ordenado que se sostiene sobre el valor de field completo de 256 bits, no una comparación truncada a U64.
 
 ### Operaciones Enteras
 
@@ -152,8 +163,23 @@ Las señales son de solo lectura; los slots de testigo son el único canal de sa
 | 0x50 | `AllocArray` | dst, len: u32, elem: ElemT |
 | 0x51 | `LoadArr` | dst, arr, idx |
 | 0x52 | `StoreArr` | arr, idx, val |
+| 0x53 | `ArrayId` | dst, arr (lee el handle de almacén de un array en un registro) |
+| 0x54 | `ArrayFromId` | dst, id, elem: ElemT (re-vincula un handle cargado en registro como array tipado) |
 
-Los arrays viven en un `Vec` bump-allocated gestionado por el ejecutor — sin GC.
+Los arrays viven en un `Vec` bump-allocated gestionado por el ejecutor — sin GC. `ArrayId` / `ArrayFromId` pasan handles de array a través de registros escalares, que es como los arrays viajan entre frames de `Call` y como se direccionan slices de fila 2D sin copiar las celdas de respaldo.
+
+## Intrínsecos Nativos de Bignum
+
+Un puñado de rutinas bignum multi-limb (el inverso modular estilo Fermat de secp256k1, la exponenciación modular, el producto escolar y la división larga) son demasiado lentas para interpretar limb por limb. El lift toma una **huella** (fingerprint) de estos cuerpos de función y, al coincidir, los ejecuta nativamente como `ModInv`, `ModExp`, `Prod` o `LongDiv` en vez de recorrer el bytecode interpretado:
+
+| Intrínseco | Cuerpo reconocido |
+|------------|-------------------|
+| `ModInv` | inverso modular de Fermat (`a^(p−2) mod p`) |
+| `ModExp` | exponenciación modular cuadrar-y-multiplicar |
+| `Prod` | producto multi-limb escolar |
+| `LongDiv` | división larga escolar (cociente + residuo) |
+
+Cada cuerpo reconocido aún recae en el camino interpretado si su huella no coincide exactamente, así que la solidez no cambia. El camino nativo es lo que bajó el recorrido de testigos de `ECDSAVerify(64,4)` de aproximadamente 226 s a 64 s end-to-end — la inversión de Fermat interpretada era el 98.6% del recorrido — con conteo de restricciones y verificación idénticos.
 
 ## Límites Estáticos y de Runtime
 
@@ -215,23 +241,29 @@ Ver [Generación de Testigos](./witness-generation) para el modelo completo de r
 
 ## Decisiones de Diseño
 
-- **Canal lateral vía `Instruction::WitnessCall`, no una tabla lateral separada en `IrProgram`.** Mantiene los programas de testigo en orden de instrucción para que el loop de witness-gen del prover naturalmente los intercale entre otros replays de `WitnessOp`. Costo: ~8 sitios de match exhaustivo extendidos en `ir` + `compiler`.
+- **Canal lateral vía `Instruction::WitnessCall`, no una tabla lateral separada en `IrProgram`.** Mantiene los programas de testigo en orden de instrucción para que el loop de witness-gen del prover naturalmente los intercale entre otros replays de `WitnessOp`. Costo: ~8 sitios de match exhaustivo extendidos en `ir` + `zkc`.
 - **Salida primaria = `outputs[0]`, extras vía `extra_result_vars`.** Los lifts que retornan array exponen slots de testigo secundarios así. Invariante no-vacío impuesto por el lift.
 - **Salidas públicas ganan sobre cables de testigo frescos.** Instantiate reutiliza `output_pub_vars[name]` cuando el nombre de binding coincide con una señal de salida pública, así Artik escribe directamente en el cable de salida pública.
 - **Chequeo de familia BN vía `F::PRIME_ID`, no `type_name`.** Más limpio y captura Goldilocks como no soportado en vez de aceptarlo silenciosamente.
 - **Sin heap, sin GC.** Los arrays son bump-allocated en un solo `Vec` poseído por el ejecutor. Un programa es de un solo uso: corre una vez por prueba, luego se descarta.
 
-## Límites Actuales
+## Gaps recientemente cerrados
 
-- **Parámetros array** — el mayor gap restante. `sha256compression(hin[256], inp[512])` baila a E212 porque el lift mapea cada param a un solo `ReadSignal`. Necesita inferencia de dimensión del call-site + alocación de N señales + binding de array.
-- **Arrays multi-dim** (`var M[t][t]`) — soporte actual solo 1D.
-- **Bounds de loop en runtime** — loops con end dependiente de señal no se desenrollan; el `JumpIf` de Artik aún no lo usa el lift.
+Los tres gaps históricos más grandes del lift están todos cerrados — son exactamente lo que habilitó el cierre del testigo de ECDSA secp256k1:
+
+- **Parámetros array** — los cuerpos de función con params array (`sha256compression(hin[256], inp[512])`, helpers de secp256k1) se liftean vía inferencia de dimensión del call-site + binding de array, ya no bailan a E212.
+- **Arrays multidimensionales** — los slices de fila 2D (`var M[t][t]`, `pubkey[2][k]`) se direccionan y pasan mediante handles de array, no solo 1D.
+- **Bounds de loop en runtime** — los loops con un end dependiente de señal o descendente se liftean usando el `JumpIf` de Artik en vez de requerir un desenrollado en tiempo de compilación.
+
+## Límites Restantes
+
 - **Backend Plonkish** — retorna error limpio en `WitnessCall`. R1CS es el único camino de prueba para Artik en este release.
 
 ## Cobertura E2E
 
 | Caso | Camino |
 |------|--------|
+| `ECDSAVerify(64,4)` (secp256k1) | lift -> R1CS -> witness -> Groth16 (verificado, ~1.49M restricciones, por debajo de circom) |
 | SHA-256 `sigma0` | lift -> R1CS -> witness (verificado end-to-end) |
 | Pedersen_old(8) | BigVal field-aware + lift -> R1CS |
 | EdDSaMiMCVerifier | lift + R1CS con `enabled=0` |

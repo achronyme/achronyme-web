@@ -70,6 +70,12 @@ El backend mapea cada `SsaVar` a una `LinearCombination` (sparse `Vec<(Variable,
 
 Si una variable está en el conjunto `proven_boolean` (del pase `bool_prop`), el backend omite su restricción de verificación booleana. Esto ahorra 1 restricción por variable booleana conocida usada en `Mux`, `And`, `Or` o `Not`.
 
+### Solidez de la Sustitución R1CS
+
+Después de la optimización a nivel de IR, un pase a nivel de R1CS realiza eliminación lineal y sustitución para reducir el conteo de restricciones (esto es lo que lleva `ECDSAVerify(64,4)` a ~1.49M restricciones, por debajo del propio conteo de circom). El eliminador greedy podía dejar previamente una restricción *superviviente* que aún referenciaba un cable que el pase ya había eliminado — un peligro de testigo falsificable, porque el cable eliminado ya no estaba fijado por ninguna restricción.
+
+Esto ahora se cierra vía **resolución de ciclos por clúster**: las sustituciones se resuelven clúster por clúster (SCC de Tarjan + RREF, incluyendo auto-ciclos) sobre el mapa de sustitución sin componer, luego el driver aplana la clausura para que ningún cable eliminado sobreviva como referencia colgante. Los testigos generados son bit-idénticos al camino previo a la corrección y el conteo de restricciones optimizado se mantiene por debajo de circom — la corrección es puramente una reparación de solidez, no una regresión de conteo.
+
 ## Backend Plonkish
 
 **Archivo:** `zkc/src/plonkish_backend/`
