@@ -180,15 +180,15 @@ Each prove block compiles and proves independently.
 
 ## Running with Proof Generation
 
-To generate actual Groth16 proofs, provide a Powers of Tau file:
+`ach run` generates real Groth16 proofs natively — no Powers of Tau file or extra flags required:
 
 ```bash
-ach run my_program.ach --ptau pot12_final.ptau
+ach run my_program.ach
 ```
 
-Without `--ptau`, prove blocks still verify constraints but return `VerifiedOnly` (no cryptographic proof is generated).
+The native backend is wired automatically, so every `prove {}` block compiles its circuit, verifies the constraints, and returns a cryptographic proof. The proving and verifying keys are cached in `~/.achronyme/cache/` for faster subsequent runs.
 
-The zkey is cached in `~/.achronyme/cache/` for faster subsequent runs.
+> **Note:** the Groth16 trusted setup is development-only — keys are generated locally with a CSPRNG, not a production ceremony. Ingesting external Powers of Tau for a production-grade setup is the planned path and is not yet wired.
 
 ## Backend Selection
 

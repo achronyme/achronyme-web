@@ -92,4 +92,4 @@ let p = prove(product: Public) {
 }
 ```
 
-The `prove {}` block compiles the circuit, captures variables from the enclosing scope, generates a witness, verifies constraints, and — if a proving backend is available — returns a cryptographic proof.
+The `prove {}` block compiles the circuit, captures variables from the enclosing scope, generates a witness, verifies the constraints, and returns a real Groth16 proof. `ach run` wires the native proving backend automatically — no Powers of Tau file or extra flags required.

@@ -28,7 +28,7 @@ When running with `ach run`, the VM reports errors with line numbers:
 | `InvalidOpcode` | Corrupt bytecode — unknown instruction |
 | `FunctionNotFound` | Closure or function reference is invalid |
 | `ProveBlockFailed` | Error during `prove {}` execution |
-| `ProveHandlerNotConfigured` | `prove {}` used without `--ptau` |
+| `ProveHandlerNotConfigured` | `prove {}` reached but no prove handler was injected into the VM. This only happens in custom embeddings that run the VM directly — `ach run` always wires the native Groth16 handler, so the CLI never triggers it. |
 | `SystemError` | Internal VM state corruption |
 
 ### Integer Overflow

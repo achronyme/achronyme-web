@@ -55,7 +55,7 @@ Generates Plonkish gates, lookups, and copy constraints. Verifies locally (no bi
 | Flag | Description |
 |------|-------------|
 | `--prove` | Generate a cryptographic proof after compiling and verifying |
-| `--solidity` | Generate a Solidity verifier contract (R1CS/Groth16 only) |
+| `--solidity <path>` | Write a Solidity verifier contract to `<path>` (R1CS/Groth16 only). The path is required. |
 
 ## Optimization
 
@@ -76,7 +76,7 @@ ach circuit circuit.ach --backend plonkish --inputs "x=42"
 ach circuit circuit.ach --inputs "x=42,y=7" --prove
 
 # Generate Solidity verifier
-ach circuit circuit.ach --inputs "x=42,y=7" --solidity
+ach circuit circuit.ach --inputs "x=42,y=7" --solidity Verifier.sol
 
 # Unoptimized compilation
 ach circuit circuit.ach --inputs "x=42" --no-optimize

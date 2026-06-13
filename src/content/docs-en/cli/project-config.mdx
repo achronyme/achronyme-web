@@ -92,17 +92,16 @@ gc_stats = false      # Print GC statistics after execution (default: false)
 | `stress_gc` | `--stress-gc` | `false` |
 | `gc_stats` | `--gc-stats` | `false` |
 
-### `[circuit]` — Circuit input declarations
+### `[circuit]` — Circuit settings
 
 ```toml
 [circuit]
-public = ["x", "y"]      # Public input variable names
-witness = ["secret"]      # Witness input variable names
+prime = "bn254"      # Prime field: "bn254" (default), "bls12-381", or "goldilocks"
 ```
 
-These are equivalent to `--public x,y --witness secret` on the command line. If `--public` or `--witness` are explicitly passed on the CLI, they override these values.
+The `prime` field is the manifest equivalent of the global `--prime` flag. If `--prime` is explicitly passed on the CLI, it overrides this value.
 
-If both the CLI flags and TOML fields are empty, the compiler uses in-source `public` and `witness` declarations.
+Public and witness inputs are not configured here — they come from the in-source `public` and `witness` declarations (or the `--public` / `--witness` CLI flags). This section is validated with `deny_unknown_fields`, so any other key (such as `public` or `witness`) is rejected with a hard error.
 
 ### `[circom]` — Circom library search paths
 
@@ -167,7 +166,7 @@ The CLI validates the TOML file on load:
 - `build.backend` must be `"r1cs"` or `"plonkish"`
 - `build.error_format` must be `"human"`, `"json"`, or `"short"`
 - `vm.max_heap` must be a valid size string if non-empty
-- `circuit.public` / `circuit.witness` entries must be valid identifiers
+- `circuit.prime` must be `"bn254"`, `"bls12-381"`, or `"goldilocks"`
 - `project.entry` must end in `.ach` or `.achb`
 - `circom.libs` entries must exist (resolved at load time, relative to project root)
 - Unknown fields are rejected (forward compatibility via explicit sections)

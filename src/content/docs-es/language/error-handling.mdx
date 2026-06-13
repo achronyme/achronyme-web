@@ -28,7 +28,7 @@ Al ejecutar con `ach run`, la VM reporta errores con números de línea:
 | `InvalidOpcode` | Bytecode corrupto — instrucción desconocida |
 | `FunctionNotFound` | Referencia a closure o función inválida |
 | `ProveBlockFailed` | Error durante ejecución de `prove {}` |
-| `ProveHandlerNotConfigured` | `prove {}` usado sin `--ptau` |
+| `ProveHandlerNotConfigured` | Se alcanzó un `prove {}` pero no se inyectó ningún manejador de pruebas en la VM. Esto solo ocurre en integraciones personalizadas que ejecutan la VM directamente — `ach run` siempre conecta el manejador Groth16 nativo, por lo que el CLI nunca lo dispara. |
 | `SystemError` | Corrupción del estado interno de la VM |
 
 ### Desbordamiento de Enteros

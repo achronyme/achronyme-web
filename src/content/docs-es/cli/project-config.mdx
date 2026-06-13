@@ -92,17 +92,16 @@ gc_stats = false      # Imprimir estadísticas del GC tras la ejecución (por de
 | `stress_gc` | `--stress-gc` | `false` |
 | `gc_stats` | `--gc-stats` | `false` |
 
-### `[circuit]` — Declaraciones de entradas del circuito
+### `[circuit]` — Configuración del circuito
 
 ```toml
 [circuit]
-public = ["x", "y"]      # Nombres de variables de entrada públicas
-witness = ["secret"]      # Nombres de variables de entrada testigo
+prime = "bn254"      # Campo primo: "bn254" (por defecto), "bls12-381", o "goldilocks"
 ```
 
-Equivalen a `--public x,y --witness secret` en la línea de comandos. Si `--public` o `--witness` se pasan explícitamente en el CLI, sobrescriben estos valores.
+El campo `prime` es el equivalente en el manifiesto de la bandera global `--prime`. Si `--prime` se pasa explícitamente en el CLI, sobrescribe este valor.
 
-Si tanto las banderas CLI como los campos TOML están vacíos, el compilador usa las declaraciones `public` y `witness` en el código fuente.
+Las entradas públicas y testigo no se configuran aquí — provienen de las declaraciones `public` y `witness` en el código fuente (o de las banderas CLI `--public` / `--witness`). Esta sección se valida con `deny_unknown_fields`, por lo que cualquier otra clave (como `public` o `witness`) se rechaza con un error duro.
 
 ### `[circom]` — Rutas de búsqueda de bibliotecas Circom
 
@@ -167,7 +166,7 @@ El CLI valida el archivo TOML al cargarlo:
 - `build.backend` debe ser `"r1cs"` o `"plonkish"`
 - `build.error_format` debe ser `"human"`, `"json"`, o `"short"`
 - `vm.max_heap` debe ser una cadena de tamaño válida si no está vacía
-- Las entradas `circuit.public` / `circuit.witness` deben ser identificadores válidos
+- `circuit.prime` debe ser `"bn254"`, `"bls12-381"`, o `"goldilocks"`
 - `project.entry` debe terminar en `.ach` o `.achb`
 - Las entradas `circom.libs` deben existir (resueltas en tiempo de carga, relativas a la raíz del proyecto)
 - Los campos desconocidos son rechazados (compatibilidad futura vía secciones explícitas)

@@ -55,7 +55,7 @@ Genera puertas Plonkish, lookups y restricciones de copia. Verifica localmente (
 | Bandera | Descripción |
 |------|-------------|
 | `--prove` | Generar una prueba criptográfica después de compilar y verificar |
-| `--solidity` | Generar un contrato verificador Solidity (solo R1CS/Groth16) |
+| `--solidity <ruta>` | Escribir un contrato verificador Solidity en `<ruta>` (solo R1CS/Groth16). La ruta es obligatoria. |
 
 ## Optimización
 
@@ -79,7 +79,7 @@ ach circuit circuit.ach --backend plonkish --inputs "x=42"
 ach circuit circuit.ach --inputs "x=42,y=7" --prove
 
 # Generar verificador Solidity
-ach circuit circuit.ach --inputs "x=42,y=7" --solidity
+ach circuit circuit.ach --inputs "x=42,y=7" --solidity Verifier.sol
 
 # Compilación sin optimizar
 ach circuit circuit.ach --inputs "x=42" --no-optimize

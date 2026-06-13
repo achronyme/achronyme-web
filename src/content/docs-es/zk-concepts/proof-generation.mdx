@@ -15,6 +15,8 @@ Achronyme genera pruebas de conocimiento cero nativamente — no se requieren he
 | Setup | Setup confiable por circuito | Params KZG universales (reutilizables) |
 | Verificación | Tiempo constante | Logarítmica |
 
+> **Limitación conocida:** el setup confiable de Groth16 es **solo para desarrollo**. Las claves de prueba y verificación se generan localmente con un CSPRNG (`OsRng`), no mediante una ceremonia multipartita. Para un despliegue de producción necesitas una ceremonia real — ingerir Powers of Tau externos es el camino planificado y aún no está conectado.
+
 ## El Pipeline
 
 Ya sea usando el CLI o bloques `prove {}` en línea, el pipeline de pruebas sigue los mismos pasos:

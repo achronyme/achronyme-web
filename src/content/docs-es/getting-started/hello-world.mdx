@@ -78,4 +78,4 @@ let p = prove(product: Public) {
 }
 ```
 
-El bloque `prove {}` compila el circuito, captura variables del ámbito circundante, genera un testigo, verifica las restricciones y — si hay un backend de pruebas disponible — devuelve una prueba criptográfica.
+El bloque `prove {}` compila el circuito, captura variables del ámbito circundante, genera un testigo, verifica las restricciones y devuelve una prueba Groth16 real. `ach run` conecta el backend de pruebas nativo automáticamente — no se requiere archivo Powers of Tau ni banderas adicionales.

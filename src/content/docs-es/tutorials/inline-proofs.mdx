@@ -180,15 +180,15 @@ Cada bloque prove compila y prueba independientemente.
 
 ## Ejecutar con Generación de Pruebas
 
-Para generar pruebas Groth16 reales, proporciona un archivo Powers of Tau:
+`ach run` genera pruebas Groth16 reales nativamente — no se requiere archivo Powers of Tau ni banderas adicionales:
 
 ```bash
-ach run my_program.ach --ptau pot12_final.ptau
+ach run my_program.ach
 ```
 
-Sin `--ptau`, los bloques prove aún verifican restricciones pero devuelven `VerifiedOnly` (no se genera prueba criptográfica).
+El backend nativo se conecta automáticamente, así que cada bloque `prove {}` compila su circuito, verifica las restricciones y devuelve una prueba criptográfica. Las claves de prueba y verificación se cachean en `~/.achronyme/cache/` para ejecuciones posteriores más rápidas.
 
-La zkey se cachea en `~/.achronyme/cache/` para ejecuciones posteriores más rápidas.
+> **Nota:** el setup confiable de Groth16 es solo para desarrollo — las claves se generan localmente con un CSPRNG, no con una ceremonia de producción. Ingerir Powers of Tau externos para un setup de grado producción es el camino planificado y aún no está conectado.
 
 ## Selección de Backend
 
