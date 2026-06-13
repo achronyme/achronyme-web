@@ -8,20 +8,20 @@ license = "Apache-2.0"
 # Achronyme crates (from main repo).
 # Pin to an explicit rev so `cargo build --locked` is reproducible even
 # if upstream `main` advances between a push and this deploy.
-# Tracks the beta.21 release tag — picks up the For-preserving library
-# template dispatch and the walker fix that unblock SHA-256(N) for N < 64
-# from `.ach prove` blocks.
-akronc = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-akron = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-zkc = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-memory = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-ir = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-circom = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-constraints = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
-achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
+# Tracks the beta.22 release tag — picks up end-to-end secp256k1 ECDSA
+# witness generation via native Artik bignum intrinsics and the R1CS
+# substitution soundness fix.
+akronc = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+akron = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+zkc = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+memory = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+ir = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+circom = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+constraints = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
+achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
 
 # Web framework
 axum = "0.8"
@@ -34,7 +34,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Proving backends (shared crate)
-proving = { git = "https://github.com/achronyme/achronyme", rev = "99c50a9998a7ea245a4bf47d0c8882be1f3e49b6" }
+proving = { git = "https://github.com/achronyme/achronyme", rev = "0ab27721a81283547b8c51172f72355a554bd2dc" }
 
 # Session management
 dashmap = "6"
