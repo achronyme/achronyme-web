@@ -7,7 +7,7 @@
     "banner": "Introducing Achronyme — a language for zero-knowledge proofs. Read the announcement"
   },
   "hero": {
-    "badge": "v0.1.0-beta.22 — Public beta",
+    "badge": "v0.0.1 - Initial 0.x release",
     "eyebrow": "The Tri-Architecture",
     "headline1": "Three machines.",
     "headline2": "One language.",
@@ -85,7 +85,7 @@
   "roadmap": {
     "title": "Roadmap",
     "subtitle": "Real receipts, not promises. Versioned milestones, shipped commits, and what comes next.",
-    "livingPill": "Living roadmap · updated Jun 2026",
+    "livingPill": "Living roadmap - updated Aug 2026",
     "metrics": {
       "started": "Started",
       "startedValue": "Jan 2026",
@@ -112,7 +112,7 @@
     "phases": {
       "now": {
         "label": "Now shipping",
-        "anchor": "v0.1.0-beta.22",
+        "anchor": "v0.0.1",
         "desc": "Latest release."
       },
       "wip": {

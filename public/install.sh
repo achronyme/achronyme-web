@@ -1,16 +1,17 @@
 #!/bin/sh
-# Achronyme installer — https://achrony.me
+# Achronyme installer - https://achrony.me
 #
 # Usage:
 #   curl -fsSL https://achrony.me/install.sh | sh
-#   curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.1.0-beta.7
+#   curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.0.1
 #
-# Installs the `ach` binary to ~/.local/bin (XDG standard, usually already in PATH).
+# Installs `ach` to ~/.local/bin and the Linux AOT runtime to ~/.local/lib.
 
 set -e
 
 REPO="achronyme/achronyme"
-INSTALL_DIR="$HOME/.local/bin"
+ACHRONYME_INSTALL_BIN_DIR="${ACHRONYME_BIN_DIR:-$HOME/.local/bin}"
+ACHRONYME_INSTALL_LIB_DIR="${ACHRONYME_LIB_DIR:-$HOME/.local/lib}"
 VERSION=""
 
 # --- Parse arguments ---
@@ -18,6 +19,10 @@ VERSION=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --version)
+            if [ "$#" -lt 2 ]; then
+                echo "error: --version requires a value"
+                exit 1
+            fi
             VERSION="$2"
             shift 2
             ;;
@@ -25,7 +30,7 @@ while [ $# -gt 0 ]; do
             echo "Usage: install.sh [--version VERSION]"
             echo ""
             echo "Options:"
-            echo "  --version VERSION   Install a specific version (e.g. 0.1.0-beta.7)"
+            echo "  --version VERSION   Install a specific version (e.g. 0.0.1)"
             echo "                      Default: latest release"
             exit 0
             ;;
@@ -76,48 +81,86 @@ else
     TAG="v$VERSION"
 fi
 
-URL="https://github.com/$REPO/releases/download/$TAG/$ARTIFACT"
+RELEASE_URL="https://github.com/$REPO/releases/download/$TAG"
 
 # --- Download ---
 
 echo "Installing Achronyme $TAG ($PLATFORM $ARCH_SUFFIX)..."
 
-TMPFILE=$(mktemp)
-trap 'rm -f "$TMPFILE"' EXIT
+ACHRONYME_TMP_ROOT=$(mktemp -d)
+trap 'rm -rf "$ACHRONYME_TMP_ROOT"' EXIT HUP INT TERM
 
-HTTP_CODE=$(curl -fsSL -w '%{http_code}' -o "$TMPFILE" "$URL" 2>/dev/null) || true
+download_file() {
+    DOWNLOAD_URL="$1"
+    DOWNLOAD_DESTINATION="$2"
+    HTTP_CODE=$(curl -fsSL -w '%{http_code}' -o "$DOWNLOAD_DESTINATION" \
+        "$DOWNLOAD_URL" 2>/dev/null) || true
 
-if [ "$HTTP_CODE" != "200" ]; then
-    echo "error: failed to download $URL (HTTP $HTTP_CODE)"
-    echo ""
-    echo "Available releases: https://github.com/$REPO/releases"
-    exit 1
-fi
+    if [ "$HTTP_CODE" != "200" ]; then
+        echo "error: failed to download $DOWNLOAD_URL (HTTP $HTTP_CODE)"
+        echo ""
+        echo "Available releases: https://github.com/$REPO/releases"
+        exit 1
+    fi
+}
 
 # --- Install ---
 
-mkdir -p "$INSTALL_DIR"
-mv "$TMPFILE" "$INSTALL_DIR/ach"
-chmod +x "$INSTALL_DIR/ach"
+mkdir -p "$ACHRONYME_INSTALL_BIN_DIR"
+
+if [ "$OS" = "Linux" ]; then
+    ARCHIVE="$ARTIFACT.tar.gz"
+    CHECKSUM="$ARCHIVE.sha256"
+
+    download_file "$RELEASE_URL/$ARCHIVE" "$ACHRONYME_TMP_ROOT/$ARCHIVE"
+    download_file "$RELEASE_URL/$CHECKSUM" "$ACHRONYME_TMP_ROOT/$CHECKSUM"
+
+    (
+        cd "$ACHRONYME_TMP_ROOT"
+        sha256sum --check "$CHECKSUM"
+    )
+    tar -C "$ACHRONYME_TMP_ROOT" -xzf "$ACHRONYME_TMP_ROOT/$ARCHIVE"
+
+    BUNDLE_ROOT="$ACHRONYME_TMP_ROOT/$ARTIFACT"
+    if [ ! -x "$BUNDLE_ROOT/bin/ach" ] || \
+       [ ! -f "$BUNDLE_ROOT/lib/libakron_aot_runtime.a" ]; then
+        echo "error: release bundle is missing the binary or AOT runtime"
+        exit 1
+    fi
+
+    mkdir -p "$ACHRONYME_INSTALL_LIB_DIR"
+    cp "$BUNDLE_ROOT/bin/ach" "$ACHRONYME_INSTALL_BIN_DIR/ach"
+    cp "$BUNDLE_ROOT/lib/libakron_aot_runtime.a" \
+        "$ACHRONYME_INSTALL_LIB_DIR/libakron_aot_runtime.a"
+    chmod +x "$ACHRONYME_INSTALL_BIN_DIR/ach"
+    chmod 644 "$ACHRONYME_INSTALL_LIB_DIR/libakron_aot_runtime.a"
+else
+    download_file "$RELEASE_URL/$ARTIFACT" "$ACHRONYME_TMP_ROOT/$ARTIFACT"
+    mv "$ACHRONYME_TMP_ROOT/$ARTIFACT" "$ACHRONYME_INSTALL_BIN_DIR/ach"
+    chmod +x "$ACHRONYME_INSTALL_BIN_DIR/ach"
+fi
 
 # --- Verify PATH ---
 
 path_configured() {
-    echo "$PATH" | tr ':' '\n' | grep -qx "$INSTALL_DIR"
+    echo "$PATH" | tr ':' '\n' | grep -Fqx "$ACHRONYME_INSTALL_BIN_DIR"
 }
 
-ACH_VERSION=$("$INSTALL_DIR/ach" --version 2>/dev/null || echo "unknown")
+ACH_VERSION=$("$ACHRONYME_INSTALL_BIN_DIR/ach" --version 2>/dev/null || echo "unknown")
 
 echo ""
 echo "  Achronyme installed successfully!"
 echo ""
-echo "  Binary:  $INSTALL_DIR/ach"
+echo "  Binary:  $ACHRONYME_INSTALL_BIN_DIR/ach"
+if [ "$OS" = "Linux" ]; then
+    echo "  Runtime: $ACHRONYME_INSTALL_LIB_DIR/libakron_aot_runtime.a"
+fi
 echo "  Version: $ACH_VERSION"
 echo ""
 
 if ! path_configured; then
-    echo "  ~/.local/bin is not in your PATH. Add it with:"
-    echo "    export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "  $ACHRONYME_INSTALL_BIN_DIR is not in your PATH. Add it with:"
+    echo "    export PATH=\"$ACHRONYME_INSTALL_BIN_DIR:\$PATH\""
     echo ""
 fi
 

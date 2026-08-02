@@ -287,7 +287,12 @@ async fn sha256_inline_call_in_prove_block_succeeds() {
         )
         .await
         .unwrap();
-    assert_eq!(resp.status(), StatusCode::OK, "run returned {}", resp.status());
+    assert_eq!(
+        resp.status(),
+        StatusCode::OK,
+        "run returned {}",
+        resp.status()
+    );
 
     let body = read_json(resp).await;
     assert_eq!(
