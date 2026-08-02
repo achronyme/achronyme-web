@@ -4,7 +4,7 @@ set -eu
 
 project_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 source_version="0.0.1"
-source_revision="b39da399b629d39b185a6969a056482c4c26eaac"
+source_revision="6256454e91a645e27e1d2e95b4c232c6e551c450"
 metadata_file=$(mktemp)
 trap 'rm -f "$metadata_file"' EXIT HUP INT TERM
 
