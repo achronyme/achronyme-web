@@ -5,6 +5,33 @@ description: Release history for Achronyme.
 
 All notable changes to Achronyme are documented here. Each release bumps every workspace crate to the same version.
 
+## 0.0.1 - Unreleased
+
+**Achronyme starts plain `MAJOR.MINOR.PATCH` numbering for its pre-1.0 line.**
+This intentional numbering reset follows the historical `0.1.0-beta.22`
+series. The language and API can still change between `0.x` minor versions.
+
+### Native execution and packaging
+
+- LLVM 21 ORC JIT is part of the default CLI, with explicit interpreter
+  selection and a visible fallback when LLVM is unavailable.
+- `ach aot` emits native executables and discovers the packaged Achronyme AOT
+  runtime without manual environment variables.
+- Linux releases include reproducible bundles, license files, SHA-256
+  checksums, and legacy standalone binaries for existing installers.
+- The web installer verifies the Linux bundle and installs both `ach` and the
+  AOT runtime.
+
+### Verification
+
+- The production gate passes on native Linux x86_64 and aarch64 runners.
+- The gate covers JIT, interpreter fallback, AOT, resource limits, real file
+  I/O, installed-layout execution, and lazy LLVM loading.
+- macOS and Windows remain interpreter-compatible release targets; they are not
+  certified by the Linux native gate.
+
+---
+
 ## 0.1.0-beta.22 — 2026-06-12
 
 **secp256k1 `ECDSAVerify(64, 4)` — the heaviest circomlib reference circuit — now compiles, generates a witness, and proves end-to-end.** The optimized R1CS lands at ~1.49M constraints, below circom's own count for the same circuit; the witness verifies and a Groth16 proof is produced and checked.
