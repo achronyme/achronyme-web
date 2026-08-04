@@ -8,20 +8,20 @@ license = "Apache-2.0"
 # Achronyme crates (from main repo).
 # Pin to an explicit rev so `cargo build --locked` is reproducible even
 # if upstream `main` advances between a push and this deploy.
-# Pinned to the final 0.0.1 source commit. This keeps the shared
+# Pinned to the reviewed 0.1.0 release candidate. This keeps the shared
 # `prove-engine` crate on the same compile/prove/verify path as the CLI
 # and retains R1CS optimization on the prove path.
-akronc = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-akron = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-zkc = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-memory = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-ir = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-circom = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-constraints = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
-achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
+akronc = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+akron = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+zkc = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+memory = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+ir = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+circom = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+constraints = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
+achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
 
 # Web framework
 axum = "0.8"
@@ -34,12 +34,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Proving backends (shared crate)
-proving = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
+proving = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
 
 # Shared compile→prove→verify engine (same code path as the CLI's
 # DefaultProveHandler — replaces the previously hand-copied, divergent
 # server prove handler that proved over un-optimized R1CS).
-prove-engine = { git = "https://github.com/achronyme/achronyme", rev = "6256454e91a645e27e1d2e95b4c232c6e551c450" }
+prove-engine = { git = "https://github.com/achronyme/achronyme", rev = "4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1" }
 
 # Session management
 dashmap = "6"
@@ -57,3 +57,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Drive the axum Router from integration tests without a TCP listener.
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
+
+[profile.test]
+# Keep proof integration tests representative of the optimized server. Fully
+# unoptimized Groth16 arithmetic exceeds the production request timeout even
+# though the same SHA-256 proof finishes within the budget in release builds.
+opt-level = 1

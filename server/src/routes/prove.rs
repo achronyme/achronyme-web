@@ -5,6 +5,9 @@
 //! - Workspace `.ach`: `X-Ach-Session` header, `[project] entry = "...ach"`.
 //! - Workspace `.circom`: `X-Ach-Session` header, `[project] entry = "...circom"`,
 //!   `[circom] libs = [...]` resolves to circomlib include paths.
+//!
+//! Playground proofs use explicit insecure local setup. They demonstrate the
+//! proving pipeline but are not production-trusted proofs.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -18,6 +21,9 @@ use memory::FieldElement;
 use zkc::r1cs_backend::R1CSCompiler;
 
 use crate::error::ApiError;
+use crate::playground_proving::{
+    playground_proving_policy, require_development_key_source, PlaygroundProvingPolicy,
+};
 use crate::sandbox::sandboxed;
 
 const PROVE_TIMEOUT_SECS: u64 = 30;
@@ -154,12 +160,11 @@ fn prove_circuit(
 
     ir::passes::optimize(&mut program);
 
-    // Use a temp dir for proof key caching
-    let cache_dir = std::env::temp_dir().join("ach-server-cache");
+    let policy = playground_proving_policy();
 
     match backend {
-        "r1cs" => prove_r1cs(&program, &inputs, &cache_dir),
-        "plonkish" => prove_plonkish(&program, &inputs, &cache_dir),
+        "r1cs" => prove_r1cs(&program, &inputs, &policy),
+        "plonkish" => prove_plonkish(&program, &inputs, &policy),
         _ => Err(format!(
             "unknown backend: {backend} (expected 'r1cs' or 'plonkish')"
         )),
@@ -205,11 +210,11 @@ fn prove_circuit_circom(
 
     let merged_inputs = crate::circom_pipeline::merge_circom_witness(&compiled, &inputs)?;
 
-    let cache_dir = std::env::temp_dir().join("ach-server-cache");
+    let policy = playground_proving_policy();
 
     match backend {
-        "r1cs" => prove_r1cs(&program, &merged_inputs, &cache_dir),
-        "plonkish" => prove_plonkish(&program, &merged_inputs, &cache_dir),
+        "r1cs" => prove_r1cs(&program, &merged_inputs, &policy),
+        "plonkish" => prove_plonkish(&program, &merged_inputs, &policy),
         _ => Err(format!(
             "unknown backend: {backend} (expected 'r1cs' or 'plonkish')"
         )),
@@ -219,7 +224,7 @@ fn prove_circuit_circom(
 fn prove_r1cs(
     program: &ir::IrProgram,
     inputs: &HashMap<String, FieldElement>,
-    cache_dir: &std::path::Path,
+    policy: &PlaygroundProvingPolicy,
 ) -> Result<ProveResponse, String> {
     let mut r1cs = R1CSCompiler::new();
     let proven = ir::passes::bool_prop::compute_proven_boolean(program);
@@ -235,8 +240,13 @@ fn prove_r1cs(
 
     let n_constraints = r1cs.cs.num_constraints();
 
-    let result = proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, cache_dir)
-        .map_err(|e| format!("proof generation failed: {e}"))?;
+    let result = proving::groth16_bn254::generate_proof(
+        &r1cs.cs,
+        &witness,
+        policy.cache_dir(),
+        policy.key_source(),
+    )
+    .map_err(|e| format!("proof generation failed: {e}"))?;
 
     match result {
         ProveResult::Proof {
@@ -267,8 +277,10 @@ fn prove_r1cs(
 fn prove_plonkish(
     program: &ir::IrProgram,
     inputs: &HashMap<String, FieldElement>,
-    cache_dir: &std::path::Path,
+    policy: &PlaygroundProvingPolicy,
 ) -> Result<ProveResponse, String> {
+    require_development_key_source(policy.key_source())?;
+
     let mut compiler = zkc::plonkish_backend::PlonkishCompiler::new();
     let proven = ir::passes::bool_prop::compute_proven_boolean(program);
     compiler.set_proven_boolean(proven);
@@ -284,7 +296,7 @@ fn prove_plonkish(
         .verify()
         .map_err(|e| format!("plonkish verification failed: {e}"))?;
 
-    let result = proving::halo2_proof::generate_plonkish_proof(compiler, cache_dir)
+    let result = proving::halo2_proof::generate_plonkish_proof(compiler, policy.cache_dir())
         .map_err(|e| format!("proof generation failed: {e}"))?;
 
     match result {

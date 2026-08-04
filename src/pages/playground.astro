@@ -445,6 +445,14 @@ import 'material-symbols/outlined.css';
       background: rgba(168,85,247,0.12); color: var(--accent);
       padding: 1px 5px; border-radius: 3px; font-size: 12px;
     }
+    .proof-trust-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      margin: 8px 12px; padding: 8px 10px;
+      border: 1px solid rgba(204,167,0,0.28); border-radius: 6px;
+      background: rgba(204,167,0,0.07); color: var(--text-secondary);
+      font-family: var(--font-sans); font-size: 12px; line-height: 1.45;
+    }
+    .proof-trust-notice .ms-icon { color: var(--yellow); margin-top: 1px; }
     .proof-artifact {
       border: 1px solid var(--border); border-radius: 6px;
       margin: 8px 12px; overflow: hidden;
@@ -852,6 +860,10 @@ import 'material-symbols/outlined.css';
             <span class="output-cursor"></span>
           </div>
           <div class="output-scroll" id="proof-panel" style="display:none">
+            <div class="proof-trust-notice" role="note">
+              <span class="ms-icon ms-icon-sm" aria-hidden="true">warning</span>
+              <span>Playground proofs use an insecure local development setup and are not production-trusted proofs.</span>
+            </div>
             <div class="proof-empty" id="proof-empty">
               <span class="ms-icon ms-icon-lg" aria-hidden="true">deployed_code</span>
               <span>Run code with <code>prove {}</code> blocks to see proof artifacts</span>

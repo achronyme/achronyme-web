@@ -177,7 +177,11 @@ export async function runProject(source) {
   return res.json();
 }
 
-/** Compile a standalone circuit and generate artifacts (R1CS, WTNS, proof, Solidity). */
+/**
+ * Compile a standalone circuit and generate artifacts (R1CS, WTNS, proof,
+ * Solidity). Playground proofs use local development setup and are not
+ * production-trusted proofs.
+ */
 export async function compileCircuit(source, inputs, options = {}) {
   const res = await fetch(`${API_BASE}/api/circuit`, {
     method: "POST",
