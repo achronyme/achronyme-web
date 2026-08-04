@@ -5,6 +5,45 @@ description: Release history for Achronyme.
 
 All notable changes to Achronyme are documented here. Each release bumps every workspace crate to the same version.
 
+## 0.1.0 - 2026-08-04
+
+**Achronyme 0.1.0 adds structured concurrency, explicit host authority, and a
+fail-closed proving trust boundary.**
+
+### Structured concurrency and host authority
+
+- Lexical `concurrent` scopes add scope-bound `spawn`, explicit `await`, task
+  races, cooperative cancellation, bounded channels, and task diagnostics.
+- Effect inference and capability manifests keep host execution separate from
+  `prove` and `circuit` code.
+- File and TCP resources have explicit ownership, bounded execution, and
+  deterministic cleanup. Filesystem and network access require exact grants.
+- The interpreter, LLVM JIT, AOT runtime, and WASM support matrix define the
+  same structured task semantics without granting ambient host access.
+
+### Proving trust
+
+- Proof generation denies implicit local setup. Development proofs require an
+  explicit insecure opt-in.
+- Production BN254 Groth16 proving can load an immutable trusted-key store
+  bound to the exact optimized R1CS and ceremony transcript.
+- Detached BN254 and BLS12-381 Groth16 verification is available from the CLI.
+- BLS12-381 Groth16 and Plonkish proof generation remain development-only in
+  0.1.0.
+- The web playground selects its development setup policy centrally and labels
+  its proof artifacts as not production trusted.
+
+### Compatibility and verification
+
+- `concurrent`, `spawn`, and `await` are now reserved words. The runtime still
+  loads 0.0.1 bytecode while 0.1.0 emits the new structured-task format.
+- Release CI covers the full workspace, proving interoperability, and LLVM JIT
+  and AOT gates on Linux x86_64 and aarch64.
+- Publication remains gated on the independently contributed production
+  ceremony and its recorded public-beacon evidence.
+
+---
+
 ## 0.0.1 - 2026-08-02
 
 **Achronyme starts plain `MAJOR.MINOR.PATCH` numbering for its pre-1.0 line.**

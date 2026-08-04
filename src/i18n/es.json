@@ -7,7 +7,7 @@
     "banner": "Presentamos Achronyme — un lenguaje para pruebas zero-knowledge. Lee el anuncio"
   },
   "hero": {
-    "badge": "v0.0.1 - Version inicial 0.x",
+    "badge": "v0.1.0 - Concurrencia estructurada y confianza explicita",
     "eyebrow": "La Tri-Arquitectura",
     "headline1": "Tres maquinas.",
     "headline2": "Un lenguaje.",
@@ -57,8 +57,8 @@
     "desc": "La misma sintaxis compila a restricciones R1CS o Plonkish. Propagacion booleana, constant folding y analisis de taint detectan bugs sub-restringidos antes de generar pruebas."
   },
   "sectionProofs": {
-    "title": "Pruebas sin la ceremonia",
-    "subtitle": "Provers nativos Groth16 y PlonK. Un binario, cero Node.js."
+    "title": "Confianza explicita al probar",
+    "subtitle": "Setup local para desarrollo y llaves BN254 derivadas de ceremonia para produccion."
   },
   "featureProve": {
     "title": "Pruebas First-Class",
@@ -112,7 +112,7 @@
     "phases": {
       "now": {
         "label": "Ahora en produccion",
-        "anchor": "v0.0.1",
+        "anchor": "v0.1.0",
         "desc": "Ultimo release."
       },
       "wip": {

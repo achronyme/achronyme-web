@@ -5,6 +5,46 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
+## 0.1.0 - 2026-08-04
+
+**Achronyme 0.1.0 agrega concurrencia estructurada, autoridad explicita del
+host y un limite de confianza de proving que falla de forma cerrada.**
+
+### Concurrencia estructurada y autoridad del host
+
+- Los scopes lexicos `concurrent` agregan `spawn` ligado al scope, `await`
+  explicito, carreras de tareas, cancelacion cooperativa, canales acotados y
+  diagnosticos de tareas.
+- La inferencia de efectos y los manifiestos de capacidades separan la
+  ejecucion del host del codigo `prove` y `circuit`.
+- Los recursos de archivos y TCP tienen propiedad explicita, ejecucion acotada
+  y limpieza determinista. El filesystem y la red requieren grants exactos.
+- El interprete, LLVM JIT, el runtime AOT y la matriz de soporte WASM definen la
+  misma semantica de tareas sin otorgar acceso ambiental al host.
+
+### Confianza de proving
+
+- La generacion de pruebas rechaza el setup local implicito. Las pruebas de
+  desarrollo requieren un opt-in inseguro y explicito.
+- El proving BN254 Groth16 de produccion puede cargar un trusted-key store
+  inmutable ligado al R1CS optimizado exacto y al transcript de ceremonia.
+- El CLI permite verificacion Groth16 separada para BN254 y BLS12-381.
+- La generacion de pruebas BLS12-381 Groth16 y Plonkish sigue siendo solo para
+  desarrollo en 0.1.0.
+- El playground web centraliza su politica de setup de desarrollo y etiqueta
+  sus artefactos como no confiables para produccion.
+
+### Compatibilidad y verificacion
+
+- `concurrent`, `spawn` y `await` ahora son palabras reservadas. El runtime aun
+  carga bytecode 0.0.1 y 0.1.0 emite el nuevo formato de tareas estructuradas.
+- El CI de release cubre todo el workspace, interoperabilidad de proving y los
+  gates LLVM JIT y AOT en Linux x86_64 y aarch64.
+- La publicacion sigue bloqueada hasta registrar la contribucion independiente
+  de la ceremonia de produccion y su evidencia de beacon publico.
+
+---
+
 ## 0.0.1 - 2026-08-02
 
 **Achronyme inicia la numeracion `MAJOR.MINOR.PATCH` sin sufijos para su linea

@@ -7,7 +7,7 @@
     "banner": "Introducing Achronyme — a language for zero-knowledge proofs. Read the announcement"
   },
   "hero": {
-    "badge": "v0.0.1 - Initial 0.x release",
+    "badge": "v0.1.0 - Structured concurrency and explicit proving trust",
     "eyebrow": "The Tri-Architecture",
     "headline1": "Three machines.",
     "headline2": "One language.",
@@ -57,8 +57,8 @@
     "desc": "Same syntax compiles to R1CS or Plonkish constraints. Boolean propagation, constant folding, and taint analysis catch under-constrained bugs before proof generation."
   },
   "sectionProofs": {
-    "title": "Proofs without the ceremony",
-    "subtitle": "Native Groth16 and PlonK provers. One binary, zero Node.js."
+    "title": "Explicit proving trust",
+    "subtitle": "Local setup for development, ceremony-derived BN254 keys for production."
   },
   "featureProve": {
     "title": "First-Class Proofs",
@@ -112,7 +112,7 @@
     "phases": {
       "now": {
         "label": "Now shipping",
-        "anchor": "v0.0.1",
+        "anchor": "v0.1.0",
         "desc": "Latest release."
       },
       "wip": {
