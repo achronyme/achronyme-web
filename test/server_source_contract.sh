@@ -3,8 +3,8 @@
 set -eu
 
 project_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
-source_version="0.0.1"
-source_revision="6256454e91a645e27e1d2e95b4c232c6e551c450"
+source_version="0.1.0"
+source_revision="4a3b5ac81fc7e61ea1bb51cf9b1ec393ac37ffe1"
 metadata_file=$(mktemp)
 trap 'rm -f "$metadata_file"' EXIT HUP INT TERM
 
