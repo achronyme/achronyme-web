@@ -15,6 +15,8 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: test/header_release_version_contract.sh
+      - run: test/site_content_contract.sh
+      - run: test/landing_content_only_contract.sh
       - run: sh -n public/install.sh
       - run: test/install_script_contract.sh
 

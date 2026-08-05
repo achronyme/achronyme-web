@@ -10,13 +10,13 @@
     "banner": "Candidato 0.1.0: concurrencia estructurada, autoridad explícita y proving confiable"
   },
   "hero": {
-    "eyebrow": "Achronyme 0.1.0 candidato de release",
-    "headline1": "Escribe el programa.",
-    "headline2": "Limita su autoridad.",
-    "headline3": "Prueba lo importante.",
-    "subtitle": "Un lenguaje para programas de host con capacidades acotadas y circuitos zero-knowledge, con concurrencia estructurada, ejecución nativa y llaves de proving seleccionadas explícitamente.",
+    "eyebrow": "Candidato 0.1.0",
+    "headline1": "Escribe código.",
+    "headline2": "Limita acceso.",
+    "headline3": "Genera pruebas.",
+    "subtitle": "Programas concurrentes y circuitos zero-knowledge, con autoridad y confianza de proving explícitas.",
     "cta": "Instalar estable 0.0.1",
-    "ctaSecondary": "Explorar el candidato",
+    "ctaSecondary": "Conocer las máquinas",
     "trustLabel": "Gate del release",
     "trustValue": "Contribución independiente de ceremonia en progreso"
   },
@@ -132,6 +132,7 @@
     "readGuide": "Leer las notas del release 0.1.0"
   },
   "comparison": {
+    "eyebrow": "Modos de confianza",
     "title": "Velocidad de desarrollo sin ambigüedad en producción",
     "subtitle": "Usa setup local explícito al iterar y cambia al store exacto ligado por ceremonia para producción.",
     "circomLabel": "Desarrollo",
@@ -140,10 +141,10 @@
     "achSteps": "ligado por ceremonia"
   },
   "stats": {
-    "stable": "Core estable",
-    "candidate": "Core candidato",
-    "machines": "VMs especializadas",
-    "license": "Licencia open source"
+    "coreStable": "Core estable",
+    "coreCandidate": "Core candidato",
+    "editorStable": "Editor estable",
+    "editorCandidate": "Editor candidato"
   },
   "roadmap": {
     "title": "Roadmap",
@@ -152,10 +153,10 @@
     "metrics": {
       "started": "Inicio",
       "startedValue": "Ene 2026",
-      "version": "Estable",
-      "crates": "crates del workspace",
-      "tests": "gates de CI",
-      "deps": "licencia"
+      "version": "Core estable",
+      "crates": "Core candidato",
+      "tests": "Editor estable",
+      "deps": "Editor candidato"
     },
     "status": {
       "shipped": "Publicado",
