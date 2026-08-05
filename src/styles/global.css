@@ -53,21 +53,11 @@
     background-color: color-mix(in srgb, var(--color-proof) 30%, transparent);
     color: var(--color-text-primary);
   }
-
-  :focus-visible {
-    outline: 2px solid var(--color-proof-light);
-    outline-offset: 3px;
-  }
 }
 
 
 /* Scroll reveal */
 .reveal {
-  opacity: 1;
-  transform: none;
-  filter: none;
-}
-.reveal.reveal-pending {
   opacity: 0;
   transform: translateY(28px);
   filter: blur(8px);
@@ -76,14 +66,14 @@
               filter 0.85s var(--ease-spring);
   will-change: opacity, transform, filter;
 }
-.reveal.reveal-pending.visible {
+.reveal.visible {
   opacity: 1;
   transform: translateY(0);
   filter: blur(0);
 }
 @media (prefers-reduced-motion: reduce) {
-  .reveal.reveal-pending,
-  .reveal.reveal-pending.visible {
+  .reveal,
+  .reveal.visible {
     opacity: 1;
     transform: none;
     filter: none;

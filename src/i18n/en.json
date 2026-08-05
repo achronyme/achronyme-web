@@ -10,13 +10,13 @@
     "banner": "0.1.0 release candidate: structured concurrency, explicit authority, and trusted proving"
   },
   "hero": {
-    "eyebrow": "Achronyme 0.1.0 release candidate",
-    "headline1": "Write the program.",
-    "headline2": "Bound its authority.",
-    "headline3": "Prove what matters.",
-    "subtitle": "One language for capability-scoped host programs and zero-knowledge circuits, with structured concurrency, native execution, and proving keys selected explicitly.",
+    "eyebrow": "0.1.0 release candidate",
+    "headline1": "Write programs.",
+    "headline2": "Limit authority.",
+    "headline3": "Prove claims.",
+    "subtitle": "Structured host programs and zero-knowledge circuits, with explicit authority and proving trust.",
     "cta": "Install stable 0.0.1",
-    "ctaSecondary": "Explore the candidate",
+    "ctaSecondary": "Meet the machines",
     "trustLabel": "Release gate",
     "trustValue": "Independent ceremony contribution in progress"
   },
@@ -132,6 +132,7 @@
     "readGuide": "Read the 0.1.0 release notes"
   },
   "comparison": {
+    "eyebrow": "Trust modes",
     "title": "Development speed without production ambiguity",
     "subtitle": "Use an explicit local setup while iterating, then switch to the exact ceremony-bound store for production.",
     "circomLabel": "Development",
@@ -140,10 +141,10 @@
     "achSteps": "ceremony bound"
   },
   "stats": {
-    "stable": "Core stable",
-    "candidate": "Core candidate",
-    "machines": "Purpose-built VMs",
-    "license": "Open-source license"
+    "coreStable": "Core stable",
+    "coreCandidate": "Core candidate",
+    "editorStable": "Editor stable",
+    "editorCandidate": "Editor candidate"
   },
   "roadmap": {
     "title": "Roadmap",
@@ -152,10 +153,10 @@
     "metrics": {
       "started": "Started",
       "startedValue": "Jan 2026",
-      "version": "Stable",
-      "crates": "workspace crates",
-      "tests": "CI gates",
-      "deps": "license"
+      "version": "Core stable",
+      "crates": "Core candidate",
+      "tests": "Editor stable",
+      "deps": "Editor candidate"
     },
     "status": {
       "shipped": "Published",

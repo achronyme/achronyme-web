@@ -1,7 +1,6 @@
 ---
 import type { Locale } from '../i18n';
 import { t, getLocalizedPath } from '../i18n';
-import { releaseDocs, releaseStatus } from '../data/release-status';
 
 interface Props {
   locale: Locale;
@@ -10,7 +9,6 @@ interface Props {
 const { locale } = Astro.props;
 const s = t(locale);
 const year = new Date().getFullYear();
-const releaseNotes = releaseDocs[locale];
 ---
 
 <footer class="bg-surface/30 py-12 px-6">
@@ -36,11 +34,8 @@ const releaseNotes = releaseDocs[locale];
       <div>
         <h4 class="mb-4 text-xs font-semibold uppercase tracking-widest text-text-secondary">{s.footer.resources}</h4>
         <ul class="space-y-2.5">
-          <li><a href="/playground" class="text-sm text-text-muted transition-colors hover:text-text-primary">{s.header.playground}</a></li>
-          <li><a href={getLocalizedPath('/roadmap', locale)} class="text-sm text-text-muted transition-colors hover:text-text-primary">{s.header.roadmap}</a></li>
           <li><a href="https://github.com/achronyme/achronyme" target="_blank" rel="noopener noreferrer" class="text-sm text-text-muted transition-colors hover:text-text-primary">{s.footer.github}</a></li>
           <li><a href="https://github.com/achronyme/achronyme/releases" target="_blank" rel="noopener noreferrer" class="text-sm text-text-muted transition-colors hover:text-text-primary">{s.footer.releases}</a></li>
-          <li><a href={releaseNotes} class="text-sm text-text-muted transition-colors hover:text-text-primary">{s.footer.releaseNotes}</a></li>
           <li><a href="https://github.com/achronyme/achronyme-editor" target="_blank" rel="noopener noreferrer" class="text-sm text-text-muted transition-colors hover:text-text-primary">{s.footer.vsCode}</a></li>
         </ul>
       </div>
@@ -59,7 +54,6 @@ const releaseNotes = releaseDocs[locale];
     <div class="border-t border-subtle/30 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
       <span class="text-xs text-text-muted">&copy; {year} Achronyme Contributors</span>
       <div class="flex items-center gap-4 text-xs text-text-muted">
-        <span class="font-mono">v{releaseStatus.core.stable} stable / v{releaseStatus.core.candidate} RC</span>
         <span>{s.footer.builtWith}</span>
         <span>{s.footer.license}</span>
       </div>
