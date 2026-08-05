@@ -1,0 +1,130 @@
+---
+title: Concurrencia e I/O del Host
+description: Tareas estructuradas, canales acotados, recursos con propietario, grants de capacidades y límites del runtime en Achronyme 0.1.0.
+---
+
+Achronyme 0.1.0 trata la concurrencia y el acceso al host como
+responsabilidades del lenguaje. Las tareas no pueden sobrevivir su scope léxico
+y los programas no reciben autoridad ambiental sobre filesystem o red.
+
+## Scopes léxicos de tareas
+
+`concurrent { ... }` es una expresión. Cada tarea creada con `spawn` pertenece
+a ese scope:
+
+```ach
+fn work(value) {
+    await yield_now()
+    return value * 2
+}
+
+let total = concurrent {
+    let left = spawn work(10)
+    let right = spawn work(11)
+    await left + await right
+}
+```
+
+Salir del scope espera o cancela sus hijos conforme a las reglas estructuradas.
+Un task handle no puede separar trabajo hacia el background.
+
+## Outcomes y carreras
+
+Un `await task` normal propaga el fallo del hijo. Usa un outcome cuando el
+padre pretende recuperarse:
+
+```ach
+let result = concurrent {
+    let task = spawn work(42)
+    await task as outcome
+}
+```
+
+Compite una lista fija de hijos poseídos de forma explícita:
+
+```ach
+let winner = concurrent {
+    let first = spawn work(1)
+    let second = spawn work(2)
+    await [first, second] as race
+}
+```
+
+El scope cancela y limpia los siblings perdedores.
+
+## Canales acotados
+
+`channel(capacity)` crea un canal acotado con propietario. Capacidad cero es
+modo rendezvous; capacidades positivas aplican backpressure:
+
+```ach
+let messages = channel(1)
+
+let text = concurrent {
+    spawn produce(messages)
+    let first = await channel_receive(messages)
+    let second = await channel_receive(messages)
+    first + second
+}
+```
+
+Las operaciones del canal son puntos explícitos de suspensión. Los límites del
+runtime acotan canales vivos y operaciones pendientes.
+
+## Archivos y sockets con propietario
+
+Las funciones de archivo y TCP retornan resource handles poseídos. Abrir, leer,
+escribir y cerrar son operaciones awaited:
+
+```ach
+let file = await open_file("data/input.txt")
+let bytes = await file_read(file, 4096)
+await file_close(file)
+```
+
+El código sigue sin autoridad hasta que el operador concede el path:
+
+```bash
+ach --allow-read ./data run reader.ach
+```
+
+Los grants de red usan direcciones numéricas y puertos exactos:
+
+```bash
+ach --allow-connect 127.0.0.1:443 run client.ach
+ach --allow-listen 127.0.0.1:8080 run server.ach
+```
+
+## Límites del runtime
+
+El CLI expone límites independientes para tareas, recursos, profundidad de
+scopes, canales, resultados retenidos, requests nativos pendientes, workers
+bloqueantes y su cola. Por ejemplo:
+
+```bash
+ach --max-tasks 32 --max-resources 16 --max-channels 8 run service.ach
+```
+
+Estos límites aplican en el boundary del host y complementan `--max-heap` y
+`--max-instructions` para la VM.
+
+## Límite de prueba
+
+I/O del host, creación de tareas y operaciones suspendibles están prohibidas en
+código `prove` y `circuit`. La inferencia de efectos rechaza el programa antes
+de generar el circuito. Los valores deterministas pueden obtenerse en código de
+host y pasar al límite de prueba como inputs públicos o witness explícitos.
+
+## Motores de ejecución
+
+Selecciona el intérprete o LLVM JIT explícitamente, o permite fallback visible:
+
+```bash
+ach run app.ach --engine interpreter
+ach run app.ach --engine jit
+ach run app.ach --engine auto
+```
+
+`ach aot` compila el mismo programa de host soportado a un ejecutable nativo.
+El contrato 0.1.0 comprueba tareas estructuradas y límites de autoridad a través
+de las rutas nativas soportadas.

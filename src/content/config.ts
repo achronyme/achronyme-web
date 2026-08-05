@@ -4,6 +4,7 @@ import { glob } from 'astro/loaders';
 const docsSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
+  slug: z.string().optional(),
 });
 
 export const collections = {

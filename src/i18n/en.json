@@ -1,103 +1,166 @@
 {
   "lang": "en",
   "header": {
-    "cta": "Get Started",
     "docs": "Docs",
     "playground": "Playground",
-    "banner": "Introducing Achronyme — a language for zero-knowledge proofs. Read the announcement"
+    "roadmap": "Roadmap",
+    "releaseNotes": "0.1.0 notes",
+    "stableLabel": "Stable",
+    "candidateLabel": "Release candidate",
+    "banner": "0.1.0 release candidate: structured concurrency, explicit authority, and trusted proving"
   },
   "hero": {
-    "badge": "v0.1.0 - Structured concurrency and explicit proving trust",
-    "eyebrow": "The Tri-Architecture",
-    "headline1": "Three machines.",
-    "headline2": "One language.",
-    "headline3": "Zero trust.",
-    "subtitle": "Three bytecode VMs. Akron runs your code. Artik computes witnesses. Lysis builds the circuit.",
-    "cta": "Get Started",
-    "ctaSecondary": "Meet the Machines",
-    "github": "View on GitHub"
+    "eyebrow": "Achronyme 0.1.0 release candidate",
+    "headline1": "Write the program.",
+    "headline2": "Bound its authority.",
+    "headline3": "Prove what matters.",
+    "subtitle": "One language for capability-scoped host programs and zero-knowledge circuits, with structured concurrency, native execution, and proving keys selected explicitly.",
+    "cta": "Install stable 0.0.1",
+    "ctaSecondary": "Explore the candidate",
+    "trustLabel": "Release gate",
+    "trustValue": "Independent ceremony contribution in progress"
   },
   "ecosystem": {
-    "title": "Built with Rust. Outputs everywhere.",
-    "outputs": [".r1cs", ".wtns", ".sol", "Groth16", "PlonK"]
+    "title": "One source, explicit execution paths.",
+    "outputs": ["Interpreter", "LLVM JIT", "Native AOT", "R1CS", "Groth16"]
+  },
+  "releaseStatus": {
+    "eyebrow": "Version truth",
+    "title": "Published and candidate versions, clearly separated.",
+    "subtitle": "The installer follows the latest published core release. Candidate builds remain reviewable source until their release gates close.",
+    "stable": "Published stable",
+    "candidate": "Release candidate",
+    "core": "Compiler and CLI",
+    "coreDesc": "Stable packages and installer artifacts are published from the core repository.",
+    "editor": "Editor tooling",
+    "editorDesc": "VS Code and LSP support track the language grammar and core source revision.",
+    "web": "Web and playground",
+    "webDesc": "The documentation and playground are being prepared against the 0.1.0 core candidate.",
+    "published": "Published",
+    "review": "In review",
+    "live": "Service live",
+    "source": "Pinned core revision"
+  },
+  "capabilities": {
+    "eyebrow": "What 0.1.0 actually adds",
+    "title": "A systems language boundary around proof code.",
+    "subtitle": "The candidate is not only a proving update. It defines how concurrent host work, external authority, circuit compilation, and cryptographic trust meet.",
+    "items": {
+      "concurrency": {
+        "title": "Structured concurrency",
+        "desc": "Lexical concurrent scopes own every spawned task. Await, race, cancellation, bounded channels, and task diagnostics have explicit lifetime rules.",
+        "meta": "concurrent + spawn + await"
+      },
+      "authority": {
+        "title": "Capability-scoped I/O",
+        "desc": "Files and TCP resources are owned values. Read, write, connect, and listen authority must be granted explicitly at the CLI or project boundary.",
+        "meta": "deny ambient host access"
+      },
+      "native": {
+        "title": "Interpreter, JIT, and AOT",
+        "desc": "Run through the portable interpreter, LLVM 21 ORC JIT, or packaged native AOT runtime with visible fallback and shared runtime limits.",
+        "meta": "ach run --engine ..."
+      },
+      "circuits": {
+        "title": "Circuit compilation",
+        "desc": "Lower native Achronyme or imported Circom to optimized R1CS and witnesses, with Plonkish development paths kept visibly separate.",
+        "meta": ".r1cs + .wtns"
+      },
+      "interop": {
+        "title": "Circom and snarkjs interop",
+        "desc": "Artik computes complex witnesses, Lysis bounds template expansion, and exported artifacts cross-check with the established snarkjs ecosystem.",
+        "meta": "BN254 interoperability"
+      },
+      "trust": {
+        "title": "Fail-closed proving trust",
+        "desc": "Proof generation requires an explicit development opt-in or an immutable ceremony-derived key store bound to the exact optimized circuit.",
+        "meta": "no implicit setup"
+      }
+    }
   },
   "triArch": {
-    "eyebrow": "The Tri-Architecture",
-    "title": "Meet the Machines",
-    "subtitle": "Three bytecode VMs. Three layers of the pipeline.",
+    "eyebrow": "The tri-architecture",
+    "title": "Three machines, one explicit pipeline.",
+    "subtitle": "Each VM owns a different responsibility instead of hiding execution, witness generation, and constraint construction behind one runtime.",
     "akron": {
       "name": "Akron",
-      "role": "The Surface VM",
-      "desc": "Runs Achronyme as a real language. Variables, closures, mark-sweep GC, 40 opcodes. The same code you test with ach run is the code that gets compiled. No translation gap.",
-      "capabilities": ["40 opcodes", "Tagged values", "prove {} blocks", "Circom interop"]
+      "role": "Host and surface VM",
+      "desc": "Runs the language, structured tasks, owned resources, closures, and proof blocks. Interpreter, JIT, and AOT share the same authority boundary.",
+      "capabilities": ["Structured tasks", "Owned I/O", "JIT + AOT", "Proof values"]
     },
     "artik": {
       "name": "Artik",
-      "role": "The Witness VM",
-      "desc": "Computes witnesses for circuits where Circom hits a wall. No heap, no GC, pure field arithmetic. Runs inside the R1CS backend to close the E212 gap.",
-      "capabilities": ["25 opcodes", "Field arithmetic", "E212 closure", "Multi-prime"]
+      "role": "Witness VM",
+      "desc": "Executes deterministic witness programs, including multi-subprogram Circom lowering and native bigint operations for ECDSA-scale circuits.",
+      "capabilities": ["Deterministic witness", "Native bigint", "Multi-subprogram", "Multi-prime"]
     },
     "lysis": {
       "name": "Lysis",
-      "role": "The Instantiation VM",
-      "desc": "Expands templates into constraints without memory explosions. Hash-consing collapses identical sub-graphs. Turns eager expansions from gigabytes into lean IR.",
-      "capabilities": ["29 opcodes", "Hash-consing", "Loop unrolling", "IR emission"]
+      "role": "Instantiation VM",
+      "desc": "Stages template expansion, deduplicates shared bodies, and emits constraint IR without forcing every repeated subgraph into memory at once.",
+      "capabilities": ["Staged expansion", "Hash-consing", "Shared bodies", "Constraint IR"]
     }
   },
-  "sectionDual": {
-    "title": "Dual execution engine",
-    "subtitle": "One language, two targets. No compromises."
-  },
   "featureVM": {
-    "title": "VM Mode",
-    "desc": "A real programming language with closures, recursion, mark-sweep GC, 37 opcodes, and 50 type methods. Build anything from binary search to cryptographic protocols."
+    "title": "Concurrent host programs",
+    "desc": "Closures, collections, structured tasks, bounded channels, and owned file or TCP resources run under explicit grants and runtime limits."
   },
   "featureCircuit": {
-    "title": "Circuit Mode",
-    "desc": "Same syntax compiles to R1CS or Plonkish constraints. Boolean propagation, constant folding, and taint analysis catch under-constrained bugs before proof generation."
-  },
-  "sectionProofs": {
-    "title": "Explicit proving trust",
-    "subtitle": "Local setup for development, ceremony-derived BN254 keys for production."
+    "title": "Exact circuit artifacts",
+    "desc": "Compile Achronyme and Circom inputs to optimized constraints and witnesses that can be checked independently with standard tooling."
   },
   "featureProve": {
-    "title": "First-Class Proofs",
-    "desc": "prove {} blocks return real proof objects. Chain them, extract components with proof_json(), verify inline with verify_proof(). Proofs are values, not CLI artifacts."
+    "title": "Proofs with an explicit key source",
+    "desc": "Proof blocks remain first-class values, but generation now fails unless development setup or a circuit-bound trusted key store is selected."
   },
   "featureSolidity": {
-    "title": "On-Chain Verification",
-    "desc": "Export .r1cs and .wtns for snarkjs compatibility. Generate Solidity verifier contracts with --solidity. Deploy and verify proofs directly on Ethereum."
+    "title": "Detached and on-chain verification",
+    "desc": "Export snarkjs-compatible artifacts, generate Solidity Groth16 verifiers, or verify detached BN254 and BLS12-381 proof JSON from the CLI."
+  },
+  "proofTrust": {
+    "eyebrow": "Trust is an input",
+    "title": "Proof generation no longer invents trust for you.",
+    "subtitle": "Achronyme separates convenient local experimentation from production proving and keeps verification independent of either key source.",
+    "development": "Local development",
+    "developmentDesc": "Single-party setup is available only through an explicit insecure flag. Artifacts are not production trusted.",
+    "production": "Production key store",
+    "productionDesc": "A ceremony-derived BN254 key is packaged with its circuit hash, transcript, contribution history, and release evidence.",
+    "verification": "Detached verification",
+    "verificationDesc": "Verification accepts explicit proof, public input, key, curve, and output format. It does not infer trust from project state.",
+    "gateTitle": "Why 0.1.0 is still a candidate",
+    "gateDesc": "The implementation and CI are complete, but publication waits for the independent phase-2 contribution, public beacon, and bidirectional interoperability evidence.",
+    "readGuide": "Read the 0.1.0 release notes"
   },
   "comparison": {
-    "title": "The difference",
-    "subtitle": "Proving a Poseidon commitment: Circom + snarkjs vs Achronyme.",
-    "circomLabel": "Circom + snarkjs",
-    "achLabel": "Achronyme",
-    "circomSteps": "7 steps, 3 tools",
-    "achSteps": "6 lines, 1 file"
+    "title": "Development speed without production ambiguity",
+    "subtitle": "Use an explicit local setup while iterating, then switch to the exact ceremony-bound store for production.",
+    "circomLabel": "Development",
+    "achLabel": "Production",
+    "circomSteps": "explicitly insecure",
+    "achSteps": "ceremony bound"
   },
   "stats": {
-    "tests": "4,400+ tests",
-    "backends": "2 proof backends",
-    "natives": "50 methods",
-    "deps": "0 JS deps"
+    "stable": "Core stable",
+    "candidate": "Core candidate",
+    "machines": "Purpose-built VMs",
+    "license": "Open-source license"
   },
   "roadmap": {
     "title": "Roadmap",
-    "subtitle": "Real receipts, not promises. Versioned milestones, shipped commits, and what comes next.",
+    "subtitle": "Published releases, reviewable candidates, and future research are labeled separately.",
     "livingPill": "Living roadmap - updated Aug 2026",
     "metrics": {
       "started": "Started",
       "startedValue": "Jan 2026",
-      "version": "Current",
-      "crates": "crates",
-      "tests": "tests",
-      "deps": "JS deps"
+      "version": "Stable",
+      "crates": "workspace crates",
+      "tests": "CI gates",
+      "deps": "license"
     },
     "status": {
-      "shipped": "Shipped",
-      "inProgress": "In Progress",
-      "planned": "Planned",
+      "shipped": "Published",
+      "inProgress": "Release candidate",
+      "planned": "Next",
       "exploratory": "Exploratory",
       "target": "Target"
     },
@@ -107,60 +170,61 @@
       "commits": "commits",
       "verified": "Verified",
       "viewRelease": "View release",
-      "viewBranch": "View branch"
+      "viewBranch": "View branch",
+      "candidateNotes": "Candidate release notes"
     },
     "phases": {
       "now": {
-        "label": "Now shipping",
-        "anchor": "v0.1.0",
-        "desc": "Latest release."
+        "label": "Published stable",
+        "anchor": "v0.0.1",
+        "desc": "Native Linux packaging, JIT, AOT, and reproducible installer artifacts."
       },
       "wip": {
-        "label": "Active development",
+        "label": "Closing the 0.1.0 gate",
         "anchor": "0.1.0",
-        "desc": "Production trusted setup — ingesting external Powers-of-Tau."
+        "desc": "Core merged and green; independent ceremony evidence remains."
       },
       "next": {
-        "label": "Next milestone",
-        "anchor": "v0.3.0",
-        "desc": "Browser playground."
+        "label": "After 0.1.0",
+        "anchor": "next",
+        "desc": "Stabilize SDK and editor distribution from measured usage."
       },
       "later": {
-        "label": "On the horizon",
+        "label": "Research horizon",
         "anchor": "v0.x",
-        "desc": "Researched, scoped, not yet started."
+        "desc": "Scoped ideas, not release commitments."
       },
       "target": {
         "label": "Stable target",
         "anchor": "v1.0.0",
-        "desc": "API freeze + backwards-compat guarantees."
+        "desc": "API freeze and backward-compatibility guarantees."
       }
     },
     "items": {
-      "multiPrime": "secp256k1 ECDSAVerify(64,4) end-to-end",
-      "multiPrimeDesc": "The heaviest circomlib reference circuit now compiles, generates a witness, and proves end-to-end. Optimized R1CS lands at ~1.49M constraints — below circom's own count — the witness verifies, and Groth16 prove + verify are measured. 162 E2E cross-prime tests still green.",
-      "proveIR": "ProveIR pipeline",
-      "proveIRDesc": "Pre-compiled circuit templates serialized in bytecode. prove {} blocks are first-class values.",
+      "multiPrime": "Native execution and reproducible packaging",
+      "multiPrimeDesc": "The published 0.0.1 release provides LLVM JIT, interpreter fallback, native AOT bundles, checksums, and Linux x86_64/aarch64 production gates.",
+      "proveIR": "First-class proof pipeline",
+      "proveIRDesc": "Proof blocks, ProveIR, R1CS export, and detached interoperability remain part of the stable product line.",
       "solidity": "Solidity verifier generation",
-      "solidityDesc": "Export Groth16 verifier contracts for on-chain proof verification on Ethereum.",
-      "circomFrontend": "Circom Frontend",
-      "circomFrontendDesc": "Import .circom templates and circomlib (Poseidon, MiMCSponge, EdDSA, BabyJubjub) directly. Constraint counts match circom O2 or beat it — Num2Bits 9 vs 17, LessThan 10 vs 20.",
-      "r1csOptimizer": "R1CS optimizer v2",
-      "r1csOptimizerDesc": "Frequency heuristic, tautological linear removal, Gaussian elimination, BN254 constant folding. EscalarMulAny 3.6x faster.",
-      "adversarialTests": "Adversarial soundness suite",
-      "adversarialTestsDesc": "Tests that try to forge proofs prove constraint deltas are real LC folding wins, not under-constrained bugs.",
-      "playground": "Web Playground",
-      "playgroundDesc": "In-browser WASM powers editor intelligence — instant LSP-grade diagnostics, hover, and completions as you type. Compilation, execution, and proving run on the server, with browser-session projects. Write and prove circuits online — no install.",
-      "multiFieldVM": "Multi-field VM",
-      "multiFieldVMDesc": "VM runtime parameterized over FieldBackend. prove {} blocks use native field arithmetic for any curve.",
-      "starkBackend": "STARK backend (Goldilocks)",
-      "starkBackendDesc": "AIR constraint backend using Plonky3 for transparent STARK proofs over the Goldilocks field — no trusted setup.",
-      "noirFrontend": "Noir frontend",
-      "noirFrontendDesc": "Import Noir programs as ProveIR modules. Use existing Noir circuits inside Achronyme alongside Circom.",
-      "rustSDK": "Rust SDK (cargo add)",
-      "rustSDKDesc": "Embed the Achronyme runtime in Rust apps via crate. Proc-macros, full interop. Targets Rust devs, not just ZK engineers.",
+      "solidityDesc": "Generate Groth16 verifier contracts and export standard proof artifacts for external verification.",
+      "r1csOptimizer": "Circom-compatible optimization",
+      "r1csOptimizerDesc": "Achronyme lowers native and imported circuits through checked optimization and witness validation.",
+      "circomFrontend": "Structured concurrency and host authority",
+      "circomFrontendDesc": "The 0.1.0 candidate adds lexical task scopes, bounded channels, owned resources, exact host grants, and shared interpreter/JIT/AOT semantics.",
+      "adversarialTests": "Trusted proving boundary",
+      "adversarialTestsDesc": "Proof generation fails closed, production keys are circuit-bound, and publication waits for independently verifiable ceremony evidence.",
+      "playground": "Editor and documentation distribution",
+      "playgroundDesc": "Ship the 0.3.0 editor line and keep the playground, language reference, and release artifacts pinned to the same core semantics.",
+      "multiFieldVM": "Stable embedding surface",
+      "multiFieldVMDesc": "Turn the internal compiler and proof pipeline into a small, documented SDK only after the release contracts settle.",
+      "starkBackend": "Transparent proof systems",
+      "starkBackendDesc": "Explore AIR and STARK backends without presenting research as a committed release.",
+      "noirFrontend": "Additional circuit frontends",
+      "noirFrontendDesc": "Evaluate Noir or other frontends only where they reuse ProveIR without weakening diagnostics or trust boundaries.",
+      "rustSDK": "Rust SDK",
+      "rustSDKDesc": "Expose a stable embedding API after real downstream use identifies the minimal supported surface.",
       "apiFreeze": "1.0 stable API",
-      "apiFreezeDesc": "Language specification freeze, backward compatibility guarantees, and stable bytecode format."
+      "apiFreezeDesc": "Freeze the language specification, bytecode compatibility policy, and public SDK contracts."
     }
   },
   "docs": {
@@ -169,11 +233,12 @@
     "next": "Next"
   },
   "footer": {
-    "tagline": "Three machines. One language. Zero trust.",
+    "tagline": "Capability-scoped programs and explicit proving trust.",
     "resources": "Resources",
     "community": "Community",
     "github": "GitHub",
     "releases": "Releases",
+    "releaseNotes": "0.1.0 candidate notes",
     "vsCode": "VS Code Extension",
     "discussions": "Discussions",
     "issues": "Issues",

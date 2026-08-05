@@ -1,0 +1,38 @@
+/* Shared composition primitives for the landing and roadmap surfaces. */
+.landing-grid {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--color-subtle) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-subtle) 22%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+  pointer-events: none;
+}
+
+.landing-orb {
+  position: absolute;
+  width: 30rem;
+  height: 30rem;
+  border-radius: 9999px;
+  filter: blur(96px);
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.landing-orb-proof { background: var(--color-proof); }
+.landing-orb-info { background: var(--color-info); }
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 9999px;
+  padding: 0.35rem 0.75rem;
+  background: color-mix(in srgb, var(--color-proof) 8%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-proof) 20%, transparent);
+  color: var(--color-proof-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1;
+  text-transform: uppercase;
+}

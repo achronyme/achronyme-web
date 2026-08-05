@@ -1,0 +1,104 @@
+---
+title: Achronyme 0.1.0 Release Candidate
+description: Current status, implemented features, compatibility, and remaining publication gate for Achronyme 0.1.0.
+slug: "releases/0.1.0"
+---
+
+> **Status: unpublished release candidate.** The package version is `0.1.0`,
+> but the latest published core release remains `v0.0.1`. Do not treat a source
+> version, merged pull request, or green workflow as a published release.
+
+The 0.1.0 candidate is built from core revision
+`fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`. It adds a host execution model
+with structured concurrency and explicit authority, and it changes proof
+generation to require an explicit source of trust.
+
+## Version matrix
+
+| Surface | Published stable | Candidate |
+|---|---:|---:|
+| Compiler and CLI | `0.0.1` | `0.1.0` |
+| Editor and LSP | `0.2.0` | `0.3.0` |
+| Web package and server | No standalone release | `0.1.0` |
+
+The installer resolves the latest published core release from GitHub. Until
+`v0.1.0` is tagged and published, a normal install therefore returns `0.0.1`.
+
+## Structured concurrency
+
+- `concurrent { ... }` creates a lexical task scope.
+- `spawn call(...)` creates a child owned by that scope.
+- `await task`, `await task as outcome`, and `await [a, b] as race` make joins,
+  recoverable failures, and races explicit.
+- Bounded channels, cooperative cancellation, task diagnostics, and runtime
+  limits prevent detached or unbounded background work.
+
+See [Concurrency and Host I/O](/docs/language/concurrency-and-io/) for the
+language and CLI contract.
+
+## Explicit host authority
+
+File and TCP operations use owned resources. Programs receive no ambient read,
+write, connect, or listen access. Authority is granted with exact CLI flags or
+the corresponding `achronyme.toml` settings:
+
+```bash
+ach --allow-read ./data --allow-connect 127.0.0.1:443 run app.ach
+```
+
+Host effects are rejected inside `prove` and `circuit` code. The compiler keeps
+the external world outside the deterministic proof boundary.
+
+## Native execution
+
+`ach run` supports the interpreter and LLVM 21 ORC JIT with an explicit
+`--engine interpreter|jit|auto` selector. `ach aot` emits a native executable
+against the packaged AOT runtime. Release CI covers interpreter fallback, JIT,
+AOT, installed layouts, resource limits, and Linux x86_64/aarch64 packaging.
+
+## Fail-closed proving trust
+
+Proof generation no longer creates local keys implicitly:
+
+```bash
+# Development only. The output is not production trusted.
+ach --insecure-dev-setup run proof.ach
+
+# Production path. The key store must match the exact optimized circuit.
+ach --trusted-key-dir ./trusted-keys run proof.ach
+```
+
+Production BN254 Groth16 stores bind the proving key to the R1CS, phase-1
+transcript, phase-2 contributors, final public beacon, and release evidence.
+Detached BN254 and BLS12-381 Groth16 verification is available through
+`ach verify`. Plonkish and BLS12-381 proof generation remain development-only
+in this release line.
+
+See [Proof Generation](/docs/zk-concepts/proof-generation/) for user-facing
+commands and the core repository's versioned trusted-setup guide for the full
+operator workflow.
+
+## Editor candidate
+
+Editor `0.3.0` tracks the final core candidate revision and adds syntax and
+semantic highlighting for structured concurrency, task handles, owned I/O,
+and capability-aware builtins. It also includes Circom language activation,
+parser-backed diagnostics, hover, completion, document symbols, definitions,
+references, and rename support.
+
+## Remaining publication gate
+
+The implementation is merged and final-SHA CI is green. Publication still
+requires all of the following production evidence:
+
+1. an independently controlled phase-2 contribution;
+2. a previously committed, publicly verifiable final beacon;
+3. a final key that verifies against the exact release R1CS and phase 1;
+4. successful snarkjs-to-Achronyme and Achronyme-to-snarkjs proof checks;
+5. packaged release evidence with exact hashes, sizes, revision, and metrics.
+
+Only after this gate closes should the project publish `v0.1.0`, promote the
+editor and web candidates, and update the stable version labels.
+
+See the [Changelog](/docs/releases/changelog/) for the complete historical
+release record.
