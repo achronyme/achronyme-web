@@ -1,95 +1,84 @@
 ---
 title: Configuración del Editor
-description: Cómo configurar VS Code con resaltado de sintaxis, diagnósticos y ejecución para Achronyme.
+description: Soporte publicado y candidato de VS Code y LSP para Achronyme y Circom.
 ---
 
-## Extensión de VS Code
+## Estado de versiones
 
-La extensión oficial de [Achronyme](https://github.com/achronyme/achronyme-editor) agrega soporte completo del lenguaje a Visual Studio Code.
+El último release publicado del editor es `0.2.0`. Editor `0.3.0` es el
+candidato para Achronyme core `0.1.0` y fija la revisión exacta
+`fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`.
 
-### Características
+Usa los [releases publicados del editor](https://github.com/achronyme/achronyme-editor/releases)
+para una instalación normal. Compila el candidato desde source solo cuando
+también estés evaluando el candidato 0.1.0 del core.
 
-- **Resaltado de sintaxis** — Keywords, builtins, literales de campo (`0p...`), literales BigInt (`0i256x...`), operadores, strings
-- **Diagnósticos en tiempo real** — Errores de parseo mientras escribes, impulsado por el servidor `ach-lsp`
-- **Documentación al pasar el cursor** — Pasa el cursor sobre cualquier keyword o función builtin para ver su firma, parámetros y ejemplos
-- **Autocompletado** — Keywords, las 32 funciones builtin con placeholders de snippet, y 7 snippets de código
-- **Botón de ejecución** — Ejecución con un clic de archivos `.ach` desde la barra de título del editor
+## Features de VS Code
 
-### Instalación desde Código Fuente
+El candidato 0.3.0 proporciona:
+
+- Resaltado TextMate para `.ach`, incluyendo `concurrent`, `spawn`, `await`,
+  task calls e I/O de archivo o red basado en capacidades.
+- Activación y resaltado del lenguaje Circom para `.circom`.
+- Diagnósticos respaldados por el parser mientras escribes.
+- Tokens semánticos para declaraciones, task handles, async calls, builtins,
+  parámetros, tipos, métodos, strings, números y operadores.
+- Hover para keywords, funciones globales, métodos y namespaces estáticos.
+- Completion para 30 keywords, 43 funciones globales, 47 métodos, 6 miembros
+  de namespaces estáticos y 16 snippets.
+- Símbolos de documento, go-to-definition, referencias y rename.
+- Botón Run que invoca `ach run` en una terminal integrada.
+- Descubrimiento, descarga y avisos de actualización del CLI desde releases
+  publicados del core.
+
+Formatting no está implementado en esta línea.
+
+## Compilar el candidato 0.3.0
 
 ```bash
-# Clonar el repositorio del editor
 git clone https://github.com/achronyme/achronyme-editor.git
 cd achronyme-editor
+git checkout release/0.3.0
 
-# Compilar el servidor LSP
 cargo build --release -p ach-lsp
-
-# Colocar el binario en el directorio bin de la extensión
 mkdir -p editors/vscode/bin
 cp target/release/ach-lsp editors/vscode/bin/
 
-# Instalar dependencias de la extensión y compilar
 cd editors/vscode
 npm ci
 npm run build
+npm run typecheck
+npm test
 ```
 
-Luego abre VS Code con la extensión en modo desarrollo:
+Abre un Extension Development Host:
 
 ```bash
 code --extensionDevelopmentPath=editors/vscode
 ```
 
-### Auto-descarga del CLI
+## Comportamiento de versión del CLI
 
-Cuando haces clic en el botón **Run** en un archivo `.ach`, la extensión busca el binario `ach` en este orden:
+La extensión busca `ach` en este orden:
 
-1. La ruta configurada en `achronyme.executablePath`
-2. `~/.achronyme/bin/ach` (ubicación de auto-descarga)
-3. PATH del sistema
+1. `achronyme.executablePath`;
+2. la ubicación de descarga administrada por la extensión;
+3. el `PATH` del sistema.
 
-Si no se encuentra, la extensión ofrece descargar el binario correcto para tu plataforma (Linux x86_64, macOS x86_64/ARM64, Windows x86_64) desde [GitHub Releases](https://github.com/achronyme/achronyme/releases).
+Las descargas vienen del último release **publicado** del core en GitHub. Hasta
+publicar `v0.1.0`, la descarga automática instala core `0.0.1`, no el candidato
+del source.
 
-La extensión también verifica actualizaciones al activarse y te avisa cuando hay una nueva versión disponible.
+## Settings
 
-## Configuración
+| Setting | Default | Descripción |
+|---|---|---|
+| `achronyme.executablePath` | `""` | Path al CLI `ach`. Vacío habilita descubrimiento bundled, administrado o por `PATH`. |
+| `achronyme.lspPath` | `""` | Path a `ach-lsp`. Vacío usa el binario incluido con la extensión. |
 
-| Ajuste | Valor por defecto | Descripción |
-|--------|-------------------|-------------|
-| `achronyme.executablePath` | `""` | Ruta al binario `ach`. Dejar vacío para auto-detección. |
-| `achronyme.lspPath` | `""` | Ruta al binario `ach-lsp`. Dejar vacío para usar el binario incluido. |
+## Otros editores
 
-## Snippets de Código
-
-La extensión proporciona estos snippets a través del autocompletado:
-
-| Prefijo | Se expande a |
-|---------|-------------|
-| `fn` | `fn nombre(params) { ... }` |
-| `prove` | `prove { ... }` |
-| `for` | `for item in colección { ... }` |
-| `forr` | `for i in 0..n { ... }` |
-| `if` | `if condición { ... }` |
-| `ife` | `if condición { ... } else { ... }` |
-| `while` | `while condición { ... }` |
-
-## Capacidades del LSP
-
-El servidor de lenguaje (`ach-lsp`) proporciona:
-
-| Característica | Estado |
-|----------------|--------|
-| Diagnósticos (errores de parseo) | Soportado |
-| Documentación al pasar el cursor | Soportado (49 keywords + builtins) |
-| Autocompletado | Soportado (keywords, builtins, snippets) |
-| Ir a definición | Soportado |
-| Buscar referencias | Soportado |
-| Renombrar | Soportado |
-| Formateo | Aún no |
-
-Los diagnósticos se actualizan en tiempo real mientras escribes — no necesitas guardar el archivo primero.
-
-## Otros Editores
-
-El servidor LSP se comunica por stdio y sigue el Language Server Protocol, por lo que puede integrarse con cualquier editor que soporte LSP (Neovim, Helix, Zed, etc.). Apunta la configuración LSP de tu editor al binario `ach-lsp`.
+`ach-lsp` se comunica por stdio mediante Language Server Protocol. Editores
+como Neovim, Helix y Zed pueden lanzar el binario directamente. La extensión de
+VS Code agrega administración de descargas y el comando Run; esas features no
+forman parte del servidor de protocolo.

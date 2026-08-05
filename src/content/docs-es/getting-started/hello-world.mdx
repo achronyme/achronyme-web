@@ -78,4 +78,24 @@ let p = prove(product: Public) {
 }
 ```
 
-El bloque `prove {}` compila el circuito, captura variables del ámbito circundante, genera un testigo, verifica las restricciones y devuelve una prueba Groth16 real. `ach run` conecta el backend de pruebas nativo automáticamente — no se requiere archivo Powers of Tau ni banderas adicionales.
+El bloque `prove {}` compila el circuito, captura variables del scope, genera
+un witness, verifica los constraints y devuelve una prueba Groth16 real.
+Achronyme 0.1.0 deliberadamente **no** elige el modelo de confianza por ti.
+
+Para desarrollo local, activa el setup de una sola parte de forma explicita:
+
+```bash
+ach --insecure-dev-setup run multiply.ach
+```
+
+La bandera facilita iterar, pero sus llaves y pruebas no son confiables para
+produccion. El proving de produccion selecciona un store derivado de ceremonia
+y ligado al circuito exacto:
+
+```bash
+ach --trusted-key-dir ./trusted-keys run multiply.ach
+```
+
+Sin una de las dos opciones, generar pruebas falla de forma cerrada. Continua
+con [Generacion de Pruebas](/es/docs/zk-concepts/proof-generation/) antes de
+usar artefactos fuera del desarrollo local.

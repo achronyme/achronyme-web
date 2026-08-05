@@ -122,9 +122,7 @@ ach circom main.circom -l vendor/circomlib/circuits --inputs "x=42"
 
 El flag toma uno o mas directorios. Cuando un archivo Circom usa `include "file.circom";` (sin prefijo `./`), el compilador recorre cada directorio `-l` en orden hasta encontrar el archivo. Esta es la forma recomendada de vendorizar circomlib.
 
-:::note
-El flag `-l` actualmente solo aplica a `ach circom`. Para `ach run` y `ach circuit`, los imports se resuelven **estrictamente relativos al fuente `.ach`**, ya que esos comandos aun no aceptan `-l`. Una futura [integracion con el manifest del proyecto](/docs/circom/limitations/) te dejara declarar directorios de libreria en `achronyme.toml` para que todos los comandos los recojan automaticamente.
-:::
+Para configurarlo en todo el proyecto, declara los mismos directorios en `[circom].libs`. `ach run`, `ach circuit` y `ach circom` consumen esa lista; las entradas `-l/--lib` del CLI añaden directorios extra para una sola invocación.
 
 ## Cadenas de Include y Deduplicacion
 

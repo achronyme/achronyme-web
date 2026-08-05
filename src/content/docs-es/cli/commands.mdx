@@ -12,6 +12,21 @@ Estas banderas aplican a todos los subcomandos:
 | `--error-format <fmt>` | Formato de salida de diagnósticos: `human` (predeterminado), `json`, o `short`. Ver [Diagnósticos y Advertencias](/es/docs/language/diagnostics/#formatos-de-salida) |
 | `--prime <name>` | Campo primo para el backend de constraints: `bn254` (predeterminado), `bls12-381`, o `goldilocks` |
 | `--no-config` | Deshabilita la carga de `achronyme.toml`. Todos los valores vienen de banderas CLI y defaults |
+| `--insecure-dev-setup` | Permite setup de una sola parte para desarrollo local. Conflicta con `--trusted-key-dir` |
+| `--trusted-key-dir <dir>` | Selecciona un store derivado de ceremonia. Conflicta con `--insecure-dev-setup` |
+| `--allow-read <dir>` | Concede lectura sobre un directorio. Repetible |
+| `--allow-write <dir>` | Concede escritura sobre un directorio. Repetible |
+| `--allow-connect <ip:port>` | Concede una IP numérica y puerto de salida. Repetible |
+| `--allow-listen <ip:port>` | Concede una dirección numérica y puerto de escucha. Repetible |
+| `--max-tasks <count>` | Limita tareas hijas vivas |
+| `--max-resources <count>` | Limita recursos con propietario abiertos simultáneamente |
+| `--max-task-scopes <count>` | Limita scopes anidados de concurrencia estructurada |
+| `--max-pending-native-requests <count>` | Limita requests nativos asíncronos en vuelo |
+| `--max-retained-task-results <count>` | Limita resultados terminados retenidos para task handles |
+| `--max-channels <count>` | Limita canales abiertos simultáneamente |
+| `--max-channel-operations <count>` | Limita operaciones send y receive pendientes |
+| `--blocking-workers <count>` | Configura workers de I/O bloqueante acotados |
+| `--blocking-queue-capacity <count>` | Limita requests de I/O bloqueante en cola |
 
 ---
 
@@ -56,6 +71,42 @@ Ver [Configuración del Proyecto](/es/docs/cli/project-config) para la referenci
 
 ---
 
+## `verify` — Verificar artefactos Groth16 separados
+
+La verificación es independiente del proyecto y no crea una proving key. La
+curva es obligatoria para no inferir formatos criptográficos desde input no
+confiable:
+
+```bash
+ach verify \
+  --proof proof.json \
+  --public public.json \
+  --vkey verification_key.json \
+  --curve bn254 \
+  --format json
+```
+
+Las curvas soportadas son `bn254` y `bls12-381`. Artefactos inválidos,
+malformados, incompatibles o alterados retornan status distinto de cero.
+
+---
+
+## `trusted-setup` — Empaquetar una llave verificada externamente
+
+`ach trusted-setup package` crea un store inmutable desde una ceremonia BN254
+Groth16 ya verificada. Requiere R1CS exacto, zkeys final y pre-beacon, artefacto
+y digest de fase 1, cada ID y hash de contribuidor, y evidencia comprometida
+del beacon público.
+
+```bash
+ach trusted-setup package --help
+```
+
+El comando no ejecuta una ceremonia ni inventa evidencia faltante. Los
+operadores deben seguir el workflow versionado del repositorio core.
+
+---
+
 ## `run` — Ejecutar un programa
 
 Corre un archivo fuente Achronyme (`.ach`) o binario compilado (`.achb`).
@@ -77,6 +128,8 @@ Si se omite `<path>`, el CLI resuelve el archivo de entrada desde `[project].ent
 | `--gc-stats` | Imprime estadísticas del GC en stderr tras la ejecución. Ver [Estadísticas del GC](/es/docs/architecture/memory-and-gc/#estadisticas-del-gc) |
 | `--circuit-stats` | Imprime estadísticas de constraints por cada bloque `prove {}` ejecutado |
 | `--prove-backend <backend>` | Backend para bloques `prove {}`: `r1cs` (predeterminado) o `plonkish` |
+| `--engine <engine>` | Motor: `interpreter`, `jit` o `auto` (predeterminado) |
+| `--max-instructions <count>` | Detiene la VM al agotar el presupuesto de instrucciones |
 
 ### Ejemplos
 
@@ -117,7 +170,7 @@ ach circom -l vendor/circomlib/circuits sha256.circom --input-file inputs.toml
 | Bandera | Descripción |
 |------|-------------|
 | `--inputs <pares>` | `name=value` separados por coma (decimal o hex `0x`) |
-| `--input-file <path>` | Inputs desde un archivo TOML (arrays soportados nativamente) |
+| `--input-file <path>` | Inputs TOML con arrays. Repetible en R1CS para compilar una vez y emitir varios witnesses o proofs |
 | `-l, --lib <dir>` | Directorio de búsqueda para resolución de `include`. Repetible; los dirs CLI tienen precedencia sobre `[circom].libs` de `achronyme.toml` |
 | `--backend <r1cs\|plonkish>` | Backend de constraints (predeterminado: `r1cs`) |
 | `--prove` | Genera una prueba criptográfica tras la compilación (requiere `--inputs`) |
@@ -127,6 +180,7 @@ ach circom -l vendor/circomlib/circuits sha256.circom --input-file inputs.toml
 | `--plonkish-json <path>` | Exporta el circuito Plonkish (con testigo si se da `--inputs`) como JSON |
 | `--dump-ir` | Imprime el IR SSA optimizado y sale antes de generar constraints |
 | `--no-optimize` | Deshabilita los pases de optimización del IR |
+| `--low-memory` | Acota metadata retenida al exportar circuitos R1CS optimizados muy grandes |
 | `--circuit-stats` | Imprime el desglose del conteo de constraints |
 
 ### Resolución de librerías
@@ -149,6 +203,39 @@ ach compile --output script.achb   # usa entry de achronyme.toml
 | Bandera | Descripción |
 |------|-------------|
 | `--output <path>` | Path del archivo de salida (opcional — puede ponerse en `[build.output].binary` en `achronyme.toml`) |
+
+---
+
+## `aot` — Compilar un ejecutable nativo
+
+Compila source Achronyme o una imagen `.achb` mediante LLVM y enlaza el runtime
+AOT empaquetado:
+
+```bash
+ach aot src/main.ach --output build/app
+ach aot program.achb --output build/app --clang clang-21
+```
+
+`--runtime <path>` reemplaza el descubrimiento de
+`libakron_aot_runtime.a`. AOT requiere Clang 21 y LLVM 21.
+
+El ejecutable independiente comienza sin autoridad sobre filesystem o red. Los
+grants y límites se seleccionan al ejecutar el binario; no se embeben desde el
+comando `ach aot`:
+
+```bash
+AKRON_ALLOW_READ=/srv/app/data \
+AKRON_MAX_TASKS=32 \
+AKRON_INSTRUCTION_BUDGET=1000000 \
+./build/app
+```
+
+`AKRON_ALLOW_READ` y `AKRON_ALLOW_WRITE` aceptan listas de paths de la
+plataforma. `AKRON_ALLOW_CONNECT` y `AKRON_ALLOW_LISTEN` aceptan direcciones
+numéricas separadas por comas. El heap y GC usan `AKRON_MAX_HEAP` y
+`AKRON_STRESS_GC`. Cada límite del runtime estructurado también tiene un
+equivalente `AKRON_`, desde `AKRON_MAX_TASKS` y `AKRON_MAX_RESOURCES` hasta
+`AKRON_BLOCKING_QUEUE_CAPACITY`.
 
 ---
 
@@ -183,3 +270,4 @@ ach inspect --bind 127.0.0.1 --port 3000
 | `--port <u16>` | Puerto HTTP (predeterminado `3000`) |
 | `--bind <addr>` | Dirección de bind (predeterminado `127.0.0.1`). El inspector expone valores del testigo, fuente y estado del DAG sin autenticación — bindear a `0.0.0.0` lo hace visible a cualquier peer en la red |
 | `--no-open` | No auto-abrir el navegador |
+| `--manifest` | Imprime el manifest resuelto de efectos/capacidades y la configuración de seguridad del runtime, y luego sale |

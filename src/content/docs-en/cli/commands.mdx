@@ -12,6 +12,21 @@ These flags apply to all subcommands:
 | `--error-format <fmt>` | Diagnostic output format: `human` (default), `json`, or `short`. See [Diagnostics & Warnings](/docs/language/diagnostics/#output-formats) |
 | `--prime <name>` | Prime field for the constraint backend: `bn254` (default), `bls12-381`, or `goldilocks` |
 | `--no-config` | Disable `achronyme.toml` loading. All values come from CLI flags and defaults |
+| `--insecure-dev-setup` | Permit single-party proving-key setup for local development. Conflicts with `--trusted-key-dir` |
+| `--trusted-key-dir <dir>` | Select a ceremony-derived trusted-key store. Conflicts with `--insecure-dev-setup` |
+| `--allow-read <dir>` | Grant read-only access to one directory. Repeatable |
+| `--allow-write <dir>` | Grant write access to one directory. Repeatable |
+| `--allow-connect <ip:port>` | Grant one outbound numeric IP and port. Repeatable |
+| `--allow-listen <ip:port>` | Grant one numeric listen address and port. Repeatable |
+| `--max-tasks <count>` | Bound live child tasks |
+| `--max-resources <count>` | Bound simultaneously open owned resources |
+| `--max-task-scopes <count>` | Bound nested structured-concurrency scopes |
+| `--max-pending-native-requests <count>` | Bound in-flight asynchronous native requests |
+| `--max-retained-task-results <count>` | Bound completed child results retained for task handles |
+| `--max-channels <count>` | Bound simultaneously open channels |
+| `--max-channel-operations <count>` | Bound pending send and receive operations |
+| `--blocking-workers <count>` | Set the bounded blocking-I/O worker count |
+| `--blocking-queue-capacity <count>` | Bound queued blocking-I/O requests |
 
 ---
 
@@ -56,6 +71,42 @@ See [Project Configuration](/docs/cli/project-config) for the `achronyme.toml` r
 
 ---
 
+## `verify` — Verify detached Groth16 artifacts
+
+Verification is independent of project configuration and does not create a
+proving key. The curve is required so the CLI never infers a cryptographic
+format from untrusted input:
+
+```bash
+ach verify \
+  --proof proof.json \
+  --public public.json \
+  --vkey verification_key.json \
+  --curve bn254 \
+  --format json
+```
+
+Supported curves are `bn254` and `bls12-381`. Invalid, malformed, mismatched,
+or tampered artifacts return a non-zero exit status.
+
+---
+
+## `trusted-setup` — Package an externally verified key
+
+`ach trusted-setup package` creates an immutable trusted-key store from an
+already verified BN254 Groth16 ceremony. It requires the exact R1CS, final and
+pre-beacon zkeys, phase-1 artifact and digest, every contributor ID and hash,
+and the committed public-beacon evidence.
+
+```bash
+ach trusted-setup package --help
+```
+
+This command does not run a ceremony or invent missing evidence. Operators
+should follow the versioned trusted-setup workflow in the core repository.
+
+---
+
 ## `run` — Execute a program
 
 Runs an Achronyme source file (`.ach`) or compiled binary (`.achb`).
@@ -77,6 +128,8 @@ If `<path>` is omitted, the CLI resolves the entry file from `[project].entry` i
 | `--gc-stats` | Print GC statistics to stderr after execution. See [GC Statistics](/docs/architecture/memory-and-gc/#gc-statistics) |
 | `--circuit-stats` | Print circuit constraint stats for each `prove {}` block executed |
 | `--prove-backend <backend>` | Backend for `prove {}` blocks: `r1cs` (default) or `plonkish` |
+| `--engine <engine>` | Execution engine: `interpreter`, `jit`, or `auto` (default) |
+| `--max-instructions <count>` | Stop after the configured bytecode instruction budget |
 
 ### Examples
 
@@ -117,7 +170,7 @@ ach circom -l vendor/circomlib/circuits sha256.circom --inputs-file inputs.toml
 | Flag | Description |
 |------|-------------|
 | `--inputs <pairs>` | Comma-separated `name=value` (decimal or `0x` hex) |
-| `--input-file <path>` | Inputs from a TOML file (arrays supported natively) |
+| `--input-file <path>` | Inputs from TOML (arrays supported). Repeat for R1CS compile-once, multi-witness/proof output |
 | `-l, --lib <dir>` | Library search directory for `include` resolution. Repeatable; CLI dirs take precedence over `[circom].libs` from `achronyme.toml` |
 | `--backend <r1cs\|plonkish>` | Constraint backend (default: `r1cs`) |
 | `--prove` | Generate a cryptographic proof after compilation (requires `--inputs`) |
@@ -127,6 +180,7 @@ ach circom -l vendor/circomlib/circuits sha256.circom --inputs-file inputs.toml
 | `--plonkish-json <path>` | Export the Plonkish circuit (with witness if `--inputs` is given) as JSON |
 | `--dump-ir` | Print the optimized SSA IR and exit before constraint generation |
 | `--no-optimize` | Disable IR optimization passes |
+| `--low-memory` | Bound retained metadata while exporting very large optimized R1CS circuits |
 | `--circuit-stats` | Print constraint count breakdown |
 
 ### Library resolution
@@ -149,6 +203,39 @@ ach compile --output script.achb   # uses entry from achronyme.toml
 | Flag | Description |
 |------|-------------|
 | `--output <path>` | Output file path (optional — can be set in `[build.output].binary` in `achronyme.toml`) |
+
+---
+
+## `aot` — Compile a native executable
+
+Compile Achronyme source or an `.achb` image through LLVM and link it against
+the packaged Achronyme AOT runtime:
+
+```bash
+ach aot src/main.ach --output build/app
+ach aot program.achb --output build/app --clang clang-21
+```
+
+`--runtime <path>` overrides discovery of `libakron_aot_runtime.a`. AOT requires
+Clang 21 and LLVM 21.
+
+The standalone executable starts with filesystem and network authority denied.
+Runtime grants and limits are selected when the binary runs, not embedded from
+the `ach aot` command:
+
+```bash
+AKRON_ALLOW_READ=/srv/app/data \
+AKRON_MAX_TASKS=32 \
+AKRON_INSTRUCTION_BUDGET=1000000 \
+./build/app
+```
+
+`AKRON_ALLOW_READ` and `AKRON_ALLOW_WRITE` accept platform path lists.
+`AKRON_ALLOW_CONNECT` and `AKRON_ALLOW_LISTEN` accept comma-separated numeric
+addresses. Heap and GC controls use `AKRON_MAX_HEAP` and `AKRON_STRESS_GC`.
+Every structured-runtime limit also has an uppercase `AKRON_` equivalent, from
+`AKRON_MAX_TASKS` and `AKRON_MAX_RESOURCES` through
+`AKRON_BLOCKING_QUEUE_CAPACITY`.
 
 ---
 
@@ -183,3 +270,4 @@ ach inspect --bind 127.0.0.1 --port 3000
 | `--port <u16>` | HTTP port (default `3000`) |
 | `--bind <addr>` | Bind address (default `127.0.0.1`). The inspector exposes witness values, source, and DAG state without auth — binding to `0.0.0.0` makes that visible to every peer on the network |
 | `--no-open` | Do not auto-open the browser |
+| `--manifest` | Print the resolved program effect/capability manifest and runtime security configuration, then exit |

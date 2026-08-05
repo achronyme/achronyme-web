@@ -180,20 +180,34 @@ Cada bloque prove compila y prueba independientemente.
 
 ## Ejecutar con Generación de Pruebas
 
-`ach run` genera pruebas Groth16 reales nativamente — no se requiere archivo Powers of Tau ni banderas adicionales:
+`ach run` genera pruebas solo despues de elegir una fuente explicita de llave.
+Usa setup de una sola parte para desarrollo local:
 
 ```bash
-ach run my_program.ach
+ach --insecure-dev-setup run my_program.ach
 ```
 
-El backend nativo se conecta automáticamente, así que cada bloque `prove {}` compila su circuito, verifica las restricciones y devuelve una prueba criptográfica. Las claves de prueba y verificación se cachean en `~/.achronyme/cache/` para ejecuciones posteriores más rápidas.
+Cada bloque `prove {}` compila su circuito, verifica el witness y devuelve una
+prueba criptografica. Las llaves de desarrollo se cachean para ejecuciones
+posteriores, pero no son confiables para produccion.
 
-> **Nota:** el setup confiable de Groth16 es solo para desarrollo — las claves se generan localmente con un CSPRNG, no con una ceremonia de producción. Ingerir Powers of Tau externos para un setup de grado producción es el camino planificado y aún no está conectado.
+Para BN254 Groth16 de produccion, selecciona un store derivado de ceremonia cuyo
+manifest coincida con el circuito optimizado exacto:
+
+```bash
+ach --trusted-key-dir ./trusted-keys run my_program.ach
+```
+
+Sin una de las dos opciones, generar falla de forma cerrada. Consulta
+[Generacion de Pruebas y Confianza](/es/docs/zk-concepts/proof-generation/)
+antes de usar el resultado fuera de desarrollo local.
 
 ## Selección de Backend
 
 Por defecto, los bloques prove usan el backend R1CS/Groth16. Para usar Plonkish/KZG-PlonK:
 
 ```bash
-ach run my_program.ach --prove-backend plonkish
+ach --insecure-dev-setup run my_program.ach --prove-backend plonkish
 ```
+
+La generacion Plonkish sigue siendo solo para desarrollo en la linea 0.1.0.
