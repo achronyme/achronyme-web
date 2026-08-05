@@ -1,0 +1,30 @@
+<script>
+  const elements = document.querySelectorAll<HTMLElement>('.reveal:not([data-reveal-bound])');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.08, rootMargin: '0px 0px -32px 0px' }
+  );
+
+  elements.forEach((element) => {
+    element.dataset.revealBound = 'true';
+    const rect = element.getBoundingClientRect();
+    const startsInViewport = rect.bottom >= 0 && rect.top <= window.innerHeight;
+
+    if (reducedMotion || startsInViewport) {
+      element.classList.add('visible');
+      return;
+    }
+
+    element.classList.add('reveal-pending');
+    observer.observe(element);
+  });
+</script>

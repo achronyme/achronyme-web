@@ -81,16 +81,70 @@ The `{name}` template variable is replaced with `project.name`.
 
 ```toml
 [vm]
-max_heap = "256M"     # Maximum heap size (e.g., "256M", "1G", "512K"). Empty = unlimited
-stress_gc = false     # Force GC on every allocation (default: false)
-gc_stats = false      # Print GC statistics after execution (default: false)
+prove_backend = "r1cs"
+max_heap = "256M"
+stress_gc = false
+gc_stats = false
+
+# Host capabilities are denied unless explicitly granted.
+allow_read = ["data"]
+allow_write = ["output"]
+allow_connect = ["127.0.0.1:9000"]
+allow_listen = []
+
+# Structured-concurrency and bounded-I/O limits.
+max_tasks = 64
+max_resources = 32
+max_task_scopes = 16
+max_pending_native_requests = 32
+max_retained_task_results = 64
+max_channels = 32
+max_channel_operations = 128
+blocking_workers = 4
+blocking_queue_capacity = 64
 ```
 
 | Field | CLI equivalent | Default |
 |-------|----------------|---------|
+| `prove_backend` | `--prove-backend` | `"r1cs"` |
 | `max_heap` | `--max-heap` | unlimited |
 | `stress_gc` | `--stress-gc` | `false` |
 | `gc_stats` | `--gc-stats` | `false` |
+| `allow_read` | repeatable `--allow-read` | `[]` |
+| `allow_write` | repeatable `--allow-write` | `[]` |
+| `allow_connect` | repeatable `--allow-connect` | `[]` |
+| `allow_listen` | repeatable `--allow-listen` | `[]` |
+| `max_tasks` | `--max-tasks` | `65535` |
+| `max_resources` | `--max-resources` | `65535` |
+| `max_task_scopes` | `--max-task-scopes` | `1024` |
+| `max_pending_native_requests` | `--max-pending-native-requests` | `4096` |
+| `max_retained_task_results` | `--max-retained-task-results` | `4096` |
+| `max_channels` | `--max-channels` | `4096` |
+| `max_channel_operations` | `--max-channel-operations` | `65535` |
+| `blocking_workers` | `--blocking-workers` | `4` |
+| `blocking_queue_capacity` | `--blocking-queue-capacity` | `64` |
+
+Relative paths in `allow_read` and `allow_write` are resolved from the project root. Supplying any repeatable capability flag on the CLI replaces that capability's manifest list for the invocation. Network grants accept numeric `IP:PORT` endpoints; hostname resolution is not implied.
+
+### `[proving]` — Proving-key trust
+
+Proof generation is fail-closed by default. Choose exactly one key source when a program needs to create a proof:
+
+```toml
+[proving]
+# Production: load ceremony-derived artifacts from this project-relative directory.
+trusted_key_dir = "ceremony/keys"
+
+# Development only; do not combine with trusted_key_dir.
+# insecure_dev_setup = true
+```
+
+| Field | CLI equivalent | Default |
+|-------|----------------|---------|
+| `trusted_key_dir` | `--trusted-key-dir <DIR>` | unset |
+| `insecure_dev_setup` | `--insecure-dev-setup` | `false` |
+
+`trusted_key_dir` and `insecure_dev_setup = true` are mutually exclusive. CLI trust flags override the manifest. With neither source configured, execution may compile circuits and verify detached artifacts, but any attempt to generate a proving key fails rather than silently creating an unsafe local setup.
 
 ### `[circuit]` — Circuit settings
 
@@ -154,7 +208,17 @@ wtns = "build/witness.wtns"
 solidity = "build/Verifier.sol"
 
 [vm]
+prove_backend = "r1cs"
 max_heap = "512M"
+allow_read = ["data"]
+allow_write = ["build"]
+max_tasks = 64
+max_resources = 32
+max_channels = 16
+max_channel_operations = 64
+
+[proving]
+trusted_key_dir = "ceremony/keys"
 ```
 
 ## Validation
@@ -165,7 +229,10 @@ The CLI validates the TOML file on load:
 - `project.version` must be valid semver (`MAJOR.MINOR.PATCH`)
 - `build.backend` must be `"r1cs"` or `"plonkish"`
 - `build.error_format` must be `"human"`, `"json"`, or `"short"`
+- `vm.prove_backend` must be `"r1cs"` or `"plonkish"`
 - `vm.max_heap` must be a valid size string if non-empty
+- `proving.insecure_dev_setup` and `proving.trusted_key_dir` cannot both be set
+- `proving.trusted_key_dir` cannot be empty
 - `circuit.prime` must be `"bn254"`, `"bls12-381"`, or `"goldilocks"`
 - `project.entry` must end in `.ach` or `.achb`
 - `circom.libs` entries must exist (resolved at load time, relative to project root)

@@ -1,0 +1,83 @@
+---
+import type { Locale } from '../../i18n';
+import { t } from '../../i18n';
+import { releaseDocs, releaseStatus } from '../../data/release-status';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const copy = t(locale).proofTrust;
+const cards = [
+  {
+    title: copy.development,
+    description: copy.developmentDesc,
+    command: 'ach --insecure-dev-setup run proof.ach',
+    icon: 'science',
+    iconClass: 'text-warn',
+    cardClass: 'bg-warn/[0.04] ring-warn/15',
+  },
+  {
+    title: copy.production,
+    description: copy.productionDesc,
+    command: 'ach --trusted-key-dir ./trusted-keys run proof.ach',
+    icon: 'verified_user',
+    iconClass: 'text-valid',
+    cardClass: 'bg-valid/[0.04] ring-valid/15',
+  },
+  {
+    title: copy.verification,
+    description: copy.verificationDesc,
+    command: 'ach verify --proof proof.json --public public.json --vkey verification_key.json --curve bn254 --format json',
+    icon: 'fact_check',
+    iconClass: 'text-info',
+    cardClass: 'bg-info/[0.04] ring-info/15',
+  },
+] as const;
+---
+
+<section aria-labelledby="proof-trust-title" class="relative overflow-hidden border-b border-subtle/77 px-7 py-16 sm:px-10 lg:px-14 lg:py-24">
+  <div aria-hidden="true" class="landing-grid absolute inset-0 opacity-20"></div>
+  <div aria-hidden="true" class="landing-orb landing-orb-proof -left-52 bottom-0"></div>
+
+  <div class="relative z-10 mx-auto max-w-6xl">
+    <div class="reveal max-w-3xl">
+      <span class="section-kicker">{copy.eyebrow}</span>
+      <h2 id="proof-trust-title" class="mt-5 text-3xl font-bold tracking-tight sm:text-5xl">{copy.title}</h2>
+      <p class="mt-5 text-lg leading-relaxed text-text-secondary">{copy.subtitle}</p>
+    </div>
+
+    <div class="reveal-stagger mt-12 grid gap-4 lg:grid-cols-3">
+      {cards.map((card) => (
+        <article class={`reveal flex flex-col rounded-2xl p-6 ring-1 ${card.cardClass}`}>
+          <span class={`grid h-11 w-11 place-items-center rounded-xl bg-black/20 ring-1 ring-white/[0.07] ${card.iconClass}`}>
+            <span class="ms-icon ms-icon-lg">{card.icon}</span>
+          </span>
+          <h3 class="mt-6 text-lg font-semibold text-text-primary">{card.title}</h3>
+          <p class="mt-3 flex-1 text-sm leading-relaxed text-text-secondary">{card.description}</p>
+          <code class="mt-6 block overflow-x-auto rounded-xl bg-[#08080D] p-4 text-xs leading-relaxed text-text-muted ring-1 ring-white/[0.06]">{card.command}</code>
+        </article>
+      ))}
+    </div>
+
+    <div class="reveal mt-8 grid overflow-hidden rounded-2xl bg-proof/[0.055] ring-1 ring-proof/20 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div class="p-6 sm:p-8">
+        <div class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-full bg-warn/10 text-warn ring-1 ring-warn/20">
+            <span class="ms-icon ms-icon-lg">hourglass_top</span>
+          </span>
+          <div>
+            <span class="block font-mono text-xs uppercase tracking-[0.16em] text-proof-light">v{releaseStatus.core.candidate}</span>
+            <h3 class="mt-1 text-xl font-semibold text-text-primary">{copy.gateTitle}</h3>
+          </div>
+        </div>
+        <p class="mt-4 max-w-3xl text-sm leading-relaxed text-text-secondary">{copy.gateDesc}</p>
+      </div>
+      <a href={releaseDocs[locale]} class="group flex h-full min-w-[230px] items-center justify-between gap-6 border-t border-proof/15 px-6 py-5 text-sm font-semibold text-proof-light transition-colors hover:bg-proof/10 lg:border-l lg:border-t-0">
+        <span>{copy.readGuide}</span>
+        <span class="receipt-arrow ms-icon ms-icon-md">arrow_outward</span>
+      </a>
+    </div>
+  </div>
+</section>

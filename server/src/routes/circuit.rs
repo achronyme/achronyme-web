@@ -5,6 +5,9 @@
 //! - Workspace `.ach`: `X-Ach-Session` header, `[project] entry = "...ach"`.
 //! - Workspace `.circom`: `X-Ach-Session` header, `[project] entry = "...circom"`,
 //!   `[circom] libs = [...]` resolves to circomlib include paths.
+//!
+//! Generated playground proofs and Solidity verifiers use explicit insecure
+//! local setup. They are development artifacts, not production-trusted ones.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -21,6 +24,9 @@ use memory::FieldElement;
 use zkc::r1cs_backend::R1CSCompiler;
 
 use crate::error::ApiError;
+use crate::playground_proving::{
+    playground_proving_policy, require_development_key_source, PlaygroundProvingPolicy,
+};
 use crate::sandbox::sandboxed;
 
 const CIRCUIT_TIMEOUT_SECS: u64 = 30;
@@ -272,7 +278,7 @@ fn run_backend(
     do_prove: bool,
     do_solidity: bool,
 ) -> Result<CircuitResponse, String> {
-    let cache_dir = std::env::temp_dir().join("ach-server-cache");
+    let policy = playground_proving_policy();
 
     match backend {
         "r1cs" => compile_r1cs(
@@ -282,9 +288,9 @@ fn run_backend(
             n_witness,
             do_prove,
             do_solidity,
-            &cache_dir,
+            &policy,
         ),
-        "plonkish" => compile_plonkish(program, inputs, n_public, n_witness, do_prove, &cache_dir),
+        "plonkish" => compile_plonkish(program, inputs, n_public, n_witness, do_prove, &policy),
         _ => Err(format!(
             "unknown backend: {backend} (expected 'r1cs' or 'plonkish')"
         )),
@@ -298,7 +304,7 @@ fn compile_r1cs(
     n_witness: usize,
     do_prove: bool,
     do_solidity: bool,
-    cache_dir: &std::path::Path,
+    policy: &PlaygroundProvingPolicy,
 ) -> Result<CircuitResponse, String> {
     let b64 = base64::engine::general_purpose::STANDARD;
     let mut r1cs = R1CSCompiler::new();
@@ -327,8 +333,13 @@ fn compile_r1cs(
 
         // Generate proof if requested
         if do_prove {
-            let result = proving::groth16_bn254::generate_proof(&r1cs.cs, &witness, cache_dir)
-                .map_err(|e| format!("proof generation failed: {e}"))?;
+            let result = proving::groth16_bn254::generate_proof(
+                &r1cs.cs,
+                &witness,
+                policy.cache_dir(),
+                policy.key_source(),
+            )
+            .map_err(|e| format!("proof generation failed: {e}"))?;
 
             if let ProveResult::Proof {
                 proof_json: pj,
@@ -351,8 +362,12 @@ fn compile_r1cs(
 
     // Generate Solidity verifier if requested
     if do_solidity {
-        let vk = proving::groth16_bn254::setup_vk_only(&r1cs.cs, cache_dir)
-            .map_err(|e| format!("Groth16 setup failed: {e}"))?;
+        let vk = proving::groth16_bn254::setup_vk_only(
+            &r1cs.cs,
+            policy.cache_dir(),
+            policy.key_source(),
+        )
+        .map_err(|e| format!("Groth16 setup failed: {e}"))?;
         solidity_src = Some(proving::solidity::generate_solidity_verifier(&vk));
     }
 
@@ -378,7 +393,7 @@ fn compile_plonkish(
     n_public: usize,
     n_witness: usize,
     do_prove: bool,
-    cache_dir: &std::path::Path,
+    policy: &PlaygroundProvingPolicy,
 ) -> Result<CircuitResponse, String> {
     let mut compiler = zkc::plonkish_backend::PlonkishCompiler::new();
     let proven = ir::passes::bool_prop::compute_proven_boolean(program);
@@ -402,8 +417,10 @@ fn compile_plonkish(
             .map_err(|e| format!("plonkish verification failed: {e}"))?;
 
         if do_prove {
-            let result = proving::halo2_proof::generate_plonkish_proof(compiler, cache_dir)
-                .map_err(|e| format!("proof generation failed: {e}"))?;
+            require_development_key_source(policy.key_source())?;
+            let result =
+                proving::halo2_proof::generate_plonkish_proof(compiler, policy.cache_dir())
+                    .map_err(|e| format!("proof generation failed: {e}"))?;
 
             if let ProveResult::Proof {
                 proof_json: pj,

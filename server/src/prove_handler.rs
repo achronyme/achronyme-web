@@ -17,6 +17,8 @@ use memory::field::PrimeId;
 use memory::FieldElement;
 use prove_engine::{ProofEvent, ProveEngine, ProveObserver, ProveOptions};
 
+use crate::playground_proving::playground_proving_policy;
+
 /// Backend selection (re-exported so routes keep importing it from here).
 pub use prove_engine::ProveBackend;
 
@@ -61,14 +63,15 @@ impl ServerProveHandler {
         // /api/run + /api/prove + /api/circuit. $HOME is unsuitable
         // here — systemd's ProtectHome=true masks /home from the
         // service, and the cache is ephemeral anyway.
-        let cache_dir = std::env::temp_dir().join("ach-server-cache");
+        let policy = playground_proving_policy();
         let count_sink = Rc::new(CountSink::default());
         let engine = ProveEngine::with_observer(
             ProveOptions {
-                cache_dir,
+                cache_dir: policy.cache_dir().to_path_buf(),
                 backend,
                 prime_id: PrimeId::Bn254,
                 circuit_stats: false,
+                key_source: policy.key_source().clone(),
             },
             Box::new(SharedSink(Rc::clone(&count_sink))),
         );

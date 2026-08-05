@@ -92,4 +92,25 @@ let p = prove(product: Public) {
 }
 ```
 
-The `prove {}` block compiles the circuit, captures variables from the enclosing scope, generates a witness, verifies the constraints, and returns a real Groth16 proof. `ach run` wires the native proving backend automatically — no Powers of Tau file or extra flags required.
+The `prove {}` block compiles the circuit, captures variables from the enclosing
+scope, generates a witness, verifies the constraints, and returns a real
+Groth16 proof. Achronyme 0.1.0 deliberately does **not** choose the proving
+trust model for you.
+
+For local development, opt in to single-party setup explicitly:
+
+```bash
+ach --insecure-dev-setup run multiply.ach
+```
+
+The flag makes iteration convenient, but its keys and proofs are not production
+trusted. Production proving selects a ceremony-derived store bound to the
+exact circuit:
+
+```bash
+ach --trusted-key-dir ./trusted-keys run multiply.ach
+```
+
+Without either option, proof generation fails closed. Continue with
+[Proof Generation](/docs/zk-concepts/proof-generation/) before using proof
+artifacts outside local development.

@@ -5,7 +5,7 @@ description: Cómo instalar y compilar Achronyme.
 
 ## Instalación Rápida
 
-Instala la última versión con un solo comando:
+Instala el ultimo release **publicado** del core con un solo comando:
 
 ```bash
 curl -fsSL https://achrony.me/install.sh | sh
@@ -14,6 +14,15 @@ curl -fsSL https://achrony.me/install.sh | sh
 Esto instala `ach` en `~/.local/bin`. En Linux, el bundle verificado tambien
 instala el runtime AOT nativo en `~/.local/lib`. El instalador funciona en
 Linux y macOS sobre x86_64 y aarch64.
+
+La version estable publicada actualmente es `0.0.1`. El source tree y el
+paquete web ya usan `0.1.0`, pero ese candidato no lo entrega el instalador
+hasta que existan su tag y artefactos publicados. Fija la estable cuando la
+reproducibilidad importe:
+
+```bash
+curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.0.1
+```
 
 Verifica la instalación:
 
@@ -26,14 +35,17 @@ instalado, el CLI informa el fallback y ejecuta el interprete. La compilacion
 nativa con `ach aot` requiere Clang 21 y LLVM 21; el instalador ya incluye la
 biblioteca de runtime AOT de Achronyme.
 
-## Desde el Código Fuente
+## Evaluar el candidato 0.1.0 desde source
 
-Achronyme esta escrito en Rust. El toolchain del release es Rust 1.96.0.
+Achronyme esta escrito en Rust. El toolchain del candidato es Rust 1.96.0.
+Usa la revision exacta al revisar el comportamiento de 0.1.0:
 
 ```bash
 git clone https://github.com/achronyme/achronyme.git
 cd achronyme
+git checkout fd07b38e16256e2ed6a8f2b438d340a681c9b0ac
 cargo build --release
+target/release/ach --version
 ```
 
 El binario se encuentra en `target/release/ach`.
@@ -47,7 +59,11 @@ bash test/run_tests.sh
 
 ## Opcional: Compatibilidad con snarkjs
 
-Achronyme incluye backends nativos de Groth16 (ark-groth16) y PlonK (halo2-KZG), no se necesitan herramientas externas. Las pruebas se generan en proceso.
+Achronyme incluye backends nativos de Groth16 (ark-groth16) y PlonK
+(halo2-KZG). En el candidato 0.1.0, generar pruebas falla si no eliges
+`--insecure-dev-setup` o `--trusted-key-dir`. Las herramientas externas no son
+necesarias para ejecucion normal, pero snarkjs sigue siendo parte de la
+ceremonia de produccion y la auditoria de interoperabilidad.
 
 Los archivos `.r1cs` y `.wtns` generados también son compatibles con snarkjs para flujos de trabajo externos:
 

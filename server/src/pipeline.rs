@@ -7,8 +7,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use akron::error::RuntimeError;
-use akron::native::NativeObj;
-use akron::{CallFrame, ValueOps, VM};
+use akron::specs::CapabilitySet;
+use akron::{CallFrame, HostPolicy, ValueOps, VM};
 use akronc::Compiler;
 use memory::{Closure, Function, Value};
 
@@ -42,6 +42,12 @@ thread_local! {
 
 /// Maximum output size (1 MB). Prevents memory exhaustion from print-heavy loops.
 const MAX_OUTPUT_BYTES: usize = 1024 * 1024;
+
+fn playground_host_policy() -> HostPolicy {
+    let mut policy = HostPolicy::untrusted();
+    policy.grant(CapabilitySet::CONSOLE_WRITE);
+    policy
+}
 
 /// Custom print native that writes to the thread-local buffer.
 fn captured_print(vm: &mut VM, args: &[Value]) -> Result<Value, RuntimeError> {
@@ -175,14 +181,13 @@ fn run_inner(
 
     // 2. Create VM
     let mut vm = VM::new();
+    // The server virtualizes console output into a bounded request-local
+    // buffer. Grant only that capability; other host authority stays denied.
+    vm.host_policy = playground_host_policy();
 
     // Replace print native (index 0) with captured version
     if !vm.natives.is_empty() {
-        vm.natives[0] = NativeObj {
-            name: "print".to_string(),
-            func: captured_print,
-            arity: -1,
-        };
+        vm.natives[0].func = captured_print;
     }
 
     // Set resource limits
@@ -364,5 +369,18 @@ fn remap_bigint_handles(constants: &mut [Value], bigint_map: &[u32]) {
                 *val = Value::bigint(new_handle);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{playground_host_policy, CapabilitySet};
+
+    #[test]
+    fn playground_grants_only_virtualized_console_output() {
+        assert_eq!(
+            playground_host_policy().granted(),
+            CapabilitySet::CONSOLE_WRITE
+        );
     }
 }

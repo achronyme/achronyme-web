@@ -81,16 +81,70 @@ La variable `{name}` se reemplaza con `project.name`.
 
 ```toml
 [vm]
-max_heap = "256M"     # Tamaño máximo del heap (ej., "256M", "1G", "512K"). Vacío = ilimitado
-stress_gc = false     # Forzar GC en cada asignación (por defecto: false)
-gc_stats = false      # Imprimir estadísticas del GC tras la ejecución (por defecto: false)
+prove_backend = "r1cs"
+max_heap = "256M"
+stress_gc = false
+gc_stats = false
+
+# Las capacidades del host se deniegan salvo que se concedan explicitamente.
+allow_read = ["datos"]
+allow_write = ["salida"]
+allow_connect = ["127.0.0.1:9000"]
+allow_listen = []
+
+# Limites de concurrencia estructurada y E/S acotada.
+max_tasks = 64
+max_resources = 32
+max_task_scopes = 16
+max_pending_native_requests = 32
+max_retained_task_results = 64
+max_channels = 32
+max_channel_operations = 128
+blocking_workers = 4
+blocking_queue_capacity = 64
 ```
 
 | Campo | Equivalente CLI | Por defecto |
 |-------|----------------|-------------|
+| `prove_backend` | `--prove-backend` | `"r1cs"` |
 | `max_heap` | `--max-heap` | ilimitado |
 | `stress_gc` | `--stress-gc` | `false` |
 | `gc_stats` | `--gc-stats` | `false` |
+| `allow_read` | `--allow-read` repetible | `[]` |
+| `allow_write` | `--allow-write` repetible | `[]` |
+| `allow_connect` | `--allow-connect` repetible | `[]` |
+| `allow_listen` | `--allow-listen` repetible | `[]` |
+| `max_tasks` | `--max-tasks` | `65535` |
+| `max_resources` | `--max-resources` | `65535` |
+| `max_task_scopes` | `--max-task-scopes` | `1024` |
+| `max_pending_native_requests` | `--max-pending-native-requests` | `4096` |
+| `max_retained_task_results` | `--max-retained-task-results` | `4096` |
+| `max_channels` | `--max-channels` | `4096` |
+| `max_channel_operations` | `--max-channel-operations` | `65535` |
+| `blocking_workers` | `--blocking-workers` | `4` |
+| `blocking_queue_capacity` | `--blocking-queue-capacity` | `64` |
+
+Las rutas relativas de `allow_read` y `allow_write` se resuelven desde la raíz del proyecto. Si pasas al menos una bandera repetible de capacidad en el CLI, esa lista reemplaza la del manifiesto durante la invocación. Los permisos de red aceptan endpoints numéricos `IP:PORT`; no implican resolución de hostnames.
+
+### `[proving]` — Confianza de las claves de prueba
+
+La generación de pruebas falla de forma cerrada por defecto. Elige exactamente una fuente de claves cuando un programa deba crear una prueba:
+
+```toml
+[proving]
+# Produccion: carga artefactos derivados de una ceremonia desde este directorio.
+trusted_key_dir = "ceremony/keys"
+
+# Solo desarrollo; no combinar con trusted_key_dir.
+# insecure_dev_setup = true
+```
+
+| Campo | Equivalente CLI | Por defecto |
+|-------|----------------|-------------|
+| `trusted_key_dir` | `--trusted-key-dir <DIR>` | no configurado |
+| `insecure_dev_setup` | `--insecure-dev-setup` | `false` |
+
+`trusted_key_dir` e `insecure_dev_setup = true` son mutuamente excluyentes. Las banderas de confianza del CLI tienen precedencia sobre el manifiesto. Sin ninguna fuente configurada, la ejecución puede compilar circuitos y verificar artefactos separados, pero cualquier intento de generar una clave de prueba falla en vez de crear silenciosamente un setup local inseguro.
 
 ### `[circuit]` — Configuración del circuito
 
@@ -154,7 +208,17 @@ wtns = "build/witness.wtns"
 solidity = "build/Verifier.sol"
 
 [vm]
+prove_backend = "r1cs"
 max_heap = "512M"
+allow_read = ["datos"]
+allow_write = ["build"]
+max_tasks = 64
+max_resources = 32
+max_channels = 16
+max_channel_operations = 64
+
+[proving]
+trusted_key_dir = "ceremony/keys"
 ```
 
 ## Validación
@@ -165,7 +229,10 @@ El CLI valida el archivo TOML al cargarlo:
 - `project.version` debe ser semver válido (`MAJOR.MINOR.PATCH`)
 - `build.backend` debe ser `"r1cs"` o `"plonkish"`
 - `build.error_format` debe ser `"human"`, `"json"`, o `"short"`
+- `vm.prove_backend` debe ser `"r1cs"` o `"plonkish"`
 - `vm.max_heap` debe ser una cadena de tamaño válida si no está vacía
+- `proving.insecure_dev_setup` y `proving.trusted_key_dir` no pueden configurarse a la vez
+- `proving.trusted_key_dir` no puede estar vacío
 - `circuit.prime` debe ser `"bn254"`, `"bls12-381"`, o `"goldilocks"`
 - `project.entry` debe terminar en `.ach` o `.achb`
 - Las entradas `circom.libs` deben existir (resueltas en tiempo de carga, relativas a la raíz del proyecto)

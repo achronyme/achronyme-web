@@ -1,186 +1,153 @@
 ---
-title: "Proof Generation"
-description: "Generating and verifying zero-knowledge proofs."
+title: Proof Generation and Trust
+description: Generate, package, and verify Achronyme proofs without confusing development setup with production trust.
 ---
 
-Achronyme generates zero-knowledge proofs natively — no external tools required. Both backends produce real, verifiable proofs using standard cryptographic protocols.
+Achronyme compiles circuits, generates witnesses, and produces cryptographic
+proofs in process. In 0.1.0, proof generation **fails closed** until the
+operator selects where the proving key comes from.
 
-## Two Proving Systems
+## Trust modes
 
-| | R1CS + Groth16 | Plonkish + KZG-PlonK |
+| Mode | Selection | Intended use |
 |---|---|---|
-| Library | ark-groth16 | PSE halo2 |
-| Curve | BN254 | BN254 |
-| Proof size | ~128 bytes (constant) | Larger (scales with circuit) |
-| Setup | Per-circuit trusted setup | Universal KZG params (reusable) |
-| Verification | Constant time | Logarithmic |
+| No key source | Default | Compilation, witness export, and verification only; proof generation is rejected |
+| Development setup | `--insecure-dev-setup` | Local experiments and tests; single-party keys are not production trusted |
+| Trusted key store | `--trusted-key-dir <dir>` | Production BN254 Groth16 with a ceremony-derived key bound to the exact circuit |
 
-> **Known limitation:** the Groth16 trusted setup is **development-only**. The proving and verifying keys are generated locally with a CSPRNG (`OsRng`), not produced by a multi-party ceremony. For a production deployment you need a real ceremony — ingesting external Powers of Tau is the planned path and is not yet wired.
+The development and trusted-store options are mutually exclusive. The same
+settings can be expressed in `achronyme.toml`, but a CLI flag is clearer for
+one-off commands.
 
-## The Pipeline
+## Compile without proving
 
-Whether using the CLI or inline `prove {}` blocks, the proof pipeline follows the same steps:
+Circuit compilation and witness validation do not require a proving key:
+
+```bash
+ach circuit multiply.ach \
+  --inputs "product=42,a=6,b=7" \
+  --r1cs build/multiply.r1cs \
+  --wtns build/multiply.wtns
+```
+
+The R1CS path exports iden3-compatible `.r1cs` and `.wtns` files. Validate the
+witness independently when crossing a tooling boundary:
+
+```bash
+snarkjs wtns check build/multiply.r1cs build/multiply.wtns
+```
+
+## Development proofs
+
+Opt in explicitly when experimenting locally:
+
+```bash
+ach --insecure-dev-setup circuit multiply.ach \
+  --inputs "product=42,a=6,b=7" \
+  --prove
+```
+
+Inline `prove {}` blocks use the same policy:
+
+```bash
+ach --insecure-dev-setup run proof.ach
+```
+
+The generated proof is cryptographically real and useful for development, but
+its locally generated key does not provide multi-party setup trust. Do not
+publish that key as a production artifact.
+
+## Production BN254 proving
+
+A trusted-key store contains an immutable, versioned package for one exact
+optimized R1CS. Its manifest binds at least:
+
+- the R1CS and final proving key hashes;
+- the phase-1 artifact and published digest;
+- the contributed pre-beacon key;
+- every phase-2 contributor ID and contribution hash;
+- the final public beacon and prior commitment evidence;
+- the ceremony tool version and release evidence.
+
+Select the store when running proof code:
+
+```bash
+ach --trusted-key-dir ./trusted-keys run proof.ach
+```
+
+If the program's optimized circuit is absent or does not match the store,
+proof generation fails instead of creating a replacement key.
+
+`ach trusted-setup package` validates and packages externally verified
+ceremony artifacts. It does not run the ceremony or make an untrusted key
+trusted. Operators should use the versioned trusted-setup and boss-fight guides
+from the core repository.
+
+## Detached verification
+
+Verification does not need project configuration, an insecure setup flag, or a
+trusted-key store:
+
+```bash
+ach verify \
+  --proof proof.json \
+  --public public.json \
+  --vkey verification_key.json \
+  --curve bn254 \
+  --format json
+```
+
+The curve is mandatory. `bn254` and `bls12-381` verification are supported.
+Malformed, curve-mismatched, or tampered artifacts return a non-zero status.
+
+## Backends and release trust
+
+| Backend | Circuit and witness | Development proof | Production proof in 0.1.0 |
+|---|---|---|---|
+| R1CS + Groth16, BN254 | Supported | Supported with explicit opt-in | Supported with a verified trusted-key store |
+| R1CS + Groth16, BLS12-381 | Supported paths vary by command | Development-only | Not a production proving target |
+| Plonkish + KZG | Supported development path | Development-only | Not a production proving target |
+
+Solidity verifier generation and snarkjs export target BN254 Groth16. Do not
+generalize those compatibility claims to every curve or backend.
+
+## Inline proof values
 
 ```ach
-Source → Parse → AST → IR → Optimize → Compile → Witness → Verify → Prove
-```
+let secret = 0p42
+let commitment = poseidon(secret, 0p7)
 
-1. **Parse**: source code to AST
-2. **IR Lowering**: AST to SSA intermediate representation, extracting `public`/`witness` declarations
-3. **Optimize**: `const_fold`, `dce`, `bool_prop` passes reduce constraint count
-4. **Compile**: IR instructions become R1CS constraints or Plonkish table rows
-5. **Witness**: concrete input values fill the witness vector/table
-6. **Verify**: constraints are checked against the witness (catches bugs before proving)
-7. **Prove**: cryptographic proof is generated
-
-## CLI: `circuit` Command
-
-The `circuit` command compiles a standalone `.ach` file:
-
-```sh
-# R1CS (default): compile + witness + export .r1cs/.wtns
-achronyme circuit multiply.ach --inputs "x=6,y=7,out=42"
-
-# Plonkish: compile + verify
-achronyme circuit multiply.ach --backend plonkish --inputs "x=6,y=7,out=42"
-
-# Plonkish with proof generation
-achronyme circuit multiply.ach --backend plonkish --inputs "x=6,y=7,out=42" --prove
-```
-
-### R1CS Output Files
-
-With the R1CS backend, the CLI exports two binary files:
-
-- **`circuit.r1cs`**: the constraint system in iden3 format (snarkjs-compatible)
-- **`circuit.wtns`**: the witness vector in iden3 format
-
-These can be used directly with snarkjs for Groth16 proof generation:
-
-```sh
-# Using snarkjs (external)
-snarkjs r1cs info circuit.r1cs
-snarkjs wtns check circuit.r1cs circuit.wtns
-snarkjs groth16 setup circuit.r1cs pot_final.ptau circuit.zkey
-snarkjs groth16 prove circuit.zkey circuit.wtns proof.json public.json
-snarkjs groth16 verify vkey.json public.json proof.json
-```
-
-Or let Achronyme handle it natively — see the `prove {}` block section below.
-
-### Plonkish Output
-
-With `--prove`, the Plonkish backend generates:
-- `proof.json`: the KZG-PlonK proof (hex-encoded bytes)
-- `public.json`: public input values
-- `vkey.json`: the verifying key (hex-encoded)
-
-### Solidity Verifier
-
-For R1CS/Groth16, you can generate an on-chain verifier:
-
-```sh
-achronyme circuit multiply.ach --inputs "x=6,y=7,out=42" --solidity Verifier.sol
-```
-
-This produces a Solidity contract that verifies Groth16 proofs for the specific circuit.
-
-## Inline: `prove {}` Blocks
-
-Prove blocks let you generate proofs inline within regular Achronyme programs:
-
-```ach
-let secret = 42
-let hash = 0p18569430475105882...
-
-let p = prove(hash: Public) {
-    assert_eq(poseidon(secret, 0), hash)
+let proof = prove(commitment: Public) {
+    assert_eq(poseidon(secret, 0p7), commitment)
 }
 
-// p is a proof object
-print(proof_json(p))
-print(proof_public(p))
-print(proof_vkey(p))
+print(proof_json(proof))
+print(proof_public(proof))
+print(proof_vkey(proof))
 ```
 
-### How Prove Blocks Work
+The compiler infers witness captures and keeps declared public inputs explicit.
+Host I/O, task spawning, and suspension are forbidden inside the deterministic
+proof body.
 
-1. The VM encounters the `prove {}` block
-2. Variables from the outer scope are **captured** — `secret` and `hash` become circuit inputs
-3. Int values are **automatically converted** to field elements (the only place this happens implicitly)
-4. The block is compiled as a circuit, a witness is generated from captured values, and a proof is produced
-5. The result is a `ProofObject` on the heap, accessible via native functions
+## Error classes
 
-### ProveResult
+Expect proof generation to reject:
 
-A prove block returns one of:
+- a missing key source;
+- simultaneous development and trusted-store options;
+- a missing circuit entry in the store;
+- circuit, curve, transcript, or manifest hash mismatches;
+- malformed proof, public input, or verification-key artifacts;
+- witness values that do not satisfy the constraints.
 
-- **`Proof`**: contains `proof_json`, `public_json`, and `vkey_json` strings
-- **`VerifiedOnly`**: constraints were verified but no proof was generated (verify-only mode)
+These failures are part of the trust boundary, not setup inconveniences to
+bypass.
 
-### Proof Object Natives
+## Further reading
 
-| Function | Returns | Description |
-|----------|---------|-------------|
-| `proof_json(p)` | String | The proof data (Groth16 or PlonK format) |
-| `proof_public(p)` | String | Public inputs as a JSON array of decimal strings |
-| `proof_vkey(p)` | String | The verification key |
-
-### Backend Selection
-
-Prove blocks support both backends:
-
-- **R1CS + Groth16** (default): native via ark-groth16
-- **Plonkish + KZG-PlonK**: native via halo2
-
-## Key Caching
-
-Proof generation requires cryptographic keys (proving key + verifying key). These are expensive to compute, so Achronyme caches them:
-
-- **Location**: `~/.achronyme/cache/`
-- **R1CS (Groth16)**: cached by a SHA256 hash of the constraint system structure. Same circuit = same keys, even across runs.
-- **Plonkish (KZG)**: universal params cached by `k` (the log2 of table size). Reusable across different circuits of the same size.
-
-On first run for a new circuit, key generation may take a few seconds. Subsequent runs with the same circuit structure are near-instant.
-
-## Witness Generation
-
-The witness is the complete assignment of values to all circuit wires — inputs, intermediates, and outputs. The compiler builds it in three passes:
-
-1. **Evaluate**: runs the IR with concrete inputs for early validation. Catches assertion failures, division by zero, and missing inputs *before* emitting any constraints.
-2. **Compile**: lowers IR to constraints, recording a trace of `WitnessOp` instructions as a side effect.
-3. **Replay**: fills the witness vector by replaying the ops trace with concrete values.
-
-### Witness Operations
-
-Each intermediate wire is computed by a recorded operation:
-
-| Op | Description |
-|----|-------------|
-| `AssignLC` | Evaluate a linear combination |
-| `Multiply` | Multiply two LCs |
-| `Inverse` | Compute modular inverse |
-| `BitExtract` | Extract the n-th bit from a field element |
-| `IsZero` | IsZero gadget: set result and inverse |
-| `PoseidonHash` | Compute Poseidon permutation (fills ~360 internal wires) |
-
-## Error Handling
-
-The pipeline reports errors at the earliest possible stage:
-
-| Stage | Error | Example |
-|-------|-------|---------|
-| IR Lowering | Parse/declaration errors | `variable 'x' not declared` |
-| Evaluation | Assertion/arithmetic errors | `assert_eq failed: 5 != 6` |
-| Compilation | Constraint errors | `division by zero` |
-| Verification | Unsatisfied constraints | `constraint 3 failed` |
-| Proof Generation | Cryptographic errors | `Groth16 setup failed` |
-
-The early evaluation pass is intentional: it catches logical errors before spending time on constraint generation and proving.
-
-## Further Reading
-
-- [R1CS](/docs/zk-concepts/r1cs/) — how constraints work in the R1CS backend
-- [Plonkish](/docs/zk-concepts/plonkish/) — how the Plonkish backend works
-- [Circuit Overview](/docs/circuits/overview/) — writing circuits in Achronyme
-- [Builtins](/docs/circuits/builtins/) — built-in circuit functions and their costs
+- [0.1.0 Release Candidate](/docs/releases/0.1.0/)
+- [CLI Commands](/docs/cli/commands/)
+- [R1CS](/docs/zk-concepts/r1cs/)
+- [Plonkish](/docs/zk-concepts/plonkish/)
+- [Inline Proofs](/docs/tutorials/inline-proofs/)

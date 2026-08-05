@@ -1,0 +1,131 @@
+---
+title: Concurrency and Host I/O
+description: Structured tasks, bounded channels, owned resources, capability grants, and runtime limits in Achronyme 0.1.0.
+---
+
+Achronyme 0.1.0 treats concurrency and host access as language-level
+responsibilities. Tasks cannot outlive their lexical scope, and programs do not
+receive ambient filesystem or network authority.
+
+## Lexical task scopes
+
+`concurrent { ... }` is an expression. Every task created with `spawn` belongs
+to that scope:
+
+```ach
+fn work(value) {
+    await yield_now()
+    return value * 2
+}
+
+let total = concurrent {
+    let left = spawn work(10)
+    let right = spawn work(11)
+    await left + await right
+}
+```
+
+Leaving a scope waits for or cancels its children according to the structured
+task rules. A task handle cannot detach work into the background.
+
+## Await outcomes and races
+
+An ordinary `await task` propagates a child failure. Use an outcome when the
+parent intends to recover:
+
+```ach
+let result = concurrent {
+    let task = spawn work(42)
+    await task as outcome
+}
+```
+
+Race a fixed list of owned children explicitly:
+
+```ach
+let winner = concurrent {
+    let first = spawn work(1)
+    let second = spawn work(2)
+    await [first, second] as race
+}
+```
+
+The losing siblings are cancelled and cleaned up by the scope.
+
+## Bounded channels
+
+`channel(capacity)` creates an owned bounded channel. Capacity zero is
+rendezvous mode; positive capacities apply backpressure:
+
+```ach
+let messages = channel(1)
+
+let text = concurrent {
+    spawn produce(messages)
+    let first = await channel_receive(messages)
+    let second = await channel_receive(messages)
+    first + second
+}
+```
+
+Channel operations are explicit suspension points. Runtime limits cap live
+channels and pending operations.
+
+## Owned files and sockets
+
+File and TCP functions return owned resource handles. Open, read, write, and
+close operations are awaited:
+
+```ach
+let file = await open_file("data/input.txt")
+let bytes = await file_read(file, 4096)
+await file_close(file)
+```
+
+The code still has no authority until the operator grants the path:
+
+```bash
+ach --allow-read ./data run reader.ach
+```
+
+Network grants use numeric addresses and exact ports:
+
+```bash
+ach --allow-connect 127.0.0.1:443 run client.ach
+ach --allow-listen 127.0.0.1:8080 run server.ach
+```
+
+## Runtime limits
+
+The CLI exposes independent limits for tasks, resources, task-scope depth,
+channels, retained results, pending native requests, blocking workers, and the
+blocking queue. For example:
+
+```bash
+ach --max-tasks 32 --max-resources 16 --max-channels 8 run service.ach
+```
+
+These limits apply at the host boundary and complement `--max-heap` and
+`--max-instructions` for VM execution.
+
+## Proof boundary
+
+Host I/O, task spawning, and suspending operations are forbidden in `prove`
+and `circuit` code. Effect inference rejects the program before circuit
+generation. Deterministic values can be obtained in host code and passed into
+the proof boundary as explicit public or witness inputs.
+
+## Execution engines
+
+Select the interpreter or LLVM JIT explicitly, or allow visible automatic
+fallback:
+
+```bash
+ach run app.ach --engine interpreter
+ach run app.ach --engine jit
+ach run app.ach --engine auto
+```
+
+`ach aot` compiles the same supported host program to a native executable. The
+0.1.0 release contract checks structured-task behavior and authority boundaries
+across the supported native execution paths.

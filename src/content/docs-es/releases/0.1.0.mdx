@@ -1,0 +1,107 @@
+---
+title: Achronyme 0.1.0 Candidato de Release
+description: Estado actual, features implementadas, compatibilidad y gate de publicación pendiente para Achronyme 0.1.0.
+slug: "releases/0.1.0"
+---
+
+> **Estado: candidato de release sin publicar.** La versión del paquete es
+> `0.1.0`, pero el último release publicado del core sigue siendo `v0.0.1`.
+> Un source versionado, un pull request fusionado o un workflow verde no son
+> por sí solos un release publicado.
+
+El candidato 0.1.0 se construye desde la revisión del core
+`fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`. Agrega un modelo de ejecución del
+host con concurrencia estructurada y autoridad explícita, y cambia la
+generación de pruebas para requerir una fuente explícita de confianza.
+
+## Matriz de versiones
+
+| Superficie | Estable publicado | Candidato |
+|---|---:|---:|
+| Compilador y CLI | `0.0.1` | `0.1.0` |
+| Editor y LSP | `0.2.0` | `0.3.0` |
+| Paquete web y servidor | Sin release independiente | `0.1.0` |
+
+El instalador resuelve el último release publicado del core en GitHub. Hasta
+que `v0.1.0` sea etiquetado y publicado, una instalación normal devuelve
+`0.0.1`.
+
+## Concurrencia estructurada
+
+- `concurrent { ... }` crea un scope léxico de tareas.
+- `spawn llamada(...)` crea un hijo poseído por ese scope.
+- `await tarea`, `await tarea as outcome` y `await [a, b] as race` hacen
+  explícitos los joins, fallos recuperables y carreras.
+- Canales acotados, cancelación cooperativa, diagnósticos y límites del runtime
+  evitan trabajo detached o sin límite.
+
+Consulta [Concurrencia e I/O del Host](/es/docs/language/concurrency-and-io/)
+para el contrato del lenguaje y el CLI.
+
+## Autoridad explícita del host
+
+Las operaciones de archivo y TCP usan recursos con propietario. Los programas
+no reciben acceso ambiental para leer, escribir, conectar o escuchar. La
+autoridad se otorga con flags exactos del CLI o los settings equivalentes de
+`achronyme.toml`:
+
+```bash
+ach --allow-read ./data --allow-connect 127.0.0.1:443 run app.ach
+```
+
+Los efectos del host se rechazan dentro de código `prove` y `circuit`. El
+compilador mantiene el mundo externo fuera del límite determinista de prueba.
+
+## Ejecución nativa
+
+`ach run` soporta el intérprete y LLVM 21 ORC JIT con el selector explícito
+`--engine interpreter|jit|auto`. `ach aot` emite un ejecutable nativo contra el
+runtime AOT empaquetado. El CI de release cubre fallback al intérprete, JIT,
+AOT, layouts instalados, límites de recursos y paquetes Linux x86_64/aarch64.
+
+## Confianza de proving fail-closed
+
+La generación de pruebas ya no crea llaves locales de forma implícita:
+
+```bash
+# Solo desarrollo. El resultado no es confiable para producción.
+ach --insecure-dev-setup run proof.ach
+
+# Ruta de producción. El store debe coincidir con el circuito optimizado exacto.
+ach --trusted-key-dir ./trusted-keys run proof.ach
+```
+
+Los stores BN254 Groth16 de producción ligan la proving key al R1CS, transcript
+de fase 1, contribuidores de fase 2, beacon público final y evidencia del
+release. La verificación Groth16 separada para BN254 y BLS12-381 está disponible
+mediante `ach verify`. La generación Plonkish y BLS12-381 sigue siendo solo para
+desarrollo en esta línea.
+
+Consulta [Generación de Pruebas](/es/docs/zk-concepts/proof-generation/) para
+los comandos de usuario y la guía versionada de trusted setup del repositorio
+core para el workflow completo del operador.
+
+## Candidato del editor
+
+El editor `0.3.0` sigue la revisión final del candidato del core y agrega
+resaltado sintáctico y semántico para concurrencia estructurada, task handles,
+I/O con propietario y builtins conscientes de capacidades. También incluye
+activación del lenguaje Circom, diagnósticos respaldados por el parser, hover,
+completion, símbolos de documento, definiciones, referencias y rename.
+
+## Gate de publicación restante
+
+La implementación está fusionada y el CI del SHA final está verde. Publicar
+todavía requiere toda esta evidencia de producción:
+
+1. una contribución de fase 2 bajo control independiente;
+2. un beacon final público, verificable y comprometido con anterioridad;
+3. una llave final que verifique contra el R1CS y fase 1 exactos del release;
+4. pruebas correctas snarkjs-a-Achronyme y Achronyme-a-snarkjs;
+5. evidencia empaquetada con hashes, tamaños, revisión y métricas exactas.
+
+Solo después de cerrar este gate se debe publicar `v0.1.0`, promover los
+candidatos del editor y web, y actualizar las etiquetas de versión estable.
+
+Consulta el [Changelog](/es/docs/releases/changelog/) para el historial
+completo.

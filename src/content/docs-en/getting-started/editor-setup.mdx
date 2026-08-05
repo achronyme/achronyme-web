@@ -1,95 +1,84 @@
 ---
 title: Editor Setup
-description: How to set up VS Code with syntax highlighting, diagnostics, and run support for Achronyme.
+description: Published and candidate VS Code and LSP support for Achronyme and Circom.
 ---
 
-## VS Code Extension
+## Version status
 
-The official [Achronyme extension](https://github.com/achronyme/achronyme-editor) adds full language support to Visual Studio Code.
+The latest published editor release is `0.2.0`. Editor `0.3.0` is the candidate
+for Achronyme core `0.1.0` and pins the exact core revision
+`fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`.
 
-### Features
+Use the [published editor releases](https://github.com/achronyme/achronyme-editor/releases)
+for normal installation. Build the candidate from source only when you are
+also evaluating the 0.1.0 core candidate.
 
-- **Syntax highlighting** — Keywords, builtins, field literals (`0p...`), BigInt literals (`0i256x...`), operators, strings
-- **Real-time diagnostics** — Parse errors as you type, powered by the `ach-lsp` language server
-- **Hover documentation** — Hover any keyword or builtin function to see its signature, parameters, and examples
-- **Autocompletion** — Keywords, all 43 builtin functions with snippet placeholders, and 7 code snippets
-- **Run button** — One-click execution of `.ach` files from the editor title bar
+## VS Code features
 
-### Install from Source
+The 0.3.0 candidate provides:
+
+- TextMate syntax highlighting for `.ach`, including `concurrent`, `spawn`,
+  `await`, task calls, and capability-based file or network I/O.
+- Circom language activation and syntax highlighting for `.circom`.
+- Parser-backed diagnostics as you type.
+- Semantic tokens for declarations, task handles, async calls, builtins,
+  parameters, types, methods, strings, numbers, and operators.
+- Hover documentation for language keywords, global functions, type methods,
+  and static namespaces.
+- Completion for 30 keywords, 43 global functions, 47 type methods, 6 static
+  namespace members, and 16 snippets.
+- Document symbols, go-to-definition, references, and rename.
+- A Run button that invokes `ach run` in an integrated terminal.
+- CLI discovery, download, and update prompts from published core releases.
+
+Formatting is not implemented in this release line.
+
+## Build the 0.3.0 candidate
 
 ```bash
-# Clone the editor repository
 git clone https://github.com/achronyme/achronyme-editor.git
 cd achronyme-editor
+git checkout release/0.3.0
 
-# Build the LSP server
 cargo build --release -p ach-lsp
-
-# Place the binary in the extension's bin directory
 mkdir -p editors/vscode/bin
 cp target/release/ach-lsp editors/vscode/bin/
 
-# Install extension dependencies and build
 cd editors/vscode
 npm ci
 npm run build
+npm run typecheck
+npm test
 ```
 
-Then open VS Code with the extension in development mode:
+Launch an Extension Development Host:
 
 ```bash
 code --extensionDevelopmentPath=editors/vscode
 ```
 
-### CLI Auto-Download
+## CLI version behavior
 
-When you click the **Run** button on a `.ach` file, the extension looks for the `ach` CLI binary in this order:
+The extension looks for `ach` in this order:
 
-1. The path configured in `achronyme.executablePath`
-2. `~/.achronyme/bin/ach` (auto-download location)
-3. System PATH
+1. `achronyme.executablePath`;
+2. the extension-managed download location;
+3. the system `PATH`.
 
-If not found, the extension offers to download the correct binary for your platform (Linux x86_64, macOS x86_64/ARM64, Windows x86_64) from [GitHub Releases](https://github.com/achronyme/achronyme/releases).
-
-The extension also checks for updates on activation and prompts you when a new version is available.
+Downloads come from the latest **published** core GitHub release. Until
+`v0.1.0` is published, automatic download therefore installs core `0.0.1`, not
+the source candidate.
 
 ## Settings
 
 | Setting | Default | Description |
-|---------|---------|-------------|
-| `achronyme.executablePath` | `""` | Path to the `ach` CLI binary. Leave empty for auto-detection. |
-| `achronyme.lspPath` | `""` | Path to the `ach-lsp` binary. Leave empty to use the bundled binary. |
+|---|---|---|
+| `achronyme.executablePath` | `""` | Path to the `ach` CLI. Empty enables bundled, managed, or `PATH` discovery. |
+| `achronyme.lspPath` | `""` | Path to `ach-lsp`. Empty uses the binary bundled with the extension. |
 
-## Code Snippets
+## Other editors
 
-The extension provides these snippets via autocompletion:
-
-| Prefix | Expands to |
-|--------|------------|
-| `fn` | `fn name(params) { ... }` |
-| `prove` | `prove { ... }` |
-| `for` | `for item in collection { ... }` |
-| `forr` | `for i in 0..n { ... }` |
-| `if` | `if condition { ... }` |
-| `ife` | `if condition { ... } else { ... }` |
-| `while` | `while condition { ... }` |
-
-## LSP Capabilities
-
-The language server (`ach-lsp`) provides:
-
-| Feature | Status |
-|---------|--------|
-| Diagnostics (parse errors) | Supported |
-| Hover documentation | Supported (49 keywords + builtins) |
-| Autocompletion | Supported (keywords, builtins, snippets) |
-| Go-to-definition | Supported |
-| Find references | Supported |
-| Rename | Supported |
-| Formatting | Not yet |
-
-Diagnostics update in real-time as you type — no need to save the file first.
-
-## Other Editors
-
-The LSP server communicates over stdio and follows the Language Server Protocol, so it can be integrated with any editor that supports LSP (Neovim, Helix, Zed, etc.). Point your editor's LSP config to the `ach-lsp` binary.
+`ach-lsp` communicates over stdio using the Language Server Protocol. Editors
+such as Neovim, Helix, and Zed can launch the binary directly. The VS Code
+extension adds download management and the Run command; those features are not
+part of the protocol server itself.

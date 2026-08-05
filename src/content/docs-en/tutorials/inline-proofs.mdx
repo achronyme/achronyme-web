@@ -180,20 +180,34 @@ Each prove block compiles and proves independently.
 
 ## Running with Proof Generation
 
-`ach run` generates real Groth16 proofs natively — no Powers of Tau file or extra flags required:
+`ach run` generates proofs only after you select an explicit key source. Use
+single-party setup for local development:
 
 ```bash
-ach run my_program.ach
+ach --insecure-dev-setup run my_program.ach
 ```
 
-The native backend is wired automatically, so every `prove {}` block compiles its circuit, verifies the constraints, and returns a cryptographic proof. The proving and verifying keys are cached in `~/.achronyme/cache/` for faster subsequent runs.
+Every `prove {}` block compiles its circuit, verifies the witness, and returns
+a cryptographic proof. Development keys are cached for faster subsequent runs,
+but they are not production trusted.
 
-> **Note:** the Groth16 trusted setup is development-only — keys are generated locally with a CSPRNG, not a production ceremony. Ingesting external Powers of Tau for a production-grade setup is the planned path and is not yet wired.
+For production BN254 Groth16, select a ceremony-derived store whose manifest
+matches the exact optimized circuit:
+
+```bash
+ach --trusted-key-dir ./trusted-keys run my_program.ach
+```
+
+Without either option, generation fails closed. See
+[Proof Generation and Trust](/docs/zk-concepts/proof-generation/) before using
+the result outside local development.
 
 ## Backend Selection
 
 By default, prove blocks use the R1CS/Groth16 backend. To use Plonkish/KZG-PlonK:
 
 ```bash
-ach run my_program.ach --prove-backend plonkish
+ach --insecure-dev-setup run my_program.ach --prove-backend plonkish
 ```
+
+Plonkish proof generation remains development-only in the 0.1.0 release line.

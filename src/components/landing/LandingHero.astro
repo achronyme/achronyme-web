@@ -1,0 +1,107 @@
+---
+import type { Locale } from '../../i18n';
+import { getLocalizedPath, t } from '../../i18n';
+import { releaseDocs, releaseStatus } from '../../data/release-status';
+import HeroCircuit from '../HeroCircuit.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const s = t(locale);
+const releaseNotes = releaseDocs[locale];
+---
+
+<section class="relative grid grid-cols-1 overflow-hidden border-b border-subtle/77 lg:grid-cols-[1.08fr_0.92fr]">
+  <div aria-hidden="true" class="landing-orb landing-orb-proof -left-44 -top-44"></div>
+  <div aria-hidden="true" class="landing-grid absolute inset-0 opacity-30"></div>
+
+  <div class="relative z-10 p-7 sm:p-10 lg:p-14 xl:p-16">
+    <a
+      href={releaseNotes}
+      class="reveal inline-flex items-center gap-2 rounded-full bg-proof/10 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-proof-light ring-1 ring-proof/25 transition-colors hover:bg-proof/15"
+    >
+      <span class="h-1.5 w-1.5 rounded-full bg-warn shadow-[0_0_12px_rgba(251,191,36,0.75)]"></span>
+      {s.hero.eyebrow}
+    </a>
+
+    <h1 class="reveal mt-8 max-w-4xl text-4xl font-bold leading-[1.02] tracking-[-0.045em] text-text-primary sm:text-6xl xl:text-7xl">
+      {s.hero.headline1}<br />
+      <span class="gradient-text">{s.hero.headline2}</span><br />
+      {s.hero.headline3}
+    </h1>
+
+    <p class="reveal mt-7 max-w-2xl text-lg leading-relaxed text-text-secondary sm:text-xl">
+      {s.hero.subtitle}
+    </p>
+
+    <div class="reveal mt-9 flex flex-wrap gap-3">
+      <a
+        href={getLocalizedPath('/docs/getting-started/installation', locale)}
+        class="cta-primary group inline-flex items-center gap-3 rounded-full bg-proof py-1.5 pl-6 pr-1.5 text-sm font-semibold text-white shadow-[0_14px_40px_rgba(168,85,247,0.22)] hover:bg-proof-dim active:scale-[0.98]"
+      >
+        <span>{s.hero.cta}</span>
+        <span class="cta-icon-shell grid h-9 w-9 place-items-center rounded-full bg-black/25 ring-1 ring-white/15 group-hover:translate-x-0.5">
+          <span class="ms-icon ms-icon-md">download</span>
+        </span>
+      </a>
+      <a
+        href="#capabilities"
+        class="cta-ghost group inline-flex items-center gap-3 rounded-full bg-white/[0.035] py-1.5 pl-6 pr-1.5 text-sm font-medium text-text-secondary ring-1 ring-white/10 hover:bg-white/[0.07] hover:text-text-primary hover:ring-proof/30 active:scale-[0.98]"
+      >
+        <span>{s.hero.ctaSecondary}</span>
+        <span class="cta-icon-shell grid h-9 w-9 place-items-center rounded-full bg-white/[0.06] ring-1 ring-white/10">
+          <span class="ms-icon ms-icon-md">south</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="reveal mt-12 grid max-w-2xl gap-3 sm:grid-cols-[auto_1fr] sm:items-center">
+      <div class="flex items-center gap-2 font-mono text-xs text-text-muted">
+        <span class="rounded-md bg-valid/10 px-2 py-1 text-valid ring-1 ring-valid/20">v{releaseStatus.core.stable}</span>
+        <span>{s.header.stableLabel}</span>
+      </div>
+      <div class="flex items-start gap-3 rounded-xl bg-black/20 px-4 py-3 ring-1 ring-white/[0.07]">
+        <span class="ms-icon ms-icon-lg mt-0.5 text-warn">pending</span>
+        <div>
+          <span class="block text-xs font-semibold uppercase tracking-[0.14em] text-text-secondary">{s.hero.trustLabel}</span>
+          <span class="mt-1 block text-sm text-text-muted">{s.hero.trustValue}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative hidden min-h-[720px] overflow-hidden border-l border-subtle/77 text-proof lg:block">
+    <div aria-hidden="true" class="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(168,85,247,0.14),transparent_52%)]"></div>
+    <HeroCircuit />
+    <div class="absolute bottom-10 left-10 right-10 grid grid-cols-3 gap-2">
+      {['Akron', 'Artik', 'Lysis'].map((machine, index) => (
+        <div class="rounded-xl bg-void/70 px-3 py-3 text-center backdrop-blur-md ring-1 ring-white/[0.08]">
+          <span class="block font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">0{index + 1}</span>
+          <span class="mt-1 block text-sm font-semibold text-text-primary">{machine}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<div class="relative border-b border-subtle/77 px-7 py-5 sm:px-10 lg:px-14">
+  <div class="grid-dot absolute -bottom-[3px] -left-[3px] z-10"></div>
+  <div class="grid-dot absolute -bottom-[3px] -right-[3px] z-10"></div>
+  <div class="reveal flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <span class="text-sm text-text-muted">{s.ecosystem.title}</span>
+    <div class="flex flex-wrap gap-2">
+      {s.ecosystem.outputs.map((item: string, index: number) => {
+        const classes = [
+          'bg-proof/8 ring-proof/20 text-proof-light',
+          'bg-valid/8 ring-valid/20 text-valid',
+          'bg-info/8 ring-info/20 text-info',
+          'bg-warn/8 ring-warn/20 text-warn',
+          'bg-proof/8 ring-proof/20 text-proof-light',
+        ];
+        return <span class={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${classes[index] ?? classes[0]}`}>{item}</span>;
+      })}
+    </div>
+  </div>
+</div>

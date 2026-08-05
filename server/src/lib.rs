@@ -24,6 +24,7 @@ pub mod circom_pipeline;
 pub mod circom_witness;
 pub mod error;
 pub mod pipeline;
+mod playground_proving;
 pub mod prove_handler;
 pub mod routes;
 pub mod sandbox;

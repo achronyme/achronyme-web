@@ -1,180 +1,245 @@
 {
   "lang": "es",
   "header": {
-    "cta": "Comenzar",
     "docs": "Docs",
     "playground": "Playground",
-    "banner": "Presentamos Achronyme — un lenguaje para pruebas zero-knowledge. Lee el anuncio"
+    "roadmap": "Roadmap",
+    "releaseNotes": "Notas 0.1.0",
+    "stableLabel": "Estable",
+    "candidateLabel": "Candidato de release",
+    "banner": "Candidato 0.1.0: concurrencia estructurada, autoridad explícita y proving confiable"
   },
   "hero": {
-    "badge": "v0.0.1 - Version inicial 0.x",
-    "eyebrow": "La Tri-Arquitectura",
-    "headline1": "Tres maquinas.",
-    "headline2": "Un lenguaje.",
-    "headline3": "Cero confianza.",
-    "subtitle": "Tres VMs de bytecode. Akron ejecuta tu codigo. Artik calcula witnesses. Lysis construye el circuito.",
-    "cta": "Comenzar",
-    "ctaSecondary": "Conoce las Maquinas",
-    "github": "Ver en GitHub"
+    "eyebrow": "Achronyme 0.1.0 candidato de release",
+    "headline1": "Escribe el programa.",
+    "headline2": "Limita su autoridad.",
+    "headline3": "Prueba lo importante.",
+    "subtitle": "Un lenguaje para programas de host con capacidades acotadas y circuitos zero-knowledge, con concurrencia estructurada, ejecución nativa y llaves de proving seleccionadas explícitamente.",
+    "cta": "Instalar estable 0.0.1",
+    "ctaSecondary": "Explorar el candidato",
+    "trustLabel": "Gate del release",
+    "trustValue": "Contribución independiente de ceremonia en progreso"
   },
   "ecosystem": {
-    "title": "Construido con Rust. Exporta a todo.",
-    "outputs": [".r1cs", ".wtns", ".sol", "Groth16", "PlonK"]
+    "title": "Un source, rutas de ejecución explícitas.",
+    "outputs": ["Intérprete", "LLVM JIT", "AOT nativo", "R1CS", "Groth16"]
+  },
+  "releaseStatus": {
+    "eyebrow": "Versiones reales",
+    "title": "Versiones publicadas y candidatas, sin mezclarlas.",
+    "subtitle": "El instalador sigue el último release publicado del core. Los candidatos siguen siendo source revisable hasta cerrar sus gates.",
+    "stable": "Estable publicado",
+    "candidate": "Candidato de release",
+    "core": "Compilador y CLI",
+    "coreDesc": "Los paquetes estables y artefactos del instalador se publican desde el repositorio principal.",
+    "editor": "Tooling de editor",
+    "editorDesc": "VS Code y el LSP siguen la gramática del lenguaje y la revisión exacta del core.",
+    "web": "Web y playground",
+    "webDesc": "La documentación y el playground se preparan contra el candidato 0.1.0 del core.",
+    "published": "Publicado",
+    "review": "En revisión",
+    "live": "Servicio activo",
+    "source": "Revisión fija del core"
+  },
+  "capabilities": {
+    "eyebrow": "Lo que 0.1.0 realmente agrega",
+    "title": "Un límite de sistema alrededor del código de pruebas.",
+    "subtitle": "El candidato no es solo una actualización de proving. Define cómo se encuentran el trabajo concurrente del host, la autoridad externa, la compilación de circuitos y la confianza criptográfica.",
+    "items": {
+      "concurrency": {
+        "title": "Concurrencia estructurada",
+        "desc": "Los scopes concurrentes léxicos poseen cada tarea creada. Await, race, cancelación, canales acotados y diagnósticos tienen reglas explícitas de vida.",
+        "meta": "concurrent + spawn + await"
+      },
+      "authority": {
+        "title": "I/O limitado por capacidades",
+        "desc": "Archivos y conexiones TCP son valores con propietario. Leer, escribir, conectar y escuchar requiere grants explícitos en el CLI o el proyecto.",
+        "meta": "sin acceso ambiental al host"
+      },
+      "native": {
+        "title": "Intérprete, JIT y AOT",
+        "desc": "Ejecuta con el intérprete portable, LLVM 21 ORC JIT o el runtime AOT empaquetado, con fallback visible y límites compartidos.",
+        "meta": "ach run --engine ..."
+      },
+      "circuits": {
+        "title": "Compilación de circuitos",
+        "desc": "Baja Achronyme nativo o Circom importado a R1CS optimizado y witnesses, manteniendo los caminos Plonkish de desarrollo claramente separados.",
+        "meta": ".r1cs + .wtns"
+      },
+      "interop": {
+        "title": "Interop Circom y snarkjs",
+        "desc": "Artik calcula witnesses complejos, Lysis acota la expansión de templates y los artefactos exportados se cruzan con el ecosistema snarkjs.",
+        "meta": "interoperabilidad BN254"
+      },
+      "trust": {
+        "title": "Confianza de proving fail-closed",
+        "desc": "Generar una prueba requiere un opt-in de desarrollo o un store inmutable derivado de ceremonia y ligado al circuito optimizado exacto.",
+        "meta": "sin setup implícito"
+      }
+    }
   },
   "triArch": {
-    "eyebrow": "La Tri-Arquitectura",
-    "title": "Conoce las Maquinas",
-    "subtitle": "Tres VMs de bytecode. Tres capas del pipeline.",
+    "eyebrow": "La tri-arquitectura",
+    "title": "Tres máquinas, un pipeline explícito.",
+    "subtitle": "Cada VM posee una responsabilidad distinta en lugar de ocultar ejecución, witness y constraints detrás de un solo runtime.",
     "akron": {
       "name": "Akron",
-      "role": "La VM de Superficie",
-      "desc": "Ejecuta Achronyme como lenguaje real. Variables, closures, GC mark-sweep, 40 opcodes. El mismo codigo que pruebas con ach run es el que se compila. Sin brecha de traduccion.",
-      "capabilities": ["40 opcodes", "Tagged values", "Bloques prove {}", "Interop Circom"]
+      "role": "VM de host y superficie",
+      "desc": "Ejecuta el lenguaje, tareas estructuradas, recursos con propietario, closures y bloques de prueba. Intérprete, JIT y AOT comparten el mismo límite de autoridad.",
+      "capabilities": ["Tareas estructuradas", "I/O con propietario", "JIT + AOT", "Pruebas como valores"]
     },
     "artik": {
       "name": "Artik",
-      "role": "La VM de Witness",
-      "desc": "Calcula witnesses donde Circom se estanca. Sin heap, sin GC, aritmetica pura de campo. Corre dentro del backend R1CS para cerrar el gap E212.",
-      "capabilities": ["25 opcodes", "Aritmetica de campo", "Cierre E212", "Multi-curva"]
+      "role": "VM de witness",
+      "desc": "Ejecuta programas deterministas de witness, incluyendo lowering Circom multi-subprograma y operaciones bigint nativas para circuitos a escala ECDSA.",
+      "capabilities": ["Witness determinista", "Bigint nativo", "Multi-subprograma", "Multi-prime"]
     },
     "lysis": {
       "name": "Lysis",
-      "role": "La VM de Instanciacion",
-      "desc": "Expande templates a constraints sin explosiones de memoria. Hash-consing colapsa sub-grafos identicos. Convierte expansiones eager de gigabytes en IR optimo.",
-      "capabilities": ["29 opcodes", "Hash-consing", "Loop unrolling", "Emision de IR"]
+      "role": "VM de instanciación",
+      "desc": "Escalona la expansión de templates, deduplica cuerpos compartidos y emite IR de constraints sin cargar cada subgrafo repetido a la vez.",
+      "capabilities": ["Expansión por etapas", "Hash-consing", "Cuerpos compartidos", "IR de constraints"]
     }
   },
-  "sectionDual": {
-    "title": "Motor de doble ejecucion",
-    "subtitle": "Un lenguaje, dos objetivos. Sin compromisos."
-  },
   "featureVM": {
-    "title": "Modo VM",
-    "desc": "Un lenguaje de programacion real con closures, recursion, GC mark-sweep, 37 opcodes y 50 metodos de tipo. Construye desde busqueda binaria hasta protocolos criptograficos."
+    "title": "Programas de host concurrentes",
+    "desc": "Closures, colecciones, tareas estructuradas, canales acotados y recursos de archivo o TCP corren bajo grants y límites explícitos."
   },
   "featureCircuit": {
-    "title": "Modo Circuito",
-    "desc": "La misma sintaxis compila a restricciones R1CS o Plonkish. Propagacion booleana, constant folding y analisis de taint detectan bugs sub-restringidos antes de generar pruebas."
-  },
-  "sectionProofs": {
-    "title": "Pruebas sin la ceremonia",
-    "subtitle": "Provers nativos Groth16 y PlonK. Un binario, cero Node.js."
+    "title": "Artefactos de circuito exactos",
+    "desc": "Compila Achronyme y Circom a constraints y witnesses optimizados que pueden comprobarse con tooling estándar independiente."
   },
   "featureProve": {
-    "title": "Pruebas First-Class",
-    "desc": "Los bloques prove {} retornan objetos de prueba reales. Encadenalos, extrae componentes con proof_json(), verifica inline con verify_proof(). Las pruebas son valores, no artefactos CLI."
+    "title": "Pruebas con fuente de llave explícita",
+    "desc": "Los bloques prove siguen siendo valores first-class, pero fallan si no se selecciona setup de desarrollo o un store confiable ligado al circuito."
   },
   "featureSolidity": {
-    "title": "Verificacion On-Chain",
-    "desc": "Exporta .r1cs y .wtns para compatibilidad con snarkjs. Genera contratos verificadores en Solidity con --solidity. Despliega y verifica pruebas directamente en Ethereum."
+    "title": "Verificación separada y on-chain",
+    "desc": "Exporta artefactos compatibles con snarkjs, genera verificadores Groth16 en Solidity o verifica JSON BN254 y BLS12-381 desde el CLI."
+  },
+  "proofTrust": {
+    "eyebrow": "La confianza es una entrada",
+    "title": "Generar pruebas ya no inventa confianza por ti.",
+    "subtitle": "Achronyme separa la experimentación local conveniente del proving de producción y mantiene la verificación independiente de ambas fuentes de llave.",
+    "development": "Desarrollo local",
+    "developmentDesc": "El setup de una sola parte solo existe tras una bandera insegura explícita. Sus artefactos no son confiables para producción.",
+    "production": "Store de producción",
+    "productionDesc": "Una llave BN254 derivada de ceremonia se empaqueta con hash del circuito, transcript, historial de contribuciones y evidencia del release.",
+    "verification": "Verificación separada",
+    "verificationDesc": "La verificación recibe proof, entradas públicas, llave, curva y formato explícitos. No infiere confianza del proyecto.",
+    "gateTitle": "Por qué 0.1.0 sigue siendo candidato",
+    "gateDesc": "La implementación y el CI están completos, pero la publicación espera la contribución independiente de fase 2, el beacon público y la evidencia bidireccional de interoperabilidad.",
+    "readGuide": "Leer las notas del release 0.1.0"
   },
   "comparison": {
-    "title": "La diferencia",
-    "subtitle": "Probar un compromiso Poseidon: Circom + snarkjs vs Achronyme.",
-    "circomLabel": "Circom + snarkjs",
-    "achLabel": "Achronyme",
-    "circomSteps": "7 pasos, 3 herramientas",
-    "achSteps": "6 lineas, 1 archivo"
+    "title": "Velocidad de desarrollo sin ambigüedad en producción",
+    "subtitle": "Usa setup local explícito al iterar y cambia al store exacto ligado por ceremonia para producción.",
+    "circomLabel": "Desarrollo",
+    "achLabel": "Producción",
+    "circomSteps": "explícitamente inseguro",
+    "achSteps": "ligado por ceremonia"
   },
   "stats": {
-    "tests": "4,400+ tests",
-    "backends": "2 proof backends",
-    "natives": "50 metodos",
-    "deps": "0 JS deps"
+    "stable": "Core estable",
+    "candidate": "Core candidato",
+    "machines": "VMs especializadas",
+    "license": "Licencia open source"
   },
   "roadmap": {
     "title": "Roadmap",
-    "subtitle": "Recibos reales, no promesas. Hitos versionados, commits enviados, y lo que sigue.",
+    "subtitle": "Releases publicados, candidatos revisables e investigación futura se etiquetan por separado.",
     "livingPill": "Roadmap vivo - actualizado ago 2026",
     "metrics": {
       "started": "Inicio",
       "startedValue": "Ene 2026",
-      "version": "Actual",
-      "crates": "crates",
-      "tests": "tests",
-      "deps": "deps JS"
+      "version": "Estable",
+      "crates": "crates del workspace",
+      "tests": "gates de CI",
+      "deps": "licencia"
     },
     "status": {
-      "shipped": "Lanzado",
-      "inProgress": "En progreso",
-      "planned": "Planeado",
+      "shipped": "Publicado",
+      "inProgress": "Candidato de release",
+      "planned": "Siguiente",
       "exploratory": "Exploratorio",
       "target": "Objetivo"
     },
     "receipts": {
-      "released": "Lanzado",
+      "released": "Publicado",
       "branch": "Rama",
       "commits": "commits",
       "verified": "Verificado",
       "viewRelease": "Ver release",
-      "viewBranch": "Ver rama"
+      "viewBranch": "Ver rama",
+      "candidateNotes": "Notas del candidato"
     },
     "phases": {
       "now": {
-        "label": "Ahora en produccion",
+        "label": "Estable publicado",
         "anchor": "v0.0.1",
-        "desc": "Ultimo release."
+        "desc": "Empaquetado Linux nativo, JIT, AOT y artefactos reproducibles del instalador."
       },
       "wip": {
-        "label": "Desarrollo activo",
+        "label": "Cerrando el gate 0.1.0",
         "anchor": "0.1.0",
-        "desc": "Trusted setup de produccion — ingiriendo Powers-of-Tau externos."
+        "desc": "Core fusionado y verde; falta evidencia independiente de ceremonia."
       },
       "next": {
-        "label": "Siguiente hito",
-        "anchor": "v0.3.0",
-        "desc": "Playground en el navegador."
+        "label": "Después de 0.1.0",
+        "anchor": "siguiente",
+        "desc": "Estabilizar SDK y distribución del editor a partir de uso medido."
       },
       "later": {
-        "label": "En el horizonte",
+        "label": "Horizonte de investigación",
         "anchor": "v0.x",
-        "desc": "Investigado, dimensionado, sin iniciar."
+        "desc": "Ideas acotadas, no compromisos de release."
       },
       "target": {
         "label": "Objetivo estable",
         "anchor": "v1.0.0",
-        "desc": "Congelamiento del API + garantias de compatibilidad."
+        "desc": "API congelada y garantías de compatibilidad hacia atrás."
       }
     },
     "items": {
-      "multiPrime": "secp256k1 ECDSAVerify(64,4) de extremo a extremo",
-      "multiPrimeDesc": "El circuito de referencia mas pesado de circomlib ahora compila, genera witness y prueba de extremo a extremo. El R1CS optimizado llega a ~1.49M restricciones — por debajo del propio conteo de circom — el witness verifica, y Groth16 prove + verify estan medidos. 162 tests E2E cross-curva siguen en verde.",
-      "proveIR": "Pipeline ProveIR",
-      "proveIRDesc": "Plantillas de circuito pre-compiladas serializadas en bytecode. Los bloques prove {} son valores first-class.",
-      "solidity": "Generacion de verificadores Solidity",
-      "solidityDesc": "Exporta contratos verificadores Groth16 para verificacion on-chain en Ethereum.",
-      "circomFrontend": "Frontend Circom",
-      "circomFrontendDesc": "Importa templates .circom y circomlib (Poseidon, MiMCSponge, EdDSA, BabyJubjub) directamente. Conteos de restricciones igualan circom O2 o lo superan — Num2Bits 9 vs 17, LessThan 10 vs 20.",
-      "r1csOptimizer": "Optimizador R1CS v2",
-      "r1csOptimizerDesc": "Heuristica de frecuencia, eliminacion de lineales tautologicas, eliminacion gaussiana, plegado de constantes BN254. EscalarMulAny 3.6x mas rapido.",
-      "adversarialTests": "Suite adversarial de soundness",
-      "adversarialTestsDesc": "Tests que intentan forjar pruebas demuestran que las reducciones de restricciones son ganancias reales de plegado LC, no bugs de under-constraining.",
-      "playground": "Playground Web",
-      "playgroundDesc": "El WASM en el navegador impulsa la inteligencia del editor — diagnosticos nivel LSP, hover y autocompletado instantaneos mientras escribes. La compilacion, ejecucion y generacion de pruebas corren en el servidor, con proyectos por sesion en el navegador. Escribe y prueba circuitos online — sin instalar.",
-      "multiFieldVM": "VM multi-campo",
-      "multiFieldVMDesc": "Runtime de la VM parametrizado sobre FieldBackend. Los bloques prove {} usan aritmetica nativa del campo para cualquier curva.",
-      "starkBackend": "Backend STARK (Goldilocks)",
-      "starkBackendDesc": "Backend de restricciones AIR usando Plonky3 para pruebas STARK transparentes sobre el campo Goldilocks — sin trusted setup.",
-      "noirFrontend": "Frontend Noir",
-      "noirFrontendDesc": "Importa programas Noir como modulos ProveIR. Usa circuitos Noir existentes dentro de Achronyme junto con Circom.",
-      "rustSDK": "SDK Rust (cargo add)",
-      "rustSDKDesc": "Embebe el runtime de Achronyme en apps Rust via crate. Proc-macros, interop completa. Apunta a devs Rust, no solo a ingenieros ZK.",
+      "multiPrime": "Ejecución nativa y empaquetado reproducible",
+      "multiPrimeDesc": "El release 0.0.1 publicado incluye LLVM JIT, fallback al intérprete, bundles AOT, checksums y gates Linux x86_64/aarch64.",
+      "proveIR": "Pipeline de pruebas first-class",
+      "proveIRDesc": "Bloques prove, ProveIR, exportación R1CS e interoperabilidad separada forman parte de la línea estable.",
+      "solidity": "Generación de verificador Solidity",
+      "solidityDesc": "Genera contratos Groth16 y exporta artefactos estándar para verificación externa.",
+      "r1csOptimizer": "Optimización compatible con Circom",
+      "r1csOptimizerDesc": "Achronyme baja circuitos nativos e importados mediante optimización comprobada y validación del witness.",
+      "circomFrontend": "Concurrencia estructurada y autoridad del host",
+      "circomFrontendDesc": "El candidato 0.1.0 agrega scopes de tareas, canales acotados, recursos con propietario, grants exactos y semántica compartida entre intérprete, JIT y AOT.",
+      "adversarialTests": "Límite de proving confiable",
+      "adversarialTestsDesc": "Generar pruebas falla de forma cerrada, las llaves de producción quedan ligadas al circuito y publicar espera evidencia independiente de ceremonia.",
+      "playground": "Distribución de editor y documentación",
+      "playgroundDesc": "Publicar la línea 0.3.0 del editor y mantener playground, referencia y artefactos alineados con el mismo core.",
+      "multiFieldVM": "Superficie de embedding estable",
+      "multiFieldVMDesc": "Convertir el compilador y pipeline internos en un SDK pequeño y documentado después de estabilizar contratos de release.",
+      "starkBackend": "Sistemas de prueba transparentes",
+      "starkBackendDesc": "Explorar backends AIR y STARK sin presentar investigación como un release comprometido.",
+      "noirFrontend": "Frontends de circuitos adicionales",
+      "noirFrontendDesc": "Evaluar Noir u otros frontends solo cuando reutilicen ProveIR sin debilitar diagnósticos ni límites de confianza.",
+      "rustSDK": "SDK Rust",
+      "rustSDKDesc": "Exponer una API estable de embedding después de que uso downstream real revele la superficie mínima.",
       "apiFreeze": "API estable 1.0",
-      "apiFreezeDesc": "Congelamiento de especificacion del lenguaje, garantias de compatibilidad hacia atras y formato de bytecode estable."
+      "apiFreezeDesc": "Congelar especificación del lenguaje, política de compatibilidad de bytecode y contratos públicos del SDK."
     }
   },
   "docs": {
-    "onThisPage": "En esta pagina",
+    "onThisPage": "En esta página",
     "previous": "Anterior",
     "next": "Siguiente"
   },
   "footer": {
-    "tagline": "Tres maquinas. Un lenguaje. Cero confianza.",
+    "tagline": "Programas con capacidades acotadas y confianza explícita de proving.",
     "resources": "Recursos",
     "community": "Comunidad",
     "github": "GitHub",
     "releases": "Releases",
-    "vsCode": "Extension VS Code",
+    "releaseNotes": "Notas del candidato 0.1.0",
+    "vsCode": "Extensión VS Code",
     "discussions": "Discusiones",
     "issues": "Issues",
     "builtWith": "Construido con Rust",

@@ -29,6 +29,7 @@ export const sidebarConfig: SidebarConfig = [
     items: [
       { label: 'Types & Values', slug: 'language/types-and-values', translations: { es: 'Tipos y Valores' } },
       { label: 'Control Flow', slug: 'language/control-flow', translations: { es: 'Flujo de Control' } },
+      { label: 'Concurrency & Host I/O', slug: 'language/concurrency-and-io', translations: { es: 'Concurrencia e I/O del Host' } },
       { label: 'Functions & Closures', slug: 'language/functions-and-closures', translations: { es: 'Funciones y Closures' } },
       { label: 'Arrays & Collections', slug: 'language/arrays-and-collections', translations: { es: 'Arrays y Colecciones' } },
       { label: 'Native Functions', slug: 'language/native-functions', translations: { es: 'Funciones Nativas' } },
@@ -126,6 +127,7 @@ export const sidebarConfig: SidebarConfig = [
     label: 'Releases',
     translations: { es: 'Releases' },
     items: [
+      { label: '0.1.0 - Release candidate', slug: 'releases/0.1.0', translations: { es: '0.1.0 - Candidato de release' } },
       { label: 'beta.22 — ECDSAVerify end-to-end', slug: 'releases/beta22', translations: { es: 'beta.22 — ECDSAVerify de extremo a extremo' } },
       { label: 'beta.21 — SHA-256 in the playground', slug: 'releases/beta21', translations: { es: 'beta.21 — SHA-256 en el playground' } },
       { label: 'beta.20 — Circom frontend', slug: 'releases/beta20', translations: { es: 'beta.20 — Frontend de Circom' } },
