@@ -15,13 +15,11 @@ This installs `ach` to `~/.local/bin`. On Linux, the verified release bundle
 also installs the native AOT runtime to `~/.local/lib`. The installer supports
 Linux and macOS on x86_64 and aarch64.
 
-The currently published stable version is `0.0.1`. The source tree and web
-package are already versioned `0.1.0`, but that candidate is not returned by
-the installer until its tag and release artifacts are published. Pin the
-stable version explicitly when reproducibility matters:
+The currently published stable version is `0.1.0`. Pin it explicitly when
+reproducibility matters:
 
 ```bash
-curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.0.1
+curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.1.0
 ```
 
 Verify the installation:
@@ -35,10 +33,10 @@ CLI reports the fallback and runs the interpreter. Native compilation with
 `ach aot` requires Clang 21 and LLVM 21; the installer already provides the
 Achronyme AOT runtime library.
 
-## Evaluate the 0.1.0 candidate from source
+## Build 0.1.0 from source
 
-Achronyme is written in Rust. The candidate release toolchain is Rust 1.96.0.
-Use the exact candidate revision when reviewing 0.1.0 behavior:
+Achronyme is written in Rust. The release toolchain is Rust 1.96.0. Use the
+exact published revision when reproducing 0.1.0 behavior:
 
 ```bash
 git clone https://github.com/achronyme/achronyme.git
@@ -60,7 +58,7 @@ bash test/run_tests.sh
 ## Optional: snarkjs Compatibility
 
 Achronyme includes native Groth16 (ark-groth16) and PlonK (halo2-KZG)
-backends. In the 0.1.0 candidate, proof generation fails unless you choose
+backends. In 0.1.0, proof generation fails unless you choose
 `--insecure-dev-setup` or `--trusted-key-dir`. External tools are not required
 for normal execution, but snarkjs remains part of the production ceremony and
 interoperability audit.

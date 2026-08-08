@@ -5,12 +5,11 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
-## 0.1.0 - candidato de release (sin publicar)
+## 0.1.0 - release estable
 
-> La implementacion esta fusionada, pero `v0.1.0` no ha sido etiquetado ni
-> publicado. El ultimo release publicado del core sigue siendo `v0.0.1` hasta
-> completar el gate de ceremonia de produccion e interoperabilidad descrito
-> abajo.
+> Publicado el 2026-08-08 desde la revision del core
+> `fd07b38e16256e2ed6a8f2b438d340a681c9b0ac` despues de completar el gate de
+> ceremonia independiente, beacon publico e interoperabilidad bidireccional.
 
 **Achronyme 0.1.0 agrega concurrencia estructurada, autoridad explicita del
 host y un limite de confianza de proving que falla de forma cerrada.**
@@ -45,8 +44,9 @@ host y un limite de confianza de proving que falla de forma cerrada.**
   carga bytecode 0.0.1 y 0.1.0 emite el nuevo formato de tareas estructuradas.
 - El CI de release cubre todo el workspace, interoperabilidad de proving y los
   gates LLVM JIT y AOT en Linux x86_64 y aarch64.
-- La publicacion sigue bloqueada hasta registrar la contribucion independiente
-  de la ceremonia de produccion y su evidencia de beacon publico.
+- La ceremonia de produccion registra la contribucion independiente de fase 2,
+  un beacon publico comprometido con anterioridad e interoperabilidad
+  bidireccional con snarkjs.
 
 ---
 

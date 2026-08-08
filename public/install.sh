@@ -165,5 +165,8 @@ if ! path_configured; then
 fi
 
 echo "  Get started:"
-echo "    ach run examples/hello.ach"
+echo "    ach init hello --template vm"
+echo "    cd hello && ach run"
+echo ""
+echo "  Guide: https://achrony.me/docs/getting-started/hello-world"
 echo ""

@@ -18,6 +18,13 @@ if grep -Fq '0.0.1' "$project_root/public/install.sh"; then
     printf 'error: installer documentation still references 0.0.1\n'
     exit 1
 fi
+if grep -Fq 'examples/hello.ach' "$project_root/public/install.sh"; then
+    printf 'error: installer points to an example that is not installed\n'
+    exit 1
+fi
+grep -Fq 'ach init hello --template vm' "$project_root/public/install.sh"
+grep -Fq 'https://achrony.me/docs/getting-started/hello-world' \
+    "$project_root/public/install.sh"
 
 mkdir -p "$release_root" "$bundle_root/bin" "$bundle_root/lib" "$fake_bin"
 

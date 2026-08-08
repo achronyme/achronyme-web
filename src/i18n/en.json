@@ -6,19 +6,18 @@
     "roadmap": "Roadmap",
     "releaseNotes": "0.1.0 notes",
     "stableLabel": "Stable",
-    "candidateLabel": "Release candidate",
-    "banner": "0.1.0 release candidate: structured concurrency, explicit authority, and trusted proving"
+    "banner": "Achronyme 0.1.0 is published: structured concurrency, explicit authority, and trusted proving"
   },
   "hero": {
-    "eyebrow": "0.1.0 release candidate",
+    "eyebrow": "Achronyme 0.1.0",
     "headline1": "Write programs.",
     "headline2": "Limit authority.",
     "headline3": "Prove claims.",
     "subtitle": "Structured host programs and zero-knowledge circuits, with explicit authority and proving trust.",
-    "cta": "Install stable 0.0.1",
+    "cta": "Install 0.1.0",
     "ctaSecondary": "Meet the machines",
-    "trustLabel": "Release gate",
-    "trustValue": "Independent ceremony contribution in progress"
+    "trustLabel": "Release evidence",
+    "trustValue": "Independent ceremony, public beacon, and bidirectional interoperability verified"
   },
   "ecosystem": {
     "title": "One source, explicit execution paths.",
@@ -26,16 +25,16 @@
   },
   "releaseStatus": {
     "eyebrow": "Version truth",
-    "title": "Published and candidate versions, clearly separated.",
-    "subtitle": "The installer follows the latest published core release. Candidate builds remain reviewable source until their release gates close.",
+    "title": "Published versions tied to exact source.",
+    "subtitle": "The installer, editor, documentation, and playground now track the published 0.1.0 core semantics.",
     "stable": "Published stable",
-    "candidate": "Release candidate",
+    "revision": "Source revision",
     "core": "Compiler and CLI",
     "coreDesc": "Stable packages and installer artifacts are published from the core repository.",
     "editor": "Editor tooling",
     "editorDesc": "VS Code and LSP support track the language grammar and core source revision.",
     "web": "Web and playground",
-    "webDesc": "The documentation and playground are being prepared against the 0.1.0 core candidate.",
+    "webDesc": "The documentation and playground are deployed against the published 0.1.0 core revision.",
     "published": "Published",
     "review": "In review",
     "live": "Service live",
@@ -44,7 +43,7 @@
   "capabilities": {
     "eyebrow": "What 0.1.0 actually adds",
     "title": "A systems language boundary around proof code.",
-    "subtitle": "The candidate is not only a proving update. It defines how concurrent host work, external authority, circuit compilation, and cryptographic trust meet.",
+    "subtitle": "The release defines how concurrent host work, external authority, circuit compilation, and cryptographic trust meet.",
     "items": {
       "concurrency": {
         "title": "Structured concurrency",
@@ -127,8 +126,8 @@
     "productionDesc": "A ceremony-derived BN254 key is packaged with its circuit hash, transcript, contribution history, and release evidence.",
     "verification": "Detached verification",
     "verificationDesc": "Verification accepts explicit proof, public input, key, curve, and output format. It does not infer trust from project state.",
-    "gateTitle": "Why 0.1.0 is still a candidate",
-    "gateDesc": "The implementation and CI are complete, but publication waits for the independent phase-2 contribution, public beacon, and bidirectional interoperability evidence.",
+    "gateTitle": "Why 0.1.0 can be production trusted",
+    "gateDesc": "The release records an independent phase-2 contribution, a precommitted public beacon, and bidirectional snarkjs interoperability against the exact release circuit.",
     "readGuide": "Read the 0.1.0 release notes"
   },
   "comparison": {
@@ -142,25 +141,24 @@
   },
   "stats": {
     "coreStable": "Core stable",
-    "coreCandidate": "Core candidate",
+    "coreRevision": "Core revision",
     "editorStable": "Editor stable",
-    "editorCandidate": "Editor candidate"
+    "webStable": "Web stable"
   },
   "roadmap": {
     "title": "Roadmap",
-    "subtitle": "Published releases, reviewable candidates, and future research are labeled separately.",
+    "subtitle": "Published releases, exact source receipts, and future research are labeled separately.",
     "livingPill": "Living roadmap - updated Aug 2026",
     "metrics": {
       "started": "Started",
       "startedValue": "Jan 2026",
       "version": "Core stable",
-      "crates": "Core candidate",
-      "tests": "Editor stable",
-      "deps": "Editor candidate"
+      "revision": "Core revision",
+      "editor": "Editor stable",
+      "web": "Web stable"
     },
     "status": {
       "shipped": "Published",
-      "inProgress": "Release candidate",
       "planned": "Next",
       "exploratory": "Exploratory",
       "target": "Target"
@@ -172,18 +170,18 @@
       "verified": "Verified",
       "viewRelease": "View release",
       "viewBranch": "View branch",
-      "candidateNotes": "Candidate release notes"
+      "releaseNotes": "Release notes"
     },
     "phases": {
       "now": {
-        "label": "Published stable",
+        "label": "0.0.1 foundation",
         "anchor": "v0.0.1",
         "desc": "Native Linux packaging, JIT, AOT, and reproducible installer artifacts."
       },
       "wip": {
-        "label": "Closing the 0.1.0 gate",
+        "label": "0.1.0 published",
         "anchor": "0.1.0",
-        "desc": "Core merged and green; independent ceremony evidence remains."
+        "desc": "Independent ceremony, public beacon, interoperability, artifacts, and release checks completed."
       },
       "next": {
         "label": "After 0.1.0",
@@ -211,9 +209,9 @@
       "r1csOptimizer": "Circom-compatible optimization",
       "r1csOptimizerDesc": "Achronyme lowers native and imported circuits through checked optimization and witness validation.",
       "circomFrontend": "Structured concurrency and host authority",
-      "circomFrontendDesc": "The 0.1.0 candidate adds lexical task scopes, bounded channels, owned resources, exact host grants, and shared interpreter/JIT/AOT semantics.",
+      "circomFrontendDesc": "The 0.1.0 release adds lexical task scopes, bounded channels, owned resources, exact host grants, and shared interpreter/JIT/AOT semantics.",
       "adversarialTests": "Trusted proving boundary",
-      "adversarialTestsDesc": "Proof generation fails closed, production keys are circuit-bound, and publication waits for independently verifiable ceremony evidence.",
+      "adversarialTestsDesc": "Proof generation fails closed, production keys are circuit-bound, and independently verifiable ceremony evidence is preserved with the release.",
       "playground": "Editor and documentation distribution",
       "playgroundDesc": "Ship the 0.3.0 editor line and keep the playground, language reference, and release artifacts pinned to the same core semantics.",
       "multiFieldVM": "Stable embedding surface",
@@ -239,7 +237,7 @@
     "community": "Community",
     "github": "GitHub",
     "releases": "Releases",
-    "releaseNotes": "0.1.0 candidate notes",
+    "releaseNotes": "0.1.0 release notes",
     "vsCode": "VS Code Extension",
     "discussions": "Discussions",
     "issues": "Issues",

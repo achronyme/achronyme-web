@@ -1,30 +1,28 @@
 ---
-title: Achronyme 0.1.0 Candidato de Release
-description: Estado actual, features implementadas, compatibilidad y gate de publicación pendiente para Achronyme 0.1.0.
+title: Achronyme 0.1.0
+description: Features publicadas, compatibilidad y evidencia de proving de producción para Achronyme 0.1.0.
 slug: "releases/0.1.0"
 ---
 
-> **Estado: candidato de release sin publicar.** La versión del paquete es
-> `0.1.0`, pero el último release publicado del core sigue siendo `v0.0.1`.
-> Un source versionado, un pull request fusionado o un workflow verde no son
-> por sí solos un release publicado.
+> **Estado: release estable publicado.** Core `v0.1.0`, editor `v0.3.0` y el
+> servicio web `0.1.0` estan ligados a los recibos exactos del source indicados
+> abajo.
 
-El candidato 0.1.0 se construye desde la revisión del core
+El release 0.1.0 se construye desde la revisión del core
 `fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`. Agrega un modelo de ejecución del
 host con concurrencia estructurada y autoridad explícita, y cambia la
 generación de pruebas para requerir una fuente explícita de confianza.
 
 ## Matriz de versiones
 
-| Superficie | Estable publicado | Candidato |
-|---|---:|---:|
-| Compilador y CLI | `0.0.1` | `0.1.0` |
-| Editor y LSP | `0.2.0` | `0.3.0` |
-| Paquete web y servidor | Sin release independiente | `0.1.0` |
+| Superficie | Estable publicado | Recibo del core |
+|---|---:|---|
+| Compilador y CLI | `0.1.0` | `fd07b38e` |
+| Editor y LSP | `0.3.0` | Fija `fd07b38e` |
+| Paquete web y servidor | `0.1.0` | Fija `fd07b38e` |
 
-El instalador resuelve el último release publicado del core en GitHub. Hasta
-que `v0.1.0` sea etiquetado y publicado, una instalación normal devuelve
-`0.0.1`.
+El instalador resuelve el ultimo release publicado del core en GitHub. Una
+instalacion normal ahora devuelve `0.1.0` y verifica su checksum publicado.
 
 ## Concurrencia estructurada
 
@@ -81,18 +79,17 @@ Consulta [Generación de Pruebas](/es/docs/zk-concepts/proof-generation/) para
 los comandos de usuario y la guía versionada de trusted setup del repositorio
 core para el workflow completo del operador.
 
-## Candidato del editor
+## Release del editor
 
-El editor `0.3.0` sigue la revisión final del candidato del core y agrega
+El editor `0.3.0` sigue la revisión final del core y agrega
 resaltado sintáctico y semántico para concurrencia estructurada, task handles,
 I/O con propietario y builtins conscientes de capacidades. También incluye
 activación del lenguaje Circom, diagnósticos respaldados por el parser, hover,
 completion, símbolos de documento, definiciones, referencias y rename.
 
-## Gate de publicación restante
+## Evidencia de publicación de producción
 
-La implementación está fusionada y el CI del SHA final está verde. Publicar
-todavía requiere toda esta evidencia de producción:
+El release cerro cada gate de produccion contra la revision exacta del core:
 
 1. una contribución de fase 2 bajo control independiente;
 2. un beacon final público, verificable y comprometido con anterioridad;
@@ -100,8 +97,9 @@ todavía requiere toda esta evidencia de producción:
 4. pruebas correctas snarkjs-a-Achronyme y Achronyme-a-snarkjs;
 5. evidencia empaquetada con hashes, tamaños, revisión y métricas exactas.
 
-Solo después de cerrar este gate se debe publicar `v0.1.0`, promover los
-candidatos del editor y web, y actualizar las etiquetas de versión estable.
+El [dossier publico de ceremonia](https://github.com/achronyme/achronyme/blob/cd0601402e03bbdff4b4ac4cae88c0e672d53ac8/release-evidence/0.1.0/final/README.md)
+registra el compromiso inmutable, respuesta del beacon, hashes de artefactos,
+logs de verificacion y uso medido de recursos.
 
 Consulta el [Changelog](/es/docs/releases/changelog/) para el historial
 completo.

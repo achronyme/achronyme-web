@@ -6,19 +6,18 @@
     "roadmap": "Roadmap",
     "releaseNotes": "Notas 0.1.0",
     "stableLabel": "Estable",
-    "candidateLabel": "Candidato de release",
-    "banner": "Candidato 0.1.0: concurrencia estructurada, autoridad explícita y proving confiable"
+    "banner": "Achronyme 0.1.0 publicado: concurrencia estructurada, autoridad explícita y proving confiable"
   },
   "hero": {
-    "eyebrow": "Candidato 0.1.0",
+    "eyebrow": "Achronyme 0.1.0",
     "headline1": "Escribe código.",
     "headline2": "Limita acceso.",
     "headline3": "Genera pruebas.",
     "subtitle": "Programas concurrentes y circuitos zero-knowledge, con autoridad y confianza de proving explícitas.",
-    "cta": "Instalar estable 0.0.1",
+    "cta": "Instalar 0.1.0",
     "ctaSecondary": "Conocer las máquinas",
-    "trustLabel": "Gate del release",
-    "trustValue": "Contribución independiente de ceremonia en progreso"
+    "trustLabel": "Evidencia del release",
+    "trustValue": "Ceremonia independiente, beacon público e interoperabilidad bidireccional verificados"
   },
   "ecosystem": {
     "title": "Un source, rutas de ejecución explícitas.",
@@ -26,16 +25,16 @@
   },
   "releaseStatus": {
     "eyebrow": "Versiones reales",
-    "title": "Versiones publicadas y candidatas, sin mezclarlas.",
-    "subtitle": "El instalador sigue el último release publicado del core. Los candidatos siguen siendo source revisable hasta cerrar sus gates.",
+    "title": "Versiones publicadas ligadas al source exacto.",
+    "subtitle": "El instalador, editor, documentación y playground ya siguen la semántica publicada del core 0.1.0.",
     "stable": "Estable publicado",
-    "candidate": "Candidato de release",
+    "revision": "Revisión del source",
     "core": "Compilador y CLI",
     "coreDesc": "Los paquetes estables y artefactos del instalador se publican desde el repositorio principal.",
     "editor": "Tooling de editor",
     "editorDesc": "VS Code y el LSP siguen la gramática del lenguaje y la revisión exacta del core.",
     "web": "Web y playground",
-    "webDesc": "La documentación y el playground se preparan contra el candidato 0.1.0 del core.",
+    "webDesc": "La documentación y el playground están desplegados contra la revisión publicada del core 0.1.0.",
     "published": "Publicado",
     "review": "En revisión",
     "live": "Servicio activo",
@@ -44,7 +43,7 @@
   "capabilities": {
     "eyebrow": "Lo que 0.1.0 realmente agrega",
     "title": "Un límite de sistema alrededor del código de pruebas.",
-    "subtitle": "El candidato no es solo una actualización de proving. Define cómo se encuentran el trabajo concurrente del host, la autoridad externa, la compilación de circuitos y la confianza criptográfica.",
+    "subtitle": "El release define cómo se encuentran el trabajo concurrente del host, la autoridad externa, la compilación de circuitos y la confianza criptográfica.",
     "items": {
       "concurrency": {
         "title": "Concurrencia estructurada",
@@ -127,8 +126,8 @@
     "productionDesc": "Una llave BN254 derivada de ceremonia se empaqueta con hash del circuito, transcript, historial de contribuciones y evidencia del release.",
     "verification": "Verificación separada",
     "verificationDesc": "La verificación recibe proof, entradas públicas, llave, curva y formato explícitos. No infiere confianza del proyecto.",
-    "gateTitle": "Por qué 0.1.0 sigue siendo candidato",
-    "gateDesc": "La implementación y el CI están completos, pero la publicación espera la contribución independiente de fase 2, el beacon público y la evidencia bidireccional de interoperabilidad.",
+    "gateTitle": "Por qué 0.1.0 puede ser confiable en producción",
+    "gateDesc": "El release registra una contribución independiente de fase 2, un beacon público comprometido con anterioridad e interoperabilidad bidireccional con snarkjs sobre el circuito exacto.",
     "readGuide": "Leer las notas del release 0.1.0"
   },
   "comparison": {
@@ -142,25 +141,24 @@
   },
   "stats": {
     "coreStable": "Core estable",
-    "coreCandidate": "Core candidato",
+    "coreRevision": "Revisión del core",
     "editorStable": "Editor estable",
-    "editorCandidate": "Editor candidato"
+    "webStable": "Web estable"
   },
   "roadmap": {
     "title": "Roadmap",
-    "subtitle": "Releases publicados, candidatos revisables e investigación futura se etiquetan por separado.",
+    "subtitle": "Releases publicados, recibos exactos del source e investigación futura se etiquetan por separado.",
     "livingPill": "Roadmap vivo - actualizado ago 2026",
     "metrics": {
       "started": "Inicio",
       "startedValue": "Ene 2026",
       "version": "Core estable",
-      "crates": "Core candidato",
-      "tests": "Editor estable",
-      "deps": "Editor candidato"
+      "revision": "Revisión del core",
+      "editor": "Editor estable",
+      "web": "Web estable"
     },
     "status": {
       "shipped": "Publicado",
-      "inProgress": "Candidato de release",
       "planned": "Siguiente",
       "exploratory": "Exploratorio",
       "target": "Objetivo"
@@ -172,18 +170,18 @@
       "verified": "Verificado",
       "viewRelease": "Ver release",
       "viewBranch": "Ver rama",
-      "candidateNotes": "Notas del candidato"
+      "releaseNotes": "Notas del release"
     },
     "phases": {
       "now": {
-        "label": "Estable publicado",
+        "label": "Base 0.0.1",
         "anchor": "v0.0.1",
         "desc": "Empaquetado Linux nativo, JIT, AOT y artefactos reproducibles del instalador."
       },
       "wip": {
-        "label": "Cerrando el gate 0.1.0",
+        "label": "0.1.0 publicado",
         "anchor": "0.1.0",
-        "desc": "Core fusionado y verde; falta evidencia independiente de ceremonia."
+        "desc": "Ceremonia independiente, beacon público, interoperabilidad, artefactos y checks del release completados."
       },
       "next": {
         "label": "Después de 0.1.0",
@@ -211,9 +209,9 @@
       "r1csOptimizer": "Optimización compatible con Circom",
       "r1csOptimizerDesc": "Achronyme baja circuitos nativos e importados mediante optimización comprobada y validación del witness.",
       "circomFrontend": "Concurrencia estructurada y autoridad del host",
-      "circomFrontendDesc": "El candidato 0.1.0 agrega scopes de tareas, canales acotados, recursos con propietario, grants exactos y semántica compartida entre intérprete, JIT y AOT.",
+      "circomFrontendDesc": "El release 0.1.0 agrega scopes de tareas, canales acotados, recursos con propietario, grants exactos y semántica compartida entre intérprete, JIT y AOT.",
       "adversarialTests": "Límite de proving confiable",
-      "adversarialTestsDesc": "Generar pruebas falla de forma cerrada, las llaves de producción quedan ligadas al circuito y publicar espera evidencia independiente de ceremonia.",
+      "adversarialTestsDesc": "Generar pruebas falla de forma cerrada, las llaves de producción quedan ligadas al circuito y la evidencia independiente de ceremonia se preserva con el release.",
       "playground": "Distribución de editor y documentación",
       "playgroundDesc": "Publicar la línea 0.3.0 del editor y mantener playground, referencia y artefactos alineados con el mismo core.",
       "multiFieldVM": "Superficie de embedding estable",
@@ -239,7 +237,7 @@
     "community": "Comunidad",
     "github": "GitHub",
     "releases": "Releases",
-    "releaseNotes": "Notas del candidato 0.1.0",
+    "releaseNotes": "Notas del release 0.1.0",
     "vsCode": "Extensión VS Code",
     "discussions": "Discusiones",
     "issues": "Issues",

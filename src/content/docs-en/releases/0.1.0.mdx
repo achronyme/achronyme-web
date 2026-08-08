@@ -1,28 +1,27 @@
 ---
-title: Achronyme 0.1.0 Release Candidate
-description: Current status, implemented features, compatibility, and remaining publication gate for Achronyme 0.1.0.
+title: Achronyme 0.1.0
+description: Published features, compatibility, and production proving evidence for Achronyme 0.1.0.
 slug: "releases/0.1.0"
 ---
 
-> **Status: unpublished release candidate.** The package version is `0.1.0`,
-> but the latest published core release remains `v0.0.1`. Do not treat a source
-> version, merged pull request, or green workflow as a published release.
+> **Status: published stable release.** Core `v0.1.0`, editor `v0.3.0`, and the
+> `0.1.0` web service are tied to the exact source receipts below.
 
-The 0.1.0 candidate is built from core revision
+The 0.1.0 release is built from core revision
 `fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`. It adds a host execution model
 with structured concurrency and explicit authority, and it changes proof
 generation to require an explicit source of trust.
 
 ## Version matrix
 
-| Surface | Published stable | Candidate |
-|---|---:|---:|
-| Compiler and CLI | `0.0.1` | `0.1.0` |
-| Editor and LSP | `0.2.0` | `0.3.0` |
-| Web package and server | No standalone release | `0.1.0` |
+| Surface | Published stable | Core receipt |
+|---|---:|---|
+| Compiler and CLI | `0.1.0` | `fd07b38e` |
+| Editor and LSP | `0.3.0` | Pins `fd07b38e` |
+| Web package and server | `0.1.0` | Pins `fd07b38e` |
 
-The installer resolves the latest published core release from GitHub. Until
-`v0.1.0` is tagged and published, a normal install therefore returns `0.0.1`.
+The installer resolves the latest published core release from GitHub. A normal
+install now returns `0.1.0` and verifies its published checksum.
 
 ## Structured concurrency
 
@@ -78,18 +77,17 @@ See [Proof Generation](/docs/zk-concepts/proof-generation/) for user-facing
 commands and the core repository's versioned trusted-setup guide for the full
 operator workflow.
 
-## Editor candidate
+## Editor release
 
-Editor `0.3.0` tracks the final core candidate revision and adds syntax and
+Editor `0.3.0` tracks the final core revision and adds syntax and
 semantic highlighting for structured concurrency, task handles, owned I/O,
 and capability-aware builtins. It also includes Circom language activation,
 parser-backed diagnostics, hover, completion, document symbols, definitions,
 references, and rename support.
 
-## Remaining publication gate
+## Production publication evidence
 
-The implementation is merged and final-SHA CI is green. Publication still
-requires all of the following production evidence:
+The release closed every production gate against the exact core revision:
 
 1. an independently controlled phase-2 contribution;
 2. a previously committed, publicly verifiable final beacon;
@@ -97,8 +95,9 @@ requires all of the following production evidence:
 4. successful snarkjs-to-Achronyme and Achronyme-to-snarkjs proof checks;
 5. packaged release evidence with exact hashes, sizes, revision, and metrics.
 
-Only after this gate closes should the project publish `v0.1.0`, promote the
-editor and web candidates, and update the stable version labels.
+The [public ceremony dossier](https://github.com/achronyme/achronyme/blob/cd0601402e03bbdff4b4ac4cae88c0e672d53ac8/release-evidence/0.1.0/final/README.md)
+records the immutable commitment, beacon response, artifact hashes,
+verification logs, and measured resource use.
 
 See the [Changelog](/docs/releases/changelog/) for the complete historical
 release record.
