@@ -28,10 +28,10 @@ if grep -Fq "from './landing/" "$landing" ||
 fi
 
 # Keep the current product truth and the canonical release documentation.
-grep -Fq '"cta": "Install stable 0.0.1"' "$english"
-grep -Fq '"cta": "Instalar estable 0.0.1"' "$spanish"
-grep -Fq '"banner": "0.1.0 release candidate:' "$english"
-grep -Fq '"banner": "Candidato 0.1.0:' "$spanish"
+grep -Fq '"cta": "Install 0.1.0"' "$english"
+grep -Fq '"cta": "Instalar 0.1.0"' "$spanish"
+grep -Fq '"banner": "Achronyme 0.1.0 is published:' "$english"
+grep -Fq '"banner": "Achronyme 0.1.0 publicado:' "$spanish"
 grep -Fq 'structured concurrency' "$english"
 grep -Fq 'concurrencia estructurada' "$spanish"
 grep -Fq 'slug: "releases/0.1.0"' "$release_en"

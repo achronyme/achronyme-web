@@ -346,9 +346,9 @@ const s = t(locale);
     <div class="reveal grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
       {[
         { value: `v${releaseStatus.core.stable}`, label: s.stats.coreStable, color: 'valid' },
-        { value: `v${releaseStatus.core.candidate}`, label: s.stats.coreCandidate, color: 'info' },
+        { value: releaseStatus.core.stableRevision.slice(0, 8), label: s.stats.coreRevision, color: 'info' },
         { value: `v${releaseStatus.editor.stable}`, label: s.stats.editorStable, color: 'proof' },
-        { value: `v${releaseStatus.editor.candidate}`, label: s.stats.editorCandidate, color: 'warn' },
+        { value: `v${releaseStatus.web.stable}`, label: s.stats.webStable, color: 'warn' },
       ].map((stat) => (
         <div class="rounded-xl bg-[#0C0C12] border border-white/[0.10] pt-4 pb-5 px-4 text-center relative overflow-hidden">
           <div class={`absolute top-0 left-0 right-0 h-[2px] bg-${stat.color}`}></div>
