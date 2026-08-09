@@ -1,0 +1,79 @@
+---
+title: Achronyme 0.1.1
+description: Correcciones de madurez en modulos, proving, estadisticas, limites del runtime y pruebas end-to-end para Achronyme 0.1.1.
+slug: "releases/0.1.1"
+---
+
+> **Estado: parche estable publicado.** Core `v0.1.1`, editor `v0.3.1` y el
+> servicio web `0.1.1` estan ligados a la revision exacta del core indicada
+> abajo.
+
+Achronyme 0.1.1 se construye desde la revision del core
+`44ab7868b81d69f6a5bb21f792ef5769eec8311f`. Madura cinco contratos observables
+de 0.1.0 y conserva formato de bytecode, ABI del runtime, formato de trusted
+keys y politica de proving fail-closed.
+
+## Matriz de versiones
+
+| Superficie | Estable publicado | Recibo del core |
+|---|---:|---|
+| Compilador y CLI | `0.1.1` | `44ab7868` |
+| Editor y LSP | `0.3.1` | Fija `44ab7868` |
+| Paquete web y servidor | `0.1.1` | Fija `44ab7868` |
+
+## 1. Diagnosticos de modulos importados
+
+Los errores de parseo y compilacion, ademas de las advertencias originadas en
+un modulo importado, conservan la ruta canonica del archivo, el span exacto y
+el source correspondiente. Las salidas humana, JSON y corta identifican la
+misma ubicacion. Las advertencias de imports selectivos tambien apuntan al
+nombre importado en vez del archivo raiz.
+
+## 2. Compilacion de pruebas entre modulos
+
+Los bloques `prove` dentro de funciones importadas resuelven desde el modulo
+que define la funcion. Imports de namespace y selectivos pueden pasar captures
+de arrays tipados entre modulos sin colisiones de IDs de expresiones ni falsos
+warnings de import no usado. La prueba y el witness compilados usan la misma
+propiedad de modulo expresada por el source.
+
+## 3. Estadisticas exactas del circuito
+
+`--circuit-stats` etiqueta dos valores diferentes:
+
+- `PRE-OPTIMIZATION ESTIMATE` atribuye el costo esperado antes de finalizar
+  R1CS;
+- `FINAL PROVING CONSTRAINTS` reporta el R1CS optimizado exacto que usa
+  Groth16 y queda ligado a una trusted key.
+
+Usa el conteo final para capacidad de proving, recibos de ceremonia e identidad
+de artefactos.
+
+## 4. Semantica de limites del runtime
+
+`max_tasks` cuenta cada tarea hija viva creada por `spawn` explicito o `await`
+asincrono implicito; excluye la tarea raiz. `max_task_scopes` cuenta todos los
+scopes estructurados explicitos e implicitos vivos simultaneamente en el
+runtime. Es un limite global de recursos vivos, no de profundidad lexica.
+
+## 5. Tilino Lab
+
+Tilino Lab es una subasta privada modular cuyo `main.ach` permanece como
+orquestador delgado. Modulos separados poseen transporte, logica de subasta y
+prueba, registro de bidders y artefactos. Un contrato versionado ejercita:
+
+- paridad entre interprete y LLVM JIT;
+- tareas estructuradas, canales acotados y capacidades exactas de archivo/TCP;
+- compromisos Poseidon, membresia Merkle, generacion Groth16 y verificacion
+  separada;
+- rechazo de inputs publicos alterados y de un ganador falso;
+- autoridad denegada, agotamiento de tareas/scopes, estadisticas R1CS exactas y
+  el limite de capacidades AOT standalone.
+
+Su setup local de desarrollo es explicitamente inseguro y no representa una
+prueba confiable para produccion. El proving de produccion sigue requiriendo el
+store exacto derivado de ceremonia descrito en las
+[notas de 0.1.0](/es/docs/releases/0.1.0/).
+
+Consulta el [Changelog](/es/docs/releases/changelog/) para el historial
+completo.

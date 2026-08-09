@@ -5,16 +5,16 @@ description: Soporte publicado de VS Code y LSP para Achronyme y Circom.
 
 ## Estado de versiones
 
-El ultimo release publicado del editor es `0.3.0`. Soporta Achronyme core
-`0.1.0` y fija la revision exacta
-`fd07b38e16256e2ed6a8f2b438d340a681c9b0ac`.
+El ultimo release publicado del editor es `0.3.1`. Soporta Achronyme core
+`0.1.1` y fija la revision exacta
+`44ab7868b81d69f6a5bb21f792ef5769eec8311f`.
 
 Usa los [releases publicados del editor](https://github.com/achronyme/achronyme-editor/releases)
 para una instalacion normal.
 
 ## Features de VS Code
 
-Editor 0.3.0 proporciona:
+Editor 0.3.1 proporciona:
 
 - Resaltado TextMate para `.ach`, incluyendo `concurrent`, `spawn`, `await`,
   task calls e I/O de archivo o red basado en capacidades.
@@ -32,12 +32,12 @@ Editor 0.3.0 proporciona:
 
 Formatting no está implementado en esta línea.
 
-## Compilar editor 0.3.0
+## Compilar editor 0.3.1
 
 ```bash
 git clone https://github.com/achronyme/achronyme-editor.git
 cd achronyme-editor
-git checkout v0.3.0
+git checkout v0.3.1
 
 cargo build --release -p ach-lsp
 mkdir -p editors/vscode/bin
@@ -65,7 +65,7 @@ La extensión busca `ach` en este orden:
 3. el `PATH` del sistema.
 
 Las descargas vienen del ultimo release **publicado** del core en GitHub. Editor
-0.3.0 instala core `0.1.0` cuando administra el CLI automaticamente.
+0.3.1 instala core `0.1.1` cuando administra el CLI automaticamente.
 
 ## Settings
 

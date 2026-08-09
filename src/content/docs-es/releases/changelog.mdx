@@ -5,6 +5,37 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
+## 0.1.1 - parche de madurez
+
+> Publicado el 2026-08-08 desde la revision del core
+> `44ab7868b81d69f6a5bb21f792ef5769eec8311f`.
+
+**Achronyme 0.1.1 endurece los contratos introducidos en 0.1.0 sin cambiar el
+bytecode, ABI del runtime, formato de trusted keys ni politica de proving.**
+
+### Correctitud y observabilidad
+
+- Los diagnosticos de modulos importados conservan archivo canonico, span
+  exacto y source correspondiente en salida humana, JSON y corta.
+- Imports de namespace y selectivos conservan el contexto del modulo que los
+  define durante la compilacion de pruebas, incluidos captures de arrays
+  tipados.
+- Las estadisticas separan el estimado previo a optimizar R1CS del conteo final
+  exacto que usa proving.
+- `max_tasks` cuenta cada tarea hija viva; `max_task_scopes` cuenta todos los
+  scopes estructurados vivos simultaneamente en el runtime.
+
+### Fixture de madurez end-to-end
+
+- Tilino Lab es una subasta privada modular que cubre modulos, arrays tipados,
+  concurrencia estructurada, canales acotados, recursos TCP y de archivo con
+  propietario, capacidades explicitas, Poseidon, Merkle y una prueba Groth16.
+- Su contrato comprueba paridad interprete/JIT, verificacion separada, rechazo
+  de inputs publicos alterados, autoridad denegada, agotamiento de recursos,
+  estadisticas R1CS exactas y el limite AOT standalone.
+
+---
+
 ## 0.1.0 - release estable
 
 > Publicado el 2026-08-08 desde la revision del core

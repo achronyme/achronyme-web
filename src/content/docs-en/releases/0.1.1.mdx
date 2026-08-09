@@ -1,0 +1,78 @@
+---
+title: Achronyme 0.1.1
+description: Module, proving, statistics, runtime-limit, and end-to-end maturity fixes in Achronyme 0.1.1.
+slug: "releases/0.1.1"
+---
+
+> **Status: published stable patch.** Core `v0.1.1`, editor `v0.3.1`, and the
+> `0.1.1` web service are tied to the exact core revision below.
+
+Achronyme 0.1.1 is built from core revision
+`44ab7868b81d69f6a5bb21f792ef5769eec8311f`. It matures five observable
+contracts from 0.1.0 while preserving the bytecode format, runtime ABI,
+trusted-key format, and fail-closed proving policy.
+
+## Version matrix
+
+| Surface | Published stable | Core receipt |
+|---|---:|---|
+| Compiler and CLI | `0.1.1` | `44ab7868` |
+| Editor and LSP | `0.3.1` | Pins `44ab7868` |
+| Web package and server | `0.1.1` | Pins `44ab7868` |
+
+## 1. Imported-module diagnostics
+
+Parse errors, compile errors, and warnings originating in an imported module
+now keep that module's canonical file path, exact span, and matching source
+text. Human, JSON, and short output therefore identify the same location.
+Selective-import warnings also point at the imported name instead of the root
+file.
+
+## 2. Proof compilation across modules
+
+Proof blocks inside imported functions resolve from the function's defining
+module. Namespace and selective imports can pass typed array captures across
+module boundaries without expression-ID collisions or false unused-import
+warnings. The compiled proof and witness now use the same module ownership
+that the source expresses.
+
+## 3. Exact circuit statistics
+
+`--circuit-stats` labels two different values:
+
+- `PRE-OPTIMIZATION ESTIMATE` attributes expected cost before R1CS
+  finalization;
+- `FINAL PROVING CONSTRAINTS` reports the exact optimized R1CS used by
+  Groth16 and bound to a trusted key.
+
+Use the final count for proving capacity, ceremony receipts, and artifact
+identity.
+
+## 4. Runtime-limit semantics
+
+`max_tasks` counts every live child created by explicit `spawn` or implicit
+asynchronous `await`; the root task is excluded. `max_task_scopes` counts all
+simultaneously live explicit and implicit structured scopes across the runtime.
+It is a global live-resource limit, not lexical nesting depth.
+
+## 5. Tilino Lab
+
+Tilino Lab is a modular private-auction fixture whose `main.ach` remains a thin
+orchestrator. Separate modules own transport, auction/proof logic, bidder
+registry, and artifacts. One versioned contract exercises:
+
+- interpreter and LLVM JIT parity;
+- structured tasks, bounded channels, and exact file/TCP capabilities;
+- Poseidon commitments, Merkle membership, Groth16 generation, and detached
+  verification;
+- rejection of tampered public inputs and a false winner;
+- denied authority, task/scope exhaustion, exact R1CS statistics, and the
+  standalone AOT capability boundary.
+
+Its local development setup is explicitly insecure and is not presented as a
+production-trusted proof. Production proving still requires the exact
+ceremony-derived key store described in the
+[0.1.0 release notes](/docs/releases/0.1.0/).
+
+See the [Changelog](/docs/releases/changelog/) for the historical release
+record.
