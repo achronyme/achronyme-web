@@ -18,6 +18,7 @@ grep -Fqx \
     .github/workflows/ci.yml
 grep -Fq 'EXPECTED_VERSION=' .github/workflows/deploy.yml
 grep -Fq 'http://127.0.0.1:3100/version' .github/workflows/deploy.yml
+grep -Fq 'https://play.achrony.me/version' .github/workflows/deploy.yml
 grep -Fq 'location = /health {' "$nginx_config"
 grep -Fq 'location = /version {' "$nginx_config"
 grep -Fq 'limit_req zone=api_run' "$nginx_config"
