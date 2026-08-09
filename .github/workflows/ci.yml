@@ -19,6 +19,7 @@ jobs:
       - run: test/landing_content_only_contract.sh
       - run: sh -n public/install.sh
       - run: test/install_script_contract.sh
+      - run: node test/wasm_asset_contract.mjs
 
   server:
     name: Server (format, clippy, test)
