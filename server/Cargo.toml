@@ -1,6 +1,6 @@
 [package]
 name = "ach-server"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Apache-2.0"
 
@@ -8,20 +8,20 @@ license = "Apache-2.0"
 # Achronyme crates (from main repo).
 # Pin to an explicit rev so `cargo build --locked` is reproducible even
 # if upstream `main` advances between a push and this deploy.
-# Pinned to the final core 0.1.0 revision. This keeps the shared
+# Pinned to the core 0.1.1 release revision. This keeps the shared
 # `prove-engine` crate on the same compile/prove/verify path as the CLI
 # and retains R1CS optimization on the prove path.
-akronc = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-akron = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-zkc = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-memory = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-ir = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-circom = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-constraints = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
-achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
+akronc = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+akron = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+zkc = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+memory = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+ir = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+ir-forge = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+circom = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+constraints = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+diagnostics = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+achronyme-std = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
+achronyme-parser = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
 
 # Web framework
 axum = "0.8"
@@ -34,12 +34,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Proving backends (shared crate)
-proving = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
+proving = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
 
 # Shared compile→prove→verify engine (same code path as the CLI's
 # DefaultProveHandler — replaces the previously hand-copied, divergent
 # server prove handler that proved over un-optimized R1CS).
-prove-engine = { git = "https://github.com/achronyme/achronyme", rev = "fd07b38e16256e2ed6a8f2b438d340a681c9b0ac" }
+prove-engine = { git = "https://github.com/achronyme/achronyme", rev = "b1774e88671a1889146804cb812cb099eb9cc006" }
 
 # Session management
 dashmap = "6"

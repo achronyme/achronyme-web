@@ -97,9 +97,9 @@ ach --allow-listen 127.0.0.1:8080 run server.ach
 
 ## Runtime limits
 
-The CLI exposes independent limits for tasks, resources, task-scope depth,
-channels, retained results, pending native requests, blocking workers, and the
-blocking queue. For example:
+The CLI exposes independent limits for tasks, resources, simultaneously live
+task scopes, channels, retained results, pending native requests, blocking
+workers, and the blocking queue. For example:
 
 ```bash
 ach --max-tasks 32 --max-resources 16 --max-channels 8 run service.ach
@@ -107,6 +107,11 @@ ach --max-tasks 32 --max-resources 16 --max-channels 8 run service.ach
 
 These limits apply at the host boundary and complement `--max-heap` and
 `--max-instructions` for VM execution.
+
+`max_tasks` counts every live child created by explicit `spawn` or an implicit
+asynchronous `await`; the root task is excluded. `max_task_scopes` counts all
+simultaneously live explicit and implicit structured scopes across the runtime.
+It is a global live-resource limit, not lexical nesting depth.
 
 ## Proof boundary
 

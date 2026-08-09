@@ -13,7 +13,7 @@ use std::time::Duration;
 use axum::extract::DefaultBodyLimit;
 use axum::http::{header, HeaderValue, Method};
 use axum::routing::{delete, get, post};
-use axum::Router;
+use axum::{Json, Router};
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tower_governor::GovernorLayer;
@@ -44,6 +44,19 @@ pub const BODY_CIRCUIT: usize = 32 * 1024;
 pub const BODY_FORMAT: usize = 128 * 1024;
 pub const BODY_FS_WRITE: usize = 256 * 1024;
 pub const BODY_DEFAULT: usize = 16 * 1024;
+
+#[derive(serde::Serialize)]
+struct VersionResponse {
+    service: &'static str,
+    version: &'static str,
+}
+
+async fn version() -> Json<VersionResponse> {
+    Json(VersionResponse {
+        service: "ach-server",
+        version: env!("CARGO_PKG_VERSION"),
+    })
+}
 
 /// Tuning knobs for [`build_app`]. Production reads these from env vars
 /// inside `main`; tests construct them directly.
@@ -177,9 +190,10 @@ pub fn build_app(store: session::SessionStore, cfg: &AppConfig) -> Router {
     Router::new()
         .merge(heavy_routes)
         .merge(normal_routes)
-        // /health intentionally outside both rate limiters so uptime probes
-        // don't get throttled.
+        // Health and version metadata intentionally stay outside both rate
+        // limiters so deployment probes do not get throttled.
         .route("/health", get(|| async { "ok" }))
+        .route("/version", get(version))
         .with_state(store)
         .layer(cors)
         .layer(TimeoutLayer::with_status_code(

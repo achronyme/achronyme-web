@@ -4,17 +4,17 @@
     "docs": "Docs",
     "playground": "Playground",
     "roadmap": "Roadmap",
-    "releaseNotes": "Notas 0.1.0",
+    "releaseNotes": "Notas 0.1.1",
     "stableLabel": "Estable",
-    "banner": "Achronyme 0.1.0 publicado: concurrencia estructurada, autoridad explícita y proving confiable"
+    "banner": "Achronyme 0.1.1 publicado: modulos y proving correctos, estadisticas exactas y limites del runtime"
   },
   "hero": {
-    "eyebrow": "Achronyme 0.1.0",
+    "eyebrow": "Achronyme 0.1.1",
     "headline1": "Escribe código.",
     "headline2": "Limita acceso.",
     "headline3": "Genera pruebas.",
     "subtitle": "Programas concurrentes y circuitos zero-knowledge, con autoridad y confianza de proving explícitas.",
-    "cta": "Instalar 0.1.0",
+    "cta": "Instalar 0.1.1",
     "ctaSecondary": "Conocer las máquinas",
     "trustLabel": "Evidencia del release",
     "trustValue": "Ceremonia independiente, beacon público e interoperabilidad bidireccional verificados"
@@ -26,7 +26,7 @@
   "releaseStatus": {
     "eyebrow": "Versiones reales",
     "title": "Versiones publicadas ligadas al source exacto.",
-    "subtitle": "El instalador, editor, documentación y playground ya siguen la semántica publicada del core 0.1.0.",
+    "subtitle": "El instalador, editor, documentación y playground ya siguen la semántica publicada del core 0.1.1.",
     "stable": "Estable publicado",
     "revision": "Revisión del source",
     "core": "Compilador y CLI",
@@ -34,14 +34,14 @@
     "editor": "Tooling de editor",
     "editorDesc": "VS Code y el LSP siguen la gramática del lenguaje y la revisión exacta del core.",
     "web": "Web y playground",
-    "webDesc": "La documentación y el playground están desplegados contra la revisión publicada del core 0.1.0.",
+    "webDesc": "La documentación y el playground están desplegados contra la revisión publicada del core 0.1.1.",
     "published": "Publicado",
     "review": "En revisión",
     "live": "Servicio activo",
     "source": "Revisión fija del core"
   },
   "capabilities": {
-    "eyebrow": "Lo que 0.1.0 realmente agrega",
+    "eyebrow": "Lo que entrega la linea 0.1",
     "title": "Un límite de sistema alrededor del código de pruebas.",
     "subtitle": "El release define cómo se encuentran el trabajo concurrente del host, la autoridad externa, la compilación de circuitos y la confianza criptográfica.",
     "items": {
@@ -128,7 +128,7 @@
     "verificationDesc": "La verificación recibe proof, entradas públicas, llave, curva y formato explícitos. No infiere confianza del proyecto.",
     "gateTitle": "Por qué 0.1.0 puede ser confiable en producción",
     "gateDesc": "El release registra una contribución independiente de fase 2, un beacon público comprometido con anterioridad e interoperabilidad bidireccional con snarkjs sobre el circuito exacto.",
-    "readGuide": "Leer las notas del release 0.1.0"
+    "readGuide": "Leer las notas del release 0.1.1"
   },
   "comparison": {
     "eyebrow": "Modos de confianza",
@@ -179,12 +179,12 @@
         "desc": "Empaquetado Linux nativo, JIT, AOT y artefactos reproducibles del instalador."
       },
       "wip": {
-        "label": "0.1.0 publicado",
-        "anchor": "0.1.0",
-        "desc": "Ceremonia independiente, beacon público, interoperabilidad, artefactos y checks del release completados."
+        "label": "0.1.1 publicado",
+        "anchor": "0.1.1",
+        "desc": "Correctitud de modulos y proving, estadisticas exactas, limites del runtime y el fixture end-to-end Tilino completados."
       },
       "next": {
-        "label": "Después de 0.1.0",
+        "label": "Despues de 0.1.1",
         "anchor": "siguiente",
         "desc": "Estabilizar SDK y distribución del editor a partir de uso medido."
       },
@@ -213,7 +213,7 @@
       "adversarialTests": "Límite de proving confiable",
       "adversarialTestsDesc": "Generar pruebas falla de forma cerrada, las llaves de producción quedan ligadas al circuito y la evidencia independiente de ceremonia se preserva con el release.",
       "playground": "Distribución de editor y documentación",
-      "playgroundDesc": "Publicar la línea 0.3.0 del editor y mantener playground, referencia y artefactos alineados con el mismo core.",
+      "playgroundDesc": "La linea 0.3.1 del editor, el playground, la referencia y los artefactos estan ligados a la misma semantica del core.",
       "multiFieldVM": "Superficie de embedding estable",
       "multiFieldVMDesc": "Convertir el compilador y pipeline internos en un SDK pequeño y documentado después de estabilizar contratos de release.",
       "starkBackend": "Sistemas de prueba transparentes",
@@ -237,7 +237,7 @@
     "community": "Comunidad",
     "github": "GitHub",
     "releases": "Releases",
-    "releaseNotes": "Notas del release 0.1.0",
+    "releaseNotes": "Notas del release 0.1.1",
     "vsCode": "Extensión VS Code",
     "discussions": "Discusiones",
     "issues": "Issues",

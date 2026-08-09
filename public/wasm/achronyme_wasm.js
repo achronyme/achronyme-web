@@ -5,7 +5,6 @@
  */
 export class RunResult {
     static __wrap(ptr) {
-        ptr = ptr >>> 0;
         const obj = Object.create(RunResult.prototype);
         obj.__wbg_ptr = ptr;
         RunResultFinalization.register(obj, obj.__wbg_ptr, obj);
@@ -238,6 +237,23 @@ export function hover_circom(source, line, col) {
 }
 
 /**
+ * Canonical language metadata for editors and browser tooling.
+ * @returns {string}
+ */
+export function language_metadata() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.language_metadata();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Compile and run an Achronyme source program.
  *
  * Returns a `RunResult` with captured output, success status, and error message.
@@ -251,10 +267,30 @@ export function run(source) {
     return RunResult.__wrap(ret);
 }
 
+/**
+ * Explicit support contract for the browser runtime.
+ *
+ * Pure structured tasks, bounded channels, and cooperative yield run inside
+ * the single-lane VM. Host I/O remains unavailable until an embedding API
+ * supplies both a target adapter and explicit authority.
+ * @returns {string}
+ */
+export function runtime_support() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.runtime_support();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_throw_6ddd609b62940d55: function(arg0, arg1) {
+        __wbg___wbindgen_throw_bb96b2010945f0bc: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
         __wbindgen_init_externref_table: function() {
@@ -275,11 +311,10 @@ function __wbg_get_imports() {
 
 const RunResultFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_runresult_free(ptr >>> 0, 1));
+    : new FinalizationRegistry(ptr => wasm.__wbg_runresult_free(ptr, 1));
 
 function getStringFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return decodeText(ptr, len);
+    return decodeText(ptr >>> 0, len);
 }
 
 let cachedUint8ArrayMemory0 = null;
@@ -356,8 +391,9 @@ if (!('encodeInto' in cachedTextEncoder)) {
 
 let WASM_VECTOR_LEN = 0;
 
-let wasmModule, wasm;
+let wasmModule, wasmInstance, wasm;
 function __wbg_finalize_init(instance, module) {
+    wasmInstance = instance;
     wasm = instance.exports;
     wasmModule = module;
     cachedUint8ArrayMemory0 = null;
@@ -367,11 +403,15 @@ function __wbg_finalize_init(instance, module) {
 
 async function __wbg_load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
+        if (!module.ok) {
+            throw new Error(`failed to fetch Wasm: ${module.status} ${module.statusText} fetching '${module.url}'`);
+        }
+
         if (typeof WebAssembly.instantiateStreaming === 'function') {
             try {
                 return await WebAssembly.instantiateStreaming(module, imports);
             } catch (e) {
-                const validResponse = module.ok && expectedResponseType(module.type);
+                const validResponse = expectedResponseType(module.type);
 
                 if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
                     console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);

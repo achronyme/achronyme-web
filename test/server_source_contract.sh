@@ -3,8 +3,9 @@
 set -eu
 
 project_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
-source_version="0.1.0"
-source_revision="fd07b38e16256e2ed6a8f2b438d340a681c9b0ac"
+source_version="0.1.1"
+source_revision="b1774e88671a1889146804cb812cb099eb9cc006"
+nginx_config="$project_root/deploy/nginx/play.achrony.me.conf"
 metadata_file=$(mktemp)
 trap 'rm -f "$metadata_file"' EXIT HUP INT TERM
 
@@ -15,6 +16,15 @@ grep -qx 'channel = "1.96.0"' server/rust-toolchain.toml
 grep -Fqx \
     '      - run: cargo test --release --manifest-path server/Cargo.toml --locked' \
     .github/workflows/ci.yml
+grep -Fq 'EXPECTED_VERSION=' .github/workflows/deploy.yml
+grep -Fq 'http://127.0.0.1:3100/version' .github/workflows/deploy.yml
+grep -Fq 'https://play.achrony.me/version' .github/workflows/deploy.yml
+grep -Fq 'location = /health {' "$nginx_config"
+grep -Fq 'location = /version {' "$nginx_config"
+grep -Fq 'limit_req zone=api_run' "$nginx_config"
+grep -Fq 'limit_req zone=api_session' "$nginx_config"
+grep -Fq 'limit_req zone=api_general' "$nginx_config"
+grep -Fq 'return 404;' "$nginx_config"
 
 cargo metadata --manifest-path server/Cargo.toml --locked --format-version 1 \
     > "$metadata_file"

@@ -158,6 +158,11 @@ circuit hash_check(out: Public, a: Witness, b: Witness) {
 }
 ```
 
+Namespace and selective imports preserve the defining module's resolver
+context inside `prove` blocks. Typed array captures can cross from one module
+into an imported proving function without colliding with expression IDs from
+the root file.
+
 ## Errors
 
 | Error | Cause |

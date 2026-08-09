@@ -53,6 +53,24 @@ async fn health_returns_ok() {
 }
 
 #[tokio::test]
+async fn version_reports_the_compiled_server_package() {
+    let app = make_app();
+    let req = req()
+        .method(Method::GET)
+        .uri("/version")
+        .body(Body::empty())
+        .expect("valid request");
+
+    let resp = app.oneshot(req).await.expect("oneshot");
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    let body = to_bytes(resp.into_body(), 256).await.expect("body");
+    let payload: serde_json::Value = serde_json::from_slice(&body).expect("JSON version response");
+    assert_eq!(payload["service"], "ach-server");
+    assert_eq!(payload["version"], env!("CARGO_PKG_VERSION"));
+}
+
+#[tokio::test]
 async fn unknown_route_returns_404() {
     let app = make_app();
     let req = req()

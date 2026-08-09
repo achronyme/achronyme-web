@@ -103,17 +103,56 @@ jobs:
 
           sudo systemctl restart "$ACH_SERVER_SERVICE"
 
-          # Health gate: if the new binary refuses to serve /health within
-          # 10 seconds, dump the journal and fail the workflow so we don't
-          # silently leave production broken.
+          # Health and identity gate: the restarted process must be reachable
+          # and report the package version from this exact checkout.
+          EXPECTED_VERSION="$(sed -n 's/^version = "\([^"]*\)"/\1/p' \
+            server/Cargo.toml | head -1)"
+          EXPECTED_PAYLOAD="{\"service\":\"ach-server\",\"version\":\"$EXPECTED_VERSION\"}"
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            if curl -fsS http://127.0.0.1:3100/health > /dev/null; then
-              echo "ach-server healthy (attempt $i)"
+            HEALTH_PAYLOAD="$(curl -fsS http://127.0.0.1:3100/health 2>/dev/null || true)"
+            VERSION_PAYLOAD="$(curl -fsS http://127.0.0.1:3100/version 2>/dev/null || true)"
+            if [ "$HEALTH_PAYLOAD" = "ok" ] && \
+               [ "$VERSION_PAYLOAD" = "$EXPECTED_PAYLOAD" ]; then
+              echo "ach-server healthy at version $EXPECTED_VERSION (attempt $i)"
               exit 0
             fi
             sleep 1
           done
-          echo "::error::ach-server did not report healthy within 10s"
+          echo "::error::ach-server did not report exact health and version within 10s"
+          echo "health payload: $HEALTH_PAYLOAD"
+          echo "version payload: $VERSION_PAYLOAD"
           systemctl status "$ACH_SERVER_SERVICE" --no-pager || true
           journalctl -u "$ACH_SERVER_SERVICE" -n 50 --no-pager || true
+          exit 1
+
+  public-server:
+    name: Verify public ach-server
+    needs: server
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify public health and release identity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXPECTED_VERSION="$(sed -n 's/^version = "\([^"]*\)"/\1/p' \
+            server/Cargo.toml | head -1)"
+          EXPECTED_PAYLOAD="{\"service\":\"ach-server\",\"version\":\"$EXPECTED_VERSION\"}"
+
+          for attempt in $(seq 1 30); do
+            HEALTH_PAYLOAD="$(curl -fsS https://play.achrony.me/health 2>/dev/null || true)"
+            VERSION_PAYLOAD="$(curl -fsS https://play.achrony.me/version 2>/dev/null || true)"
+            if [ "$HEALTH_PAYLOAD" = "ok" ] && \
+               [ "$VERSION_PAYLOAD" = "$EXPECTED_PAYLOAD" ]; then
+              echo "public ach-server healthy at version $EXPECTED_VERSION (attempt $attempt)"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "::error::public ach-server did not report the deployed version within 5m"
+          echo "health payload: $HEALTH_PAYLOAD"
+          echo "version payload: $VERSION_PAYLOAD"
           exit 1

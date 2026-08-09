@@ -18,9 +18,9 @@ These flags apply to all subcommands:
 | `--allow-write <dir>` | Grant write access to one directory. Repeatable |
 | `--allow-connect <ip:port>` | Grant one outbound numeric IP and port. Repeatable |
 | `--allow-listen <ip:port>` | Grant one numeric listen address and port. Repeatable |
-| `--max-tasks <count>` | Bound live child tasks |
+| `--max-tasks <count>` | Bound explicit `spawn` and implicit `await` child tasks; exclude the root task |
 | `--max-resources <count>` | Bound simultaneously open owned resources |
-| `--max-task-scopes <count>` | Bound nested structured-concurrency scopes |
+| `--max-task-scopes <count>` | Bound simultaneously live structured scopes, explicit and implicit |
 | `--max-pending-native-requests <count>` | Bound in-flight asynchronous native requests |
 | `--max-retained-task-results <count>` | Bound completed child results retained for task handles |
 | `--max-channels <count>` | Bound simultaneously open channels |
@@ -126,7 +126,7 @@ If `<path>` is omitted, the CLI resolves the entry file from `[project].entry` i
 | `--stress-gc` | Run GC on every allocation (for testing). See [Stress GC Mode](/docs/architecture/memory-and-gc/#stress-gc-mode) |
 | `--max-heap <size>` | Set maximum heap size (e.g., `256M`, `1G`, `512K`). Raises `HeapLimitExceeded` if exceeded |
 | `--gc-stats` | Print GC statistics to stderr after execution. See [GC Statistics](/docs/architecture/memory-and-gc/#gc-statistics) |
-| `--circuit-stats` | Print circuit constraint stats for each `prove {}` block executed |
+| `--circuit-stats` | Print the pre-optimization IR estimate and final R1CS proving constraints for each `prove {}` block |
 | `--prove-backend <backend>` | Backend for `prove {}` blocks: `r1cs` (default) or `plonkish` |
 | `--engine <engine>` | Execution engine: `interpreter`, `jit`, or `auto` (default) |
 | `--max-instructions <count>` | Stop after the configured bytecode instruction budget |
@@ -181,7 +181,7 @@ ach circom -l vendor/circomlib/circuits sha256.circom --inputs-file inputs.toml
 | `--dump-ir` | Print the optimized SSA IR and exit before constraint generation |
 | `--no-optimize` | Disable IR optimization passes |
 | `--low-memory` | Bound retained metadata while exporting very large optimized R1CS circuits |
-| `--circuit-stats` | Print constraint count breakdown |
+| `--circuit-stats` | Print the pre-optimization IR estimate and exact final R1CS proving constraints |
 
 ### Library resolution
 
