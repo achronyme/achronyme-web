@@ -38,7 +38,7 @@ pub fn populate_template(template: &str, workspace: &Path) -> Result<(), String>
         "circomlib-demo" | "circomlib-mimc" | "circomlib-sha256" => format!(
             r#"[project]
 name = "{name}"
-version = "0.1.0"
+version = "0.1.1"
 entry = "src/main.ach"
 
 [build]
@@ -51,7 +51,7 @@ libs = ["@circomlib"]
         _ => format!(
             r#"[project]
 name = "{name}"
-version = "0.1.0"
+version = "0.1.1"
 entry = "src/main.ach"
 
 [build]
