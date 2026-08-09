@@ -1,7 +1,7 @@
 export const releaseStatus = {
   core: {
     stable: '0.1.1',
-    stableRevision: '5eb660b0ec9c28f5125a8f972107a682519a1ed4',
+    stableRevision: 'b1774e88671a1889146804cb812cb099eb9cc006',
     stableUrl: 'https://github.com/achronyme/achronyme/releases/tag/v0.1.1',
     releasesUrl: 'https://github.com/achronyme/achronyme/releases',
   },
