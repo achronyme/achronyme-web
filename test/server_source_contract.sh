@@ -15,6 +15,8 @@ grep -qx 'channel = "1.96.0"' server/rust-toolchain.toml
 grep -Fqx \
     '      - run: cargo test --release --manifest-path server/Cargo.toml --locked' \
     .github/workflows/ci.yml
+grep -Fq 'EXPECTED_VERSION=' .github/workflows/deploy.yml
+grep -Fq 'http://127.0.0.1:3100/version' .github/workflows/deploy.yml
 
 cargo metadata --manifest-path server/Cargo.toml --locked --format-version 1 \
     > "$metadata_file"
