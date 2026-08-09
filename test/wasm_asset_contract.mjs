@@ -15,7 +15,7 @@ function sha256(path) {
 }
 
 assert.equal(receipt.coreVersion, "0.1.1");
-assert.equal(receipt.coreRevision, "44ab7868b81d69f6a5bb21f792ef5769eec8311f");
+assert.equal(receipt.coreRevision, "5eb660b0ec9c28f5125a8f972107a682519a1ed4");
 assert.equal(receipt.editorVersion, "0.3.1");
 assert.equal(receipt.javascriptSha256, sha256(javascriptPath));
 assert.equal(receipt.wasmSha256, sha256(wasmPath));

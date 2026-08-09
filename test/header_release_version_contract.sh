@@ -18,7 +18,7 @@ test "$(node -p "require('$project_root/package-lock.json').version")" = "0.1.1"
 test "$(node -p "require('$project_root/package-lock.json').packages[''].version")" = "0.1.1"
 
 test "$(grep -Fc "stable: '0.1.1'" "$release_data")" -eq 2
-grep -Fq "stableRevision: '44ab7868b81d69f6a5bb21f792ef5769eec8311f'" "$release_data"
+grep -Fq "stableRevision: '5eb660b0ec9c28f5125a8f972107a682519a1ed4'" "$release_data"
 grep -Fq "stableUrl: 'https://github.com/achronyme/achronyme/releases/tag/v0.1.1'" "$release_data"
 grep -Fq "stable: '0.3.1'" "$release_data"
 grep -Fq "stableUrl: 'https://github.com/achronyme/achronyme-editor/releases/tag/v0.3.1'" "$release_data"

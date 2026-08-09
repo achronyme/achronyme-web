@@ -4,7 +4,7 @@ set -eu
 
 project_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 source_version="0.1.1"
-source_revision="44ab7868b81d69f6a5bb21f792ef5769eec8311f"
+source_revision="5eb660b0ec9c28f5125a8f972107a682519a1ed4"
 nginx_config="$project_root/deploy/nginx/play.achrony.me.conf"
 metadata_file=$(mktemp)
 trap 'rm -f "$metadata_file"' EXIT HUP INT TERM
