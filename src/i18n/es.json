@@ -4,17 +4,17 @@
     "docs": "Docs",
     "playground": "Playground",
     "roadmap": "Roadmap",
-    "releaseNotes": "Notas 0.1.1",
+    "releaseNotes": "Notas 0.1.2",
     "stableLabel": "Estable",
-    "banner": "Achronyme 0.1.1 publicado: modulos y proving correctos, estadisticas exactas y limites del runtime"
+    "banner": "Achronyme 0.1.2 publicado: la verificacion separada conserva errores operativos y salida JSON global"
   },
   "hero": {
-    "eyebrow": "Achronyme 0.1.1",
+    "eyebrow": "Achronyme 0.1.2",
     "headline1": "Escribe código.",
     "headline2": "Limita acceso.",
     "headline3": "Genera pruebas.",
     "subtitle": "Programas concurrentes y circuitos zero-knowledge, con autoridad y confianza de proving explícitas.",
-    "cta": "Instalar 0.1.1",
+    "cta": "Instalar 0.1.2",
     "ctaSecondary": "Conocer las máquinas",
     "trustLabel": "Evidencia del release",
     "trustValue": "Ceremonia independiente, beacon público e interoperabilidad bidireccional verificados"
@@ -26,7 +26,7 @@
   "releaseStatus": {
     "eyebrow": "Versiones reales",
     "title": "Versiones publicadas ligadas al source exacto.",
-    "subtitle": "El instalador, editor, documentación y playground ya siguen la semántica publicada del core 0.1.1.",
+    "subtitle": "El instalador, la documentación y el playground siguen core 0.1.2; editor 0.3.1 permanece compatible.",
     "stable": "Estable publicado",
     "revision": "Revisión del source",
     "core": "Compilador y CLI",
@@ -34,7 +34,7 @@
     "editor": "Tooling de editor",
     "editorDesc": "VS Code y el LSP siguen la gramática del lenguaje y la revisión exacta del core.",
     "web": "Web y playground",
-    "webDesc": "La documentación y el playground están desplegados contra la revisión publicada del core 0.1.1.",
+    "webDesc": "La documentación y el playground están desplegados contra la revisión publicada del core 0.1.2.",
     "published": "Publicado",
     "review": "En revisión",
     "live": "Servicio activo",
@@ -128,7 +128,7 @@
     "verificationDesc": "La verificación recibe proof, entradas públicas, llave, curva y formato explícitos. No infiere confianza del proyecto.",
     "gateTitle": "Por qué 0.1.0 puede ser confiable en producción",
     "gateDesc": "El release registra una contribución independiente de fase 2, un beacon público comprometido con anterioridad e interoperabilidad bidireccional con snarkjs sobre el circuito exacto.",
-    "readGuide": "Leer las notas del release 0.1.1"
+    "readGuide": "Leer las notas del release 0.1.2"
   },
   "comparison": {
     "eyebrow": "Modos de confianza",
@@ -179,12 +179,12 @@
         "desc": "Empaquetado Linux nativo, JIT, AOT y artefactos reproducibles del instalador."
       },
       "wip": {
-        "label": "0.1.1 publicado",
-        "anchor": "0.1.1",
-        "desc": "Correctitud de modulos y proving, estadisticas exactas, limites del runtime y el fixture end-to-end Tilino completados."
+        "label": "0.1.2 publicado",
+        "anchor": "0.1.2",
+        "desc": "La verificacion separada conserva errores operativos y aplica el contrato global de salida JSON."
       },
       "next": {
-        "label": "Despues de 0.1.1",
+        "label": "Despues de 0.1.2",
         "anchor": "siguiente",
         "desc": "Estabilizar SDK y distribución del editor a partir de uso medido."
       },
@@ -237,7 +237,7 @@
     "community": "Comunidad",
     "github": "GitHub",
     "releases": "Releases",
-    "releaseNotes": "Notas del release 0.1.1",
+    "releaseNotes": "Notas del release 0.1.2",
     "vsCode": "Extensión VS Code",
     "discussions": "Discusiones",
     "issues": "Issues",

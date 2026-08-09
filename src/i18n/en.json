@@ -4,17 +4,17 @@
     "docs": "Docs",
     "playground": "Playground",
     "roadmap": "Roadmap",
-    "releaseNotes": "0.1.1 notes",
+    "releaseNotes": "0.1.2 notes",
     "stableLabel": "Stable",
-    "banner": "Achronyme 0.1.1 is published: correct modules and proving, exact stats, and runtime limits"
+    "banner": "Achronyme 0.1.2 is published: detached verification preserves operational errors and global JSON output"
   },
   "hero": {
-    "eyebrow": "Achronyme 0.1.1",
+    "eyebrow": "Achronyme 0.1.2",
     "headline1": "Write programs.",
     "headline2": "Limit authority.",
     "headline3": "Prove claims.",
     "subtitle": "Structured host programs and zero-knowledge circuits, with explicit authority and proving trust.",
-    "cta": "Install 0.1.1",
+    "cta": "Install 0.1.2",
     "ctaSecondary": "Meet the machines",
     "trustLabel": "Release evidence",
     "trustValue": "Independent ceremony, public beacon, and bidirectional interoperability verified"
@@ -26,7 +26,7 @@
   "releaseStatus": {
     "eyebrow": "Version truth",
     "title": "Published versions tied to exact source.",
-    "subtitle": "The installer, editor, documentation, and playground now track the published 0.1.1 core semantics.",
+    "subtitle": "The installer, documentation, and playground track core 0.1.2; editor 0.3.1 remains compatible.",
     "stable": "Published stable",
     "revision": "Source revision",
     "core": "Compiler and CLI",
@@ -34,7 +34,7 @@
     "editor": "Editor tooling",
     "editorDesc": "VS Code and LSP support track the language grammar and core source revision.",
     "web": "Web and playground",
-    "webDesc": "The documentation and playground are deployed against the published 0.1.1 core revision.",
+    "webDesc": "The documentation and playground are deployed against the published 0.1.2 core revision.",
     "published": "Published",
     "review": "In review",
     "live": "Service live",
@@ -128,7 +128,7 @@
     "verificationDesc": "Verification accepts explicit proof, public input, key, curve, and output format. It does not infer trust from project state.",
     "gateTitle": "Why 0.1.0 can be production trusted",
     "gateDesc": "The release records an independent phase-2 contribution, a precommitted public beacon, and bidirectional snarkjs interoperability against the exact release circuit.",
-    "readGuide": "Read the 0.1.1 release notes"
+    "readGuide": "Read the 0.1.2 release notes"
   },
   "comparison": {
     "eyebrow": "Trust modes",
@@ -179,12 +179,12 @@
         "desc": "Native Linux packaging, JIT, AOT, and reproducible installer artifacts."
       },
       "wip": {
-        "label": "0.1.1 published",
-        "anchor": "0.1.1",
-        "desc": "Module and proving correctness, exact stats, runtime limits, and the Tilino end-to-end fixture completed."
+        "label": "0.1.2 published",
+        "anchor": "0.1.2",
+        "desc": "Detached verification now preserves operational errors and applies the global JSON output contract."
       },
       "next": {
-        "label": "After 0.1.1",
+        "label": "After 0.1.2",
         "anchor": "next",
         "desc": "Stabilize SDK and editor distribution from measured usage."
       },
@@ -237,7 +237,7 @@
     "community": "Community",
     "github": "GitHub",
     "releases": "Releases",
-    "releaseNotes": "0.1.1 release notes",
+    "releaseNotes": "0.1.2 release notes",
     "vsCode": "VS Code Extension",
     "discussions": "Discussions",
     "issues": "Issues",

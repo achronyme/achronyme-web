@@ -5,6 +5,24 @@ description: Historial de versiones de Achronyme.
 
 Todos los cambios relevantes de Achronyme se documentan aquí. Cada release actualiza todos los crates del workspace a la misma versión.
 
+## 0.1.2 - parche de verificacion separada
+
+> Publicado el 2026-08-09 desde la revision del core
+> `cd7a6e66e133bebd8e2026e321a4c85023c311f7`.
+
+**Achronyme 0.1.2 corrige la salida de verificacion separada sin cambiar el
+lenguaje, bytecode, ABI del runtime, formatos de pruebas, formato de trusted
+keys ni contratos del LSP.**
+
+- Los artefactos ausentes, ilegibles o que no pueden inspeccionarse reportan su
+  causa operativa en vez del resultado enganoso `proof invalid`.
+- La bandera global `--error-format json` selecciona salida estructurada para
+  verificacion separada salvo que un `verify --format` explicito la reemplace.
+- Los registros legacy de estrategia y auditoria se eliminaron del arbol
+  actual sin reescribir commits ni tags historicos.
+
+---
+
 ## 0.1.1 - parche de madurez
 
 > Publicado el 2026-08-08 desde la revision del core

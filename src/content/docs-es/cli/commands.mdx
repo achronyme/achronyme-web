@@ -89,6 +89,11 @@ ach verify \
 Las curvas soportadas son `bn254` y `bls12-381`. Artefactos inválidos,
 malformados, incompatibles o alterados retornan status distinto de cero.
 
+Los artefactos ausentes o ilegibles son errores operativos, no pruebas
+invalidas. `--error-format json` selecciona salida JSON para la verificacion
+separada cuando se omite `verify --format`. Un `verify --format text` o
+`verify --format json` explicito tiene precedencia.
+
 ---
 
 ## `trusted-setup` — Empaquetar una llave verificada externamente

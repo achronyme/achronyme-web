@@ -18,14 +18,15 @@ lugar de fingir que los tres trabajos tienen los mismos requisitos de runtime.
 
 | Superficie | Estable publicado | Recibo del source |
 |---|---:|---|
-| Compilador y CLI | `0.1.1` | `b1774e88` |
-| Editor y LSP | `0.3.1` | Fijado al core `b1774e88` |
-| Paquete web y servidor | `0.1.1` | Fijado al core `b1774e88` |
+| Compilador y CLI | `0.1.2` | `cd7a6e66` |
+| Editor y LSP | `0.3.1` | Compatible; LSP construido desde core `b1774e88` |
+| Paquete web y servidor | `0.1.2` | Fijado al core `cd7a6e66` |
 
-Los releases y el servicio web desplegado usan la revisión del core
-`b1774e88671a1889146804cb812cb099eb9cc006`. Consulta las
-[notas de 0.1.1](/es/docs/releases/0.1.1/) para los contratos de madurez y su
-compatibilidad con la llave de proving de produccion de 0.1.0.
+El CLI, el paquete WASM y el servicio web desplegado usan la revision del core
+`cd7a6e66e133bebd8e2026e321a4c85023c311f7`. Editor 0.3.1 permanece compatible porque 0.1.2 no
+cambia los contratos del lenguaje ni del LSP. Consulta las
+[notas de 0.1.2](/es/docs/releases/0.1.2/) para los fixes de verificacion
+separada y la declaracion de compatibilidad.
 
 ## Ejecución del host
 
@@ -87,8 +88,9 @@ ach --insecure-dev-setup run proof.ach
 ach --trusted-key-dir ./trusted-keys run proof.ach
 ```
 
-La verificación separada usa `ach verify` y no requiere configuración de
-proyecto ni proving key.
+La verificacion separada usa `ach verify` y no requiere configuracion de
+proyecto ni proving key. Los errores operativos de los artefactos permanecen
+separados de una prueba criptograficamente invalida.
 
 ## Las tres máquinas
 
@@ -106,4 +108,4 @@ proyecto ni proving key.
 - [Instalar el release publicado](/es/docs/getting-started/installation/)
 - [Aprender concurrencia e I/O](/es/docs/language/concurrency-and-io/)
 - [Entender la confianza de proving](/es/docs/zk-concepts/proof-generation/)
-- [Revisar el contrato del release 0.1.1](/es/docs/releases/0.1.1/)
+- [Revisar el contrato del release 0.1.2](/es/docs/releases/0.1.2/)

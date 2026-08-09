@@ -1,0 +1,54 @@
+---
+title: Achronyme 0.1.2
+description: Detached verification error and JSON-output fixes in Achronyme 0.1.2.
+slug: "releases/0.1.2"
+---
+
+> **Status: published stable patch.** Core `v0.1.2` and the `0.1.2` web
+> service are built from the exact core revision below. Editor `v0.3.1`
+> remains compatible.
+
+Achronyme 0.1.2 is built from core revision
+`cd7a6e66e133bebd8e2026e321a4c85023c311f7`. It corrects detached verification output while
+preserving the bytecode format, runtime ABI, proof formats, trusted-key format,
+language grammar, and LSP contracts from 0.1.1.
+
+## Version matrix
+
+| Surface | Published stable | Core receipt |
+|---|---:|---|
+| Compiler and CLI | `0.1.2` | `cd7a6e66` |
+| Editor and LSP | `0.3.1` | Compatible; built from `b1774e88` |
+| Web package and server | `0.1.2` | Pins `cd7a6e66` |
+
+## Operational errors stay operational
+
+`ach verify` no longer prints `proof invalid` when a proof, public-input, or
+verification-key file cannot be opened or inspected. The command exits with a
+precise cause instead, so scripts can distinguish an operational failure from
+a cryptographically invalid proof.
+
+## One JSON output contract
+
+The global `--error-format json` flag now selects JSON output for detached
+verification when `verify --format` is omitted:
+
+```bash
+ach --error-format json verify \
+  --proof proof.json \
+  --public public.json \
+  --vkey verification_key.json \
+  --curve bn254
+```
+
+An explicit `verify --format text` or `verify --format json` still takes
+precedence. Invalid proofs and operational errors retain a non-zero exit
+status in either representation.
+
+## Repository maintenance
+
+Legacy strategy and audit records were removed from the current repository
+tree. The release does not rewrite Git history, tags, or prior evidence SHAs.
+
+See the [Changelog](/docs/releases/changelog/) for the complete release
+history.

@@ -127,6 +127,7 @@ export const sidebarConfig: SidebarConfig = [
     label: 'Releases',
     translations: { es: 'Releases' },
     items: [
+      { label: '0.1.2 - Verification patch', slug: 'releases/0.1.2', translations: { es: '0.1.2 - Parche de verificacion' } },
       { label: '0.1.1 - Maturity patch', slug: 'releases/0.1.1', translations: { es: '0.1.1 - Parche de madurez' } },
       { label: '0.1.0 - Stable release', slug: 'releases/0.1.0', translations: { es: '0.1.0 - Release estable' } },
       { label: 'beta.22 — ECDSAVerify end-to-end', slug: 'releases/beta22', translations: { es: 'beta.22 — ECDSAVerify de extremo a extremo' } },
