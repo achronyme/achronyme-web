@@ -28,6 +28,11 @@ use axum::http::{Method, Request, StatusCode};
 use serde_json::{json, Value};
 use tower::ServiceExt;
 
+// Both cases compile and prove SHA-256 under the production run timeout. Run
+// them one at a time so constrained CI hosts measure behavior, not CPU
+// contention between two copies of the same heavy fixture.
+static SHA256_FIXTURE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 fn ensure_circomlib_env() {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| {
@@ -149,6 +154,7 @@ async fn create_sha256_session(app: &axum::Router) -> String {
 
 #[tokio::test]
 async fn circomlib_sha256_template_runs_end_to_end() {
+    let _fixture_guard = SHA256_FIXTURE_LOCK.lock().await;
     ensure_circomlib_env();
 
     // Fail loudly if the operator forgot `git submodule update`.
@@ -259,6 +265,7 @@ prove() {
 
 #[tokio::test]
 async fn sha256_inline_call_in_prove_block_succeeds() {
+    let _fixture_guard = SHA256_FIXTURE_LOCK.lock().await;
     ensure_circomlib_env();
 
     let circomlib = PathBuf::from(std::env::var("ACH_CIRCOMLIB_PATH").unwrap());
