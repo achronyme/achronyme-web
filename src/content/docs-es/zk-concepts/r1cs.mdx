@@ -163,6 +163,20 @@ Costo: ~760 restricciones sin cotas previas de rango. Con `range_check`, el comp
 | `range_check(x, n)` | n + 1 | n bits booleanos + 1 igualdad de suma |
 | `poseidon(l, r)` | 361 | 360 permutación + 1 capacidad |
 
+## Estadísticas del Compilador
+
+Usa `--circuit-stats` con `ach run`, `ach circuit` o `ach circom` para
+inspeccionar costos. Achronyme reporta dos totales deliberadamente distintos:
+
+- `PRE-OPTIMIZATION ESTIMATE` es el estimado estático derivado de las
+  categorías del IR optimizado antes de finalizar R1CS.
+- `FINAL PROVING CONSTRAINTS` es el conteo exacto después de optimizar R1CS.
+  Este sistema es el que recibe Groth16 y el que queda ligado a trusted keys.
+
+Usa el conteo final para capacidad de proving, ceremonia y evidencia de
+release. El estimado sirve para atribución, pero no identifica un artefacto
+criptográfico.
+
 ## Exportación Binaria
 
 Achronyme exporta archivos `.r1cs` y `.wtns` en el **formato binario iden3**, compatible con snarkjs:

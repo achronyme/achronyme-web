@@ -163,6 +163,20 @@ Cost: ~760 constraints without prior range bounds. With `range_check`, the compi
 | `range_check(x, n)` | n + 1 | n boolean bits + 1 sum equality |
 | `poseidon(l, r)` | 361 | 360 permutation + 1 capacity |
 
+## Compiler Statistics
+
+Use `--circuit-stats` with `ach run`, `ach circuit`, or `ach circom` to inspect
+constraint costs. Achronyme reports two deliberately different totals:
+
+- `PRE-OPTIMIZATION ESTIMATE` is the static estimate derived from optimized IR
+  categories before R1CS finalization.
+- `FINAL PROVING CONSTRAINTS` is the exact count after R1CS optimization. This
+  is the constraint system passed to Groth16 and bound to trusted keys.
+
+Use the final count for proving capacity, ceremony, and release evidence. The
+estimate is useful for attribution, but it is not a cryptographic artifact
+identity.
+
 ## Binary Export
 
 Achronyme exports `.r1cs` and `.wtns` files in the **iden3 binary format**, compatible with snarkjs:

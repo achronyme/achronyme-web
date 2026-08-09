@@ -18,9 +18,9 @@ Estas banderas aplican a todos los subcomandos:
 | `--allow-write <dir>` | Concede escritura sobre un directorio. Repetible |
 | `--allow-connect <ip:port>` | Concede una IP numérica y puerto de salida. Repetible |
 | `--allow-listen <ip:port>` | Concede una dirección numérica y puerto de escucha. Repetible |
-| `--max-tasks <count>` | Limita tareas hijas vivas |
+| `--max-tasks <count>` | Limita tareas hijas de `spawn` explícito y `await` implícito; excluye la tarea raíz |
 | `--max-resources <count>` | Limita recursos con propietario abiertos simultáneamente |
-| `--max-task-scopes <count>` | Limita scopes anidados de concurrencia estructurada |
+| `--max-task-scopes <count>` | Limita scopes estructurados vivos simultáneamente, explícitos e implícitos |
 | `--max-pending-native-requests <count>` | Limita requests nativos asíncronos en vuelo |
 | `--max-retained-task-results <count>` | Limita resultados terminados retenidos para task handles |
 | `--max-channels <count>` | Limita canales abiertos simultáneamente |
@@ -126,7 +126,7 @@ Si se omite `<path>`, el CLI resuelve el archivo de entrada desde `[project].ent
 | `--stress-gc` | Ejecuta GC en cada alocación (para tests). Ver [Modo Stress GC](/es/docs/architecture/memory-and-gc/#modo-stress-gc) |
 | `--max-heap <size>` | Establece el tamaño máximo del heap (ej. `256M`, `1G`, `512K`). Lanza `HeapLimitExceeded` si se excede |
 | `--gc-stats` | Imprime estadísticas del GC en stderr tras la ejecución. Ver [Estadísticas del GC](/es/docs/architecture/memory-and-gc/#estadisticas-del-gc) |
-| `--circuit-stats` | Imprime estadísticas de constraints por cada bloque `prove {}` ejecutado |
+| `--circuit-stats` | Imprime el estimado IR previo a optimización y los constraints R1CS finales por cada bloque `prove {}` |
 | `--prove-backend <backend>` | Backend para bloques `prove {}`: `r1cs` (predeterminado) o `plonkish` |
 | `--engine <engine>` | Motor: `interpreter`, `jit` o `auto` (predeterminado) |
 | `--max-instructions <count>` | Detiene la VM al agotar el presupuesto de instrucciones |
@@ -181,7 +181,7 @@ ach circom -l vendor/circomlib/circuits sha256.circom --input-file inputs.toml
 | `--dump-ir` | Imprime el IR SSA optimizado y sale antes de generar constraints |
 | `--no-optimize` | Deshabilita los pases de optimización del IR |
 | `--low-memory` | Acota metadata retenida al exportar circuitos R1CS optimizados muy grandes |
-| `--circuit-stats` | Imprime el desglose del conteo de constraints |
+| `--circuit-stats` | Imprime el estimado IR previo a optimización y el conteo R1CS final exacto |
 
 ### Resolución de librerías
 

@@ -158,6 +158,11 @@ circuit hash_check(out: Public, a: Witness, b: Witness) {
 }
 ```
 
+Los imports de namespace y selectivos conservan el contexto del módulo que
+define la función dentro de bloques `prove`. Los captures de arrays tipados
+pueden cruzar hacia una función de prueba importada sin colisionar con IDs de
+expresiones del archivo raíz.
+
 ## Errores
 
 | Error | Causa |

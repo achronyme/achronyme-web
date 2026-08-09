@@ -5,6 +5,11 @@ description: "Compiler warnings, error output formats, and typo suggestions."
 
 Achronyme reports errors and warnings with source snippets, underline carets, and actionable suggestions — similar to `rustc`. The diagnostic system works across all commands (`run`, `compile`, `circuit`, `disassemble`).
 
+When a diagnostic originates in a module, every output format retains the
+canonical imported file, exact span, and matching imported source text. An
+error in `lib/proofs.ach` therefore never renders against the root program's
+line or snippet.
+
 ## Error Output
 
 By default, errors render with source context:

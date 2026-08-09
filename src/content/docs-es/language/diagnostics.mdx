@@ -5,6 +5,11 @@ description: "Advertencias del compilador, formatos de salida de errores y suger
 
 Achronyme reporta errores y advertencias con fragmentos de código fuente, carets de subrayado y sugerencias accionables — similar a `rustc`. El sistema de diagnósticos funciona en todos los comandos (`run`, `compile`, `circuit`, `disassemble`).
 
+Cuando un diagnóstico nace en un módulo, cada formato de salida conserva el
+archivo importado canónico, el span exacto y el texto fuente correspondiente.
+Un error en `lib/proofs.ach` nunca se renderiza contra la línea o el fragmento
+del programa raíz.
+
 ## Salida de Errores
 
 Por defecto, los errores se renderizan con contexto del código fuente:
