@@ -3,7 +3,7 @@
 #
 # Usage:
 #   curl -fsSL https://achrony.me/install.sh | sh
-#   curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.1.0
+#   curl -fsSL https://achrony.me/install.sh | sh -s -- --version 0.1.1
 #
 # Installs `ach` to ~/.local/bin and the Linux AOT runtime to ~/.local/lib.
 
@@ -30,7 +30,7 @@ while [ $# -gt 0 ]; do
             echo "Usage: install.sh [--version VERSION]"
             echo ""
             echo "Options:"
-            echo "  --version VERSION   Install a specific version (e.g. 0.1.0)"
+            echo "  --version VERSION   Install a specific version (e.g. 0.1.1)"
             echo "                      Default: latest release"
             exit 0
             ;;
