@@ -1,9 +1,9 @@
 {
-  "coreVersion": "0.1.1",
-  "coreRevision": "b1774e88671a1889146804cb812cb099eb9cc006",
+  "coreVersion": "0.1.2",
+  "coreRevision": "cd7a6e66e133bebd8e2026e321a4c85023c311f7",
   "editorVersion": "0.3.1",
   "editorRevision": "dbefe5e63e627ff3e49b9819655bcd7d8ff703de",
   "wasmPackVersion": "0.13.1",
-  "javascriptSha256": "38836bf77982c2cf9a5ddd4ad213cc632af333f2124d6b71c89593b5bdc13a08",
-  "wasmSha256": "0ca8ba2b6d9cff1bd25ac57f91dd40599391b0a61daeab1a0fe93c09ba277238"
+  "javascriptSha256": "cd05ea6dc7c08b4c241d5df5668f8f6901914250c2da7a5510afece6c6c27600",
+  "wasmSha256": "3f630671854b7ba6805389a0863c7ed037e2a9beb6a6e70e5538d518066bfc5c"
 }

@@ -1,0 +1,55 @@
+---
+title: Achronyme 0.1.2
+description: Fixes de errores y salida JSON en la verificacion separada de Achronyme 0.1.2.
+slug: "releases/0.1.2"
+---
+
+> **Estado: parche estable publicado.** Core `v0.1.2` y el servicio web
+> `0.1.2` se construyen desde la revision exacta del core indicada abajo.
+> Editor `v0.3.1` permanece compatible.
+
+Achronyme 0.1.2 se construye desde la revision del core
+`cd7a6e66e133bebd8e2026e321a4c85023c311f7`. Corrige la salida de verificacion separada y
+conserva formato de bytecode, ABI del runtime, formatos de pruebas, formato de
+trusted keys, gramatica del lenguaje y contratos del LSP de 0.1.1.
+
+## Matriz de versiones
+
+| Superficie | Estable publicado | Recibo del core |
+|---|---:|---|
+| Compilador y CLI | `0.1.2` | `cd7a6e66` |
+| Editor y LSP | `0.3.1` | Compatible; construido desde `b1774e88` |
+| Paquete web y servidor | `0.1.2` | Fija `cd7a6e66` |
+
+## Los errores operativos siguen siendo errores
+
+`ach verify` ya no imprime `proof invalid` cuando no puede abrir o inspeccionar
+un archivo de prueba, inputs publicos o verification key. El comando termina
+con la causa precisa, de modo que un script puede distinguir una falla
+operativa de una prueba criptograficamente invalida.
+
+## Un solo contrato de salida JSON
+
+La bandera global `--error-format json` ahora selecciona salida JSON para la
+verificacion separada cuando se omite `verify --format`:
+
+```bash
+ach --error-format json verify \
+  --proof proof.json \
+  --public public.json \
+  --vkey verification_key.json \
+  --curve bn254
+```
+
+Un `verify --format text` o `verify --format json` explicito conserva la
+precedencia. Las pruebas invalidas y los errores operativos mantienen status
+distinto de cero en ambas representaciones.
+
+## Mantenimiento del repositorio
+
+Los registros legacy de estrategia y auditoria fueron eliminados del arbol
+actual del repositorio. El release no reescribe el historial de Git, tags ni
+SHAs de evidencia anteriores.
+
+Consulta el [Changelog](/es/docs/releases/changelog/) para el historial
+completo.

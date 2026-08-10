@@ -7,8 +7,8 @@ landing="$project_root/src/components/PageGrid.astro"
 layout="$project_root/src/layouts/Layout.astro"
 english="$project_root/src/i18n/en.json"
 spanish="$project_root/src/i18n/es.json"
-release_en="$project_root/src/content/docs-en/releases/0.1.1.mdx"
-release_es="$project_root/src/content/docs-es/releases/0.1.1.mdx"
+release_en="$project_root/src/content/docs-en/releases/0.1.2.mdx"
+release_es="$project_root/src/content/docs-es/releases/0.1.2.mdx"
 
 # Preserve the established landing composition. Release copy may change, but
 # the content refresh must not replace the site's component and style system.
@@ -28,13 +28,13 @@ if grep -Fq "from './landing/" "$landing" ||
 fi
 
 # Keep the current product truth and the canonical release documentation.
-grep -Fq '"cta": "Install 0.1.1"' "$english"
-grep -Fq '"cta": "Instalar 0.1.1"' "$spanish"
-grep -Fq '"banner": "Achronyme 0.1.1 is published:' "$english"
-grep -Fq '"banner": "Achronyme 0.1.1 publicado:' "$spanish"
+grep -Fq '"cta": "Install 0.1.2"' "$english"
+grep -Fq '"cta": "Instalar 0.1.2"' "$spanish"
+grep -Fq '"banner": "Achronyme 0.1.2 is published:' "$english"
+grep -Fq '"banner": "Achronyme 0.1.2 publicado:' "$spanish"
 grep -Fq '"title": "Structured concurrency"' "$english"
 grep -Fq '"title": "Concurrencia estructurada"' "$spanish"
-grep -Fq 'slug: "releases/0.1.1"' "$release_en"
-grep -Fq 'slug: "releases/0.1.1"' "$release_es"
+grep -Fq 'slug: "releases/0.1.2"' "$release_en"
+grep -Fq 'slug: "releases/0.1.2"' "$release_es"
 
 printf 'landing contract verified: established design with current release content\n'

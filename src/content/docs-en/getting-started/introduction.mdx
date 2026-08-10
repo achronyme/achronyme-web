@@ -18,14 +18,15 @@ three jobs have the same runtime requirements.
 
 | Surface | Published stable | Source receipt |
 |---|---:|---|
-| Compiler and CLI | `0.1.1` | `b1774e88` |
-| Editor and LSP | `0.3.1` | Pinned to core `b1774e88` |
-| Web package and server | `0.1.1` | Pinned to core `b1774e88` |
+| Compiler and CLI | `0.1.2` | `cd7a6e66` |
+| Editor and LSP | `0.3.1` | Compatible; LSP built from core `b1774e88` |
+| Web package and server | `0.1.2` | Pinned to core `cd7a6e66` |
 
-The releases and deployed web service use core revision
-`b1774e88671a1889146804cb812cb099eb9cc006`. See the
-[0.1.1 release notes](/docs/releases/0.1.1/) for the maturity contracts and
-their compatibility with the 0.1.0 production proving key.
+The CLI, WASM package, and deployed web service use core revision
+`cd7a6e66e133bebd8e2026e321a4c85023c311f7`. Editor 0.3.1 remains compatible because 0.1.2 does
+not change the language or LSP contracts. See the
+[0.1.2 release notes](/docs/releases/0.1.2/) for the detached verification
+fixes and compatibility statement.
 
 ## Host execution
 
@@ -87,7 +88,8 @@ ach --trusted-key-dir ./trusted-keys run proof.ach
 ```
 
 Detached verification uses `ach verify` and does not require project
-configuration or a proving key.
+configuration or a proving key. Operational artifact errors remain distinct
+from a cryptographically invalid proof.
 
 ## The three machines
 
@@ -105,4 +107,4 @@ configuration or a proving key.
 - [Install the published release](/docs/getting-started/installation/)
 - [Learn concurrency and host I/O](/docs/language/concurrency-and-io/)
 - [Understand proof trust](/docs/zk-concepts/proof-generation/)
-- [Review the 0.1.1 release contract](/docs/releases/0.1.1/)
+- [Review the 0.1.2 release contract](/docs/releases/0.1.2/)

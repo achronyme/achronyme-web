@@ -89,6 +89,11 @@ ach verify \
 Supported curves are `bn254` and `bls12-381`. Invalid, malformed, mismatched,
 or tampered artifacts return a non-zero exit status.
 
+Missing or unreadable artifacts are operational errors, not invalid proofs.
+`--error-format json` selects JSON output for detached verification when
+`verify --format` is omitted. An explicit `verify --format text` or
+`verify --format json` takes precedence.
+
 ---
 
 ## `trusted-setup` — Package an externally verified key

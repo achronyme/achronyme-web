@@ -14,8 +14,8 @@ function sha256(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
-assert.equal(receipt.coreVersion, "0.1.1");
-assert.equal(receipt.coreRevision, "b1774e88671a1889146804cb812cb099eb9cc006");
+assert.equal(receipt.coreVersion, "0.1.2");
+assert.equal(receipt.coreRevision, "cd7a6e66e133bebd8e2026e321a4c85023c311f7");
 assert.equal(receipt.editorVersion, "0.3.1");
 assert.equal(receipt.editorRevision, "dbefe5e63e627ff3e49b9819655bcd7d8ff703de");
 assert.equal(receipt.wasmPackVersion, "0.13.1");

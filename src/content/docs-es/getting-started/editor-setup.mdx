@@ -5,9 +5,11 @@ description: Soporte publicado de VS Code y LSP para Achronyme y Circom.
 
 ## Estado de versiones
 
-El ultimo release publicado del editor es `0.3.1`. Soporta Achronyme core
-`0.1.1` y fija la revision exacta
-`b1774e88671a1889146804cb812cb099eb9cc006`.
+El ultimo release publicado del editor es `0.3.1`. Su LSP incluido se construye
+desde la revision del core Achronyme
+`b1774e88671a1889146804cb812cb099eb9cc006`. Core 0.1.2 solo cambia la
+verificacion separada del CLI, asi que los contratos del lenguaje y del LSP
+siguen siendo compatibles con este release del editor.
 
 Usa los [releases publicados del editor](https://github.com/achronyme/achronyme-editor/releases)
 para una instalacion normal.
@@ -65,7 +67,7 @@ La extensión busca `ach` en este orden:
 3. el `PATH` del sistema.
 
 Las descargas vienen del ultimo release **publicado** del core en GitHub. Editor
-0.3.1 instala core `0.1.1` cuando administra el CLI automaticamente.
+0.3.1 instala core `0.1.2` cuando administra el CLI automaticamente.
 
 ## Settings
 
